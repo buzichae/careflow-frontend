@@ -1,0 +1,43 @@
+/* ===========================
+   Variables
+=========================== */
+:root {
+  --primary: #5B4FF5;
+  --primary-light: #eeeaff;
+  --primary-bg: #f8f7ff;
+  --text-dark: #1a1a2e;
+  --text-mid: #444;
+  --text-muted: #888;
+  --border: #f0f0f8;
+  --white: #ffffff;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --font: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+}
+
+/* ===========================
+   Reset
+=========================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text-dark);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font);
+}
