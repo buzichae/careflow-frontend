@@ -1,0 +1,362 @@
+/* ===========================
+   Landing - 공통
+=========================== */
+.landing {
+  font-family: var(--font);
+  color: var(--text-dark);
+}
+
+/* ===========================
+   버튼
+=========================== */
+.landing__btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  font-family: var(--font);
+}
+
+.landing__btn:hover {
+  opacity: 0.88;
+}
+
+.landing__btn--primary {
+  background: #5B4FF5;
+  color: #ffffff;
+}
+
+.landing__btn--ghost {
+  background: none;
+  color: #444;
+}
+
+.landing__btn--outline {
+  background: #ffffff;
+  color: #5B4FF5;
+  border: 2px solid #5B4FF5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing__btn--lg {
+  padding: 14px 28px;
+  font-size: 15px;
+  border-radius: 10px;
+}
+
+/* ===========================
+   네브바
+=========================== */
+.landing__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f8;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.landing__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #5B4FF5;
+}
+
+.landing__nav-links {
+  display: flex;
+  gap: 32px;
+}
+
+.landing__nav-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: #444;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.landing__nav-link:hover {
+  color: #5B4FF5;
+}
+
+.landing__nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===========================
+   히어로
+=========================== */
+.landing__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 80px 48px;
+  background: linear-gradient(135deg, #f8f7ff 0%, #eeeaff 100%);
+  min-height: 520px;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing__hero-blob {
+  position: absolute;
+  right: 120px;
+  top: 40px;
+  width: 460px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ddd8ff 0%, #f0eeff 60%, transparent 100%);
+  z-index: 0;
+}
+
+.landing__hero-text {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+}
+
+.landing__eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5B4FF5;
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+
+.landing__title {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  color: #1a1a2e;
+}
+
+.landing__title-accent {
+  color: #5B4FF5;
+}
+
+.landing__desc {
+  font-size: 16px;
+  color: #888;
+  line-height: 1.7;
+  margin-bottom: 36px;
+}
+
+.landing__hero-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.landing__badges {
+  display: flex;
+  gap: 24px;
+}
+
+.landing__badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #888;
+}
+
+.landing__badge-check {
+  color: #5B4FF5;
+}
+
+/* 히어로 가전 이미지 */
+.landing__hero-visual {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.landing__appliances {
+  width: 400px;
+  height: 320px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+.landing__appliance {
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.landing__appliance--lg {
+  width: 140px;
+  height: 260px;
+  font-size: 48px;
+  background: linear-gradient(180deg, #e8e8f0 0%, #d0d0e0 100%);
+}
+
+.landing__appliance--md {
+  width: 110px;
+  height: 200px;
+  font-size: 40px;
+  background: linear-gradient(180deg, #ececf8 0%, #d8d8ee 100%);
+}
+
+.landing__appliance--sm {
+  width: 120px;
+  height: 160px;
+  font-size: 36px;
+  background: linear-gradient(180deg, #e0e0f0 0%, #ccccec 100%);
+}
+
+/* ===========================
+   기능 카드
+=========================== */
+.landing__features {
+  padding: 72px 48px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.landing__features-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: #1a1a2e;
+}
+
+.landing__features-grid {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.landing__feature-card {
+  width: 200px;
+  padding: 28px 20px;
+  border-radius: 16px;
+  border: 1px solid #f0f0f8;
+  background: #fafafa;
+  text-align: center;
+  transition: box-shadow 0.2s;
+}
+
+.landing__feature-card:hover {
+  box-shadow: 0 8px 32px rgba(91, 79, 245, 0.12);
+}
+
+.landing__feature-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #eeeaff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin: 0 auto 16px;
+}
+
+.landing__feature-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 8px;
+  color: #1a1a2e;
+}
+
+.landing__feature-desc {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.6;
+}
+
+/* ===========================
+   통계
+=========================== */
+.landing__stats {
+  padding: 40px 48px;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+}
+
+.landing__stats-box {
+  display: flex;
+  align-items: center;
+  background: #eeeaff;
+  border-radius: 20px;
+  padding: 40px 60px;
+  width: 100%;
+  max-width: 1000px;
+  gap: 0;
+}
+
+.landing__stat {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 0 32px;
+}
+
+.landing__stat--border {
+  border-left: 1px solid #c8c0f0;
+}
+
+.landing__stat-icon {
+  flex-shrink: 0;
+}
+
+.landing__stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing__stat-label {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.landing__stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #5B4FF5;
+}
+
+.landing__stat-unit {
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+/* ===========================
+   로고 / 시작이미지
+=========================== */
+.landing__logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.landing__hero-img {
+  width: 620px;
+  object-fit: contain;
+}
