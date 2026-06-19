@@ -5,10 +5,10 @@ const NAV_LINKS = ["서비스 소개", "주요 기능", "이용 방법"];
 
 const FEATURES = [
   { icon: <LayoutGrid size={22} color="#5B4FF5" />, title: "통합 관리", desc: "여러 브랜드의 가전을 한 곳에서 편리하게 관리" },
-  { icon: <Wrench size={22} color="#5B4FF5" />, desc: "원하는 시간에 맞는 기사 배정, 실시간 진행 상황 확인" },
+  { icon: <Wrench size={22} color="#5B4FF5" />,title: "간편한 A/S 신청", desc: "원하는 시간에 맞는 기사 배정, 실시간 진행 상황 확인" },
   { icon: <ShieldCheck size={22} color="#5B4FF5" />, title: "제품 건강 진단서", desc: "수리/점검 이력을 기반으로 가전의 건강 상태를 한눈에" },
   { icon: <Bell size={22} color="#5B4FF5" />, title: "교체 알림", desc: "소모품 교체 시기를 알려주고 바로 구매까지 연결" },
-  { icon: <RefreshCw size={22} color="#5B4FF5" />, desc: "신뢰할 수 있는 진단서를 기반으로 제값 받고 거래" },
+  { icon: <RefreshCw size={22} color="#5B4FF5" />, title: "중고 거래 연계", desc: "신뢰할 수 있는 진단서를 기반으로 제값 받고 거래" },
 ];
 
 const STATS = [
