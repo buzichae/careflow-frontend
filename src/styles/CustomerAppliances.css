@@ -1,0 +1,328 @@
+/* ===========================
+   CustomerAppliances
+=========================== */
+.ca-wrap {
+  padding: 32px 36px;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 헤더 */
+.ca-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.ca-header__left h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ca-header__left p {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.ca-header__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ca-icon-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+
+.ca-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ca-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #8b7cf7;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* 탭 + 정렬 */
+.ca-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.ca-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.ca-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.ca-tab--active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 700;
+}
+
+.ca-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  background: #fff;
+  margin-bottom: 4px;
+}
+
+/* 그리드 */
+.ca-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* 가전 카드 */
+.ca-card {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ca-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.ca-card__img {
+  width: 80px;
+  height: 80px;
+  background: #f3f3f7;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.ca-card__badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.ca-cert-badge {
+  background: #f0edff;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+  padding: 4px 7px;
+  border-radius: 6px;
+}
+
+.ca-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.ca-status-badge--green { background: #e8f9f0; color: #22c55e; }
+.ca-status-badge--orange { background: #fff7e6; color: #f59e0b; }
+.ca-status-badge--red { background: #fff0f0; color: #ef4444; }
+
+.ca-card__name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ca-card__brand {
+  font-size: 12px;
+  color: var(--text-mid);
+  margin-top: 2px;
+}
+
+.ca-card__model {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ca-card__period {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.ca-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 6px;
+}
+
+.ca-score-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-mid);
+  white-space: nowrap;
+}
+
+.ca-score-bar {
+  flex: 1;
+  height: 4px;
+  background: #f0f0f8;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ca-score-bar__fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.ca-card__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ca-btn-detail {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+
+.ca-btn-check {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: #f0edff;
+  color: var(--primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* 가전 등록 카드 */
+.ca-card--add {
+  border: 2px dashed #d4ccff;
+  background: #faf9ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  min-height: 220px;
+  transition: background 0.15s;
+}
+
+.ca-card--add:hover {
+  background: #f0edff;
+}
+
+.ca-add-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ede8ff;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ca-add-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.ca-add-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* 하단 배너 */
+.ca-banner {
+  background: linear-gradient(135deg, #f0edff 0%, #e8f9f0 100%);
+  border-radius: var(--radius-lg);
+  padding: 28px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ca-banner__text p {
+  font-size: 14px;
+  color: var(--text-mid);
+  line-height: 1.6;
+}
+
+.ca-banner__text p strong {
+  font-size: 18px;
+  color: var(--text-dark);
+}
+
+.ca-banner__btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}

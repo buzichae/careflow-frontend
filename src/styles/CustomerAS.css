@@ -1,0 +1,279 @@
+/* ===========================
+   CustomerAS
+=========================== */
+.cas-wrap {
+  padding: 32px 36px;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 헤더 */
+.cas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cas-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.cas-header__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cas-icon-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+
+.cas-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cas-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #8b7cf7;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* 통계 카드 */
+.cas-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.cas-stat {
+  background: #fff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cas-stat--alert {
+  border: 2px solid #ef4444;
+}
+
+.cas-stat__label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.cas-stat__num {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.cas-stat__num span {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-mid);
+}
+
+.cas-stat__num--red {
+  color: #ef4444;
+}
+
+/* 신청 내역 헤더 */
+.cas-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cas-list-header h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.cas-reserve-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 필터 탭 */
+.cas-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cas-filter {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.cas-filter--active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+/* 신청 목록 */
+.cas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cas-empty {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  background: #fff;
+  border-radius: var(--radius-md);
+}
+
+/* 신청 아이템 */
+.cas-item {
+  background: #fff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.cas-item__img {
+  width: 72px;
+  height: 72px;
+  background: #f3f3f7;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.cas-item__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cas-item__title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cas-item__name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cas-item__model {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: #f3f3f7;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.cas-item__desc {
+  font-size: 13px;
+  color: var(--text-mid);
+}
+
+.cas-item__datetime {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.cas-item__engineer {
+  color: #734bcf;
+  font-weight: 600;
+}
+
+/* 상태 배지 */
+.cas-item__middle {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.cas-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.cas-badge--purple { background: #f0edff; color: var(--primary); }
+.cas-badge--green  { background: #e8f9f0; color: #22c55e; }
+.cas-badge--blue   { background: #eff6ff; color: #3b82f6; }
+.cas-badge--gray   { background: #f3f3f7; color: var(--text-mid); }
+.cas-badge--red    { background: #fff0f0; color: #ef4444; }
+
+/* 액션 버튼 */
+.cas-item__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cas-action-btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 130px;
+  text-align: center;
+}
+
+.cas-action-btn--outline {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+}
+
+.cas-action-btn--primary {
+  background: var(--primary);
+  border: none;
+  color: #fff;
+}

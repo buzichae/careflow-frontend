@@ -1,5 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/MainLayout.jsx";
+import CustomerHome from "./pages/customer/CustomerHome.jsx";
+import CustomerAppliances from "./pages/customer/CustomerAppliances.jsx";
+import CustomerAS from "./pages/customer/CustomerAS.jsx";
+import CustomerNotice from "./pages/customer/CustomerNotice.jsx";
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -9,18 +13,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/agency/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/customer/home" replace />} />
 
         <Route element={<MainLayout />}>
 
           {/* 고객 */}
-          <Route path="/customer/home" element={<TempPage title="고객 - 홈" />} />
-          <Route path="/customer/appliances" element={<TempPage title="고객 - 내 가전" />} />
+          <Route path="/customer/home" element={<CustomerHome />} />
+          <Route path="/customer/appliances" element={<CustomerAppliances />} />
           <Route path="/customer/repair-history" element={<TempPage title="고객 - 가전별 수리 이력" />} />
-          <Route path="/customer/as" element={<TempPage title="고객 - A/S 신청/예약" />} />
+          <Route path="/customer/as" element={<CustomerAS />} />
           <Route path="/customer/payment" element={<TempPage title="고객 - 정산/결제" />} />
           <Route path="/customer/market" element={<TempPage title="고객 - 중고 마켓" />} />
-          <Route path="/customer/notice" element={<TempPage title="고객 - 알림" />} />
+          <Route path="/customer/notice" element={<CustomerNotice />} />
 
           {/* 기사 */}
           <Route path="/engineer/dashboard" element={<TempPage title="기사 - 대시보드" />} />
@@ -54,7 +58,7 @@ export default function App() {
 
         </Route>
 
-        <Route path="*" element={<Navigate to="/agency/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/customer/home" replace />} />
       </Routes>
     </BrowserRouter>
   );
