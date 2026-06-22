@@ -170,7 +170,7 @@ export default function CustomerPayment() {
       </header>
 
       {/* Hero */}
-      <div className="cp-hero">
+      {/* <div className="cp-hero">
         <div className="cp-hero__main">
           <p className="cp-hero__sub">총 지출</p>
           <p className="cp-hero__amount">₩1,280,000</p>
@@ -182,7 +182,7 @@ export default function CustomerPayment() {
           <p className="cp-hero__save-amount">₩320,000</p>
           <span className="cp-hero__save-label">보증 수리 + 할인 혜택 합산</span>
         </div>
-      </div>
+      </div> */}
 
       {/* KPI 6개 */}
       <div className="cp-kpi-grid">

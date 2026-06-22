@@ -2,167 +2,106 @@
    CustomerAS
 =========================== */
 .cas-wrap {
-  padding: 32px 36px;
-  max-width: 1000px;
+  padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* 헤더 */
 .cas-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
 }
 
-.cas-header h1 {
-  font-size: 24px;
-  font-weight: 700;
-}
+.cas-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+.cas-header p  { font-size: 13px; color: var(--text-muted); }
 
-.cas-header__right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+.cas-header__right { display: flex; align-items: center; gap: 14px; }
 
-.cas-icon-btn {
-  background: none;
-  border: none;
-  padding: 6px;
-  color: var(--text-mid);
-  cursor: pointer;
-}
+.cas-icon-btn { background: none; border: none; padding: 6px; color: var(--text-mid); cursor: pointer; }
 
-.cas-profile {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-}
+.cas-profile { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
 
 .cas-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #8b7cf7;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #8b7cf7; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
 }
 
 /* 통계 카드 */
 .cas-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 12px;
 }
 
 .cas-stat {
   background: #fff;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  padding: 20px 24px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.cas-stat--alert {
-  border: 2px solid #ef4444;
+.cas-stat--alert { border: 2px solid #ef4444; }
+
+.cas-stat__label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.cas-stat__num   { font-size: 26px; font-weight: 700; }
+.cas-stat__num span { font-size: 14px; font-weight: 500; color: var(--text-mid); }
+.cas-stat__num--red { color: #ef4444; }
+
+/* ── 바디 2열 ── */
+.cas-body {
+  display: grid;
+  grid-template-columns: 1fr 250px;
+  gap: 20px;
+  align-items: start;
 }
 
-.cas-stat__label {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
+.cas-main { display: flex; flex-direction: column; gap: 14px; }
 
-.cas-stat__num {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-dark);
-}
-
-.cas-stat__num span {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-mid);
-}
-
-.cas-stat__num--red {
-  color: #ef4444;
-}
-
-/* 신청 내역 헤더 */
+/* 목록 헤더 */
 .cas-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.cas-list-header h2 {
-  font-size: 17px;
-  font-weight: 700;
-}
+.cas-list-header h2 { font-size: 16px; font-weight: 700; }
 
 .cas-reserve-btn {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 10px 22px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
+  background: var(--primary); color: #fff; border: none;
+  border-radius: var(--radius-sm); padding: 9px 20px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
 }
 
 /* 필터 탭 */
-.cas-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+.cas-filters { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .cas-filter {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-mid);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 12px; font-weight: 500; color: var(--text-mid);
+  cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .cas-filter--active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-  font-weight: 700;
+  background: var(--primary); color: #fff;
+  border-color: var(--primary); font-weight: 700;
 }
 
 /* 신청 목록 */
-.cas-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.cas-list { display: flex; flex-direction: column; gap: 10px; }
 
 .cas-empty {
-  text-align: center;
-  padding: 48px 0;
-  color: var(--text-muted);
-  font-size: 14px;
-  background: #fff;
-  border-radius: var(--radius-md);
+  text-align: center; padding: 48px 0;
+  color: var(--text-muted); font-size: 14px;
+  background: #fff; border-radius: var(--radius-md);
 }
 
 /* 신청 아이템 */
@@ -170,75 +109,64 @@
   background: #fff;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  padding: 20px 24px;
-  display: flex;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: 72px 1fr 160px 140px;
+  gap: 16px;
   align-items: center;
-  gap: 20px;
+}
+
+.cas-item--payment {
+  border-color: #f59e0b;
+  background: #fffdf7;
 }
 
 .cas-item__img {
-  width: 72px;
-  height: 72px;
-  background: #f3f3f7;
-  border-radius: 10px;
-  flex-shrink: 0;
+  width: 68px; height: 68px;
+  background: #f3f3f7; border-radius: 10px; flex-shrink: 0;
 }
 
-.cas-item__info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+.cas-item__info { display: flex; flex-direction: column; gap: 5px; }
 
-.cas-item__title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.cas-item__title-row { display: flex; align-items: center; gap: 8px; }
 
-.cas-item__name {
-  font-size: 15px;
-  font-weight: 700;
-}
-
+.cas-item__name  { font-size: 14px; font-weight: 700; }
 .cas-item__model {
-  font-size: 12px;
-  color: var(--text-muted);
-  background: #f3f3f7;
-  padding: 2px 8px;
-  border-radius: 6px;
+  font-size: 11px; color: var(--text-muted);
+  background: #f3f3f7; padding: 2px 7px; border-radius: 6px;
 }
 
-.cas-item__desc {
-  font-size: 13px;
-  color: var(--text-mid);
+.cas-item__desc { font-size: 12px; color: var(--text-mid); }
+
+.cas-item__meta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 
 .cas-item__datetime {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--text-muted);
 }
 
 .cas-item__engineer {
-  color: #734bcf;
-  font-weight: 600;
+  font-size: 11px; font-weight: 600; color: #734bcf;
 }
 
-/* 상태 배지 */
-.cas-item__middle {
+.cas-item__amount {
+  font-size: 12px; color: var(--text-mid);
+}
+.cas-item__amount strong { color: #ef4444; font-size: 14px; }
+
+/* 중앙: 배지 + 기사 정보 */
+.cas-item__center {
   display: flex;
-  align-items: center;
-  padding: 0 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .cas-badge {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 20px;
-  white-space: nowrap;
+  font-size: 11px; font-weight: 700;
+  padding: 4px 12px; border-radius: 20px; white-space: nowrap;
 }
 
 .cas-badge--purple { background: #f0edff; color: var(--primary); }
@@ -247,33 +175,340 @@
 .cas-badge--gray   { background: #f3f3f7; color: var(--text-mid); }
 .cas-badge--red    { background: #fff0f0; color: #ef4444; }
 
-/* 액션 버튼 */
-.cas-item__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
+.cas-item__engineer-info {
+  display: flex; align-items: center; gap: 7px;
 }
+
+.cas-item__eng-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #8b7cf7; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px; flex-shrink: 0;
+}
+
+.cas-item__eng-name   { font-size: 12px; font-weight: 600; }
+.cas-item__eng-rating { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; margin-top: 1px; }
+
+/* 액션 버튼 */
+.cas-item__actions { display: flex; flex-direction: column; gap: 7px; }
 
 .cas-action-btn {
-  padding: 8px 18px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  min-width: 130px;
-  text-align: center;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; text-align: center;
 }
 
-.cas-action-btn--outline {
+.cas-action-btn--outline { background: #fff; border: 1px solid var(--border); color: var(--text-mid); }
+.cas-action-btn--primary { background: var(--primary); border: none; color: #fff; }
+.cas-action-btn--danger  { background: #ef4444; border: none; color: #fff; }
+
+/* ── 우측 사이드바 ── */
+.cas-sidebar {
+  display: flex; flex-direction: column; gap: 12px;
+  position: sticky; top: 20px;
+}
+
+.cas-side-card {
   background: #fff;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  color: var(--text-mid);
+  padding: 16px;
 }
 
-.cas-action-btn--primary {
-  background: var(--primary);
+.cas-side-card--alert { border-color: #ef4444; background: #fffafa; }
+
+.cas-side-card--cta {
+  background: linear-gradient(135deg, #7c5cf7, #5b9cf6);
   border: none;
-  color: #fff;
 }
+
+.cas-side-card__head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.cas-side-badge {
+  margin-left: auto; font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px;
+}
+.cas-side-badge--red    { background: #fff0f0; color: #ef4444; }
+.cas-side-badge--purple { background: #f0edff; color: var(--primary); }
+
+/* 결제 대기 아이템 */
+.cas-payment-item { display: flex; flex-direction: column; gap: 6px; }
+
+.cas-payment-item__top { }
+.cas-payment-item__name  { font-size: 13px; font-weight: 700; }
+.cas-payment-item__model { font-size: 11px; color: var(--text-muted); }
+
+.cas-payment-item__bottom {
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.cas-payment-item__amount { font-size: 18px; font-weight: 800; color: #ef4444; }
+.cas-payment-item__due    { font-size: 10px; color: var(--text-muted); }
+
+.cas-pay-btn {
+  width: 100%; margin-top: 6px; padding: 9px 0;
+  border-radius: var(--radius-sm); border: none;
+  background: #ef4444; color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+
+/* 방문 예정 */
+.cas-visit-item { display: flex; gap: 10px; align-items: flex-start; }
+
+.cas-visit-dday {
+  font-size: 13px; font-weight: 800;
+  background: #f0edff; color: var(--primary);
+  padding: 4px 10px; border-radius: 8px; white-space: nowrap; flex-shrink: 0;
+}
+
+.cas-visit-appliance { font-size: 13px; font-weight: 700; }
+.cas-visit-date      { font-size: 11px; color: var(--text-mid); margin-top: 2px; }
+.cas-visit-time      { font-size: 11px; color: var(--text-muted); }
+.cas-visit-engineer  { font-size: 11px; font-weight: 600; color: #734bcf; margin-top: 3px; }
+
+/* 최근 담당 기사 */
+.cas-eng-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.cas-eng-row:last-child { border-bottom: none; }
+
+.cas-eng-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #8b7cf7; color: #fff; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+}
+
+.cas-eng-info { flex: 1; }
+.cas-eng-top  { display: flex; justify-content: space-between; align-items: center; }
+.cas-eng-name   { font-size: 12px; font-weight: 700; }
+.cas-eng-rating { font-size: 11px; color: var(--text-mid); display: flex; align-items: center; gap: 3px; }
+.cas-eng-count  { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.cas-eng-tags   { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.cas-eng-tag    { font-size: 10px; background: #f0edff; color: var(--primary); padding: 2px 7px; border-radius: 8px; }
+
+/* CTA 카드 */
+.cas-cta-title { font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.cas-cta-desc  { font-size: 12px; color: rgba(255,255,255,0.8); margin-bottom: 12px; }
+
+.cas-cta-btn {
+  width: 100%; padding: 9px 0;
+  border-radius: var(--radius-sm); border: none;
+  background: rgba(255,255,255,0.2); color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+
+.cas-cta-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* ─────────────────────────────────
+   A/S 예약 플로우
+───────────────────────────────── */
+
+/* 뒤로 버튼 */
+.cas-back-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 6px 12px;
+  font-size: 13px; font-weight: 600; color: var(--text-mid);
+  cursor: pointer; white-space: nowrap;
+}
+.cas-back-btn:hover { background: #f3f3f7; }
+
+/* 스텝 바 */
+.cas-stepper {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border-radius: var(--radius-md);
+  border: 1px solid var(--border); padding: 20px 32px;
+}
+.cas-stepper__item {
+  display: flex; align-items: center; gap: 10px;
+}
+.cas-stepper__circle {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #f0f0f8; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.cas-stepper__circle--active { background: var(--primary); color: #fff; }
+.cas-stepper__label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.cas-stepper__label--active { color: var(--text-dark); font-weight: 700; }
+.cas-stepper__line { color: #d0d0e0; font-size: 13px; margin: 0 4px; }
+
+/* 2열 바디 */
+.cas-flow-body {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 20px;
+  align-items: start;
+}
+
+.cas-flow-main { display: flex; flex-direction: column; gap: 14px; }
+
+/* 일반 카드 래퍼 */
+.cas-flow-card {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px;
+}
+.cas-flow-card__title {
+  font-size: 14px; font-weight: 700; margin-bottom: 14px;
+}
+
+/* 제품 선택 그리드 */
+.cas-product-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.cas-product-card {
+  position: relative; background: #fff;
+  border: 2px solid var(--border); border-radius: var(--radius-md);
+  padding: 14px 10px; cursor: pointer; text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.cas-product-card--selected {
+  border-color: var(--primary); background: #f5f3ff;
+}
+.cas-product-card--add {
+  border-style: dashed; border-color: #d4ccff; background: #faf9ff;
+  color: var(--primary);
+}
+.cas-product-card--add:hover { background: #f0edff; }
+.cas-product-card__check {
+  position: absolute; top: 6px; right: 6px;
+  background: var(--primary); color: #fff;
+  border-radius: 50%; width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.cas-product-card__img { font-size: 28px; line-height: 1; }
+.cas-product-card__name { font-size: 11px; font-weight: 700; color: var(--text-dark); text-align: center; line-height: 1.4; }
+.cas-product-card__model { font-size: 10px; color: var(--text-muted); }
+
+/* AI 진단 배너 */
+.cas-ai-banner {
+  background: linear-gradient(135deg, #f0edff 0%, #e8f1ff 100%);
+  border: 1px solid #d4ccff; border-radius: var(--radius-md);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.cas-ai-banner__left {
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.cas-ai-banner__bot { font-size: 28px; line-height: 1; }
+.cas-ai-banner__title { font-size: 13px; font-weight: 700; color: var(--text-dark); margin-bottom: 3px; }
+.cas-ai-banner__sub   { font-size: 11px; color: var(--text-mid); }
+.cas-ai-banner__stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.cas-ai-banner__stat {
+  background: rgba(255,255,255,0.8); border-radius: var(--radius-sm);
+  padding: 10px; text-align: center;
+}
+.cas-ai-banner__stat-icon { font-size: 18px; }
+.cas-ai-banner__stat-val  { font-size: 12px; font-weight: 700; color: var(--text-dark); margin-top: 4px; }
+.cas-ai-banner__stat-sub  { font-size: 10px; color: var(--text-muted); }
+
+/* 선택 카드: AI vs A/S */
+.cas-choice-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.cas-choice-card {
+  background: #fff; border: 2px solid var(--border);
+  border-radius: var(--radius-md); padding: 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color 0.15s;
+}
+.cas-choice-card:hover { border-color: var(--primary); }
+.cas-choice-card__icon {
+  font-size: 28px; width: 48px; height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+}
+.cas-choice-card__icon--ai { background: #f0edff; }
+.cas-choice-card__icon--as { background: #fff7e6; }
+.cas-choice-card__title { font-size: 14px; font-weight: 700; }
+.cas-choice-card__desc  { font-size: 12px; color: var(--text-mid); line-height: 1.5; }
+.cas-choice-card__tags  { display: flex; gap: 6px; flex-wrap: wrap; }
+.cas-choice-card__tags span {
+  font-size: 10px; background: #f3f3f7; color: var(--text-mid);
+  padding: 3px 8px; border-radius: 8px;
+}
+.cas-choice-btn {
+  margin-top: auto; padding: 10px 0; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 700; cursor: pointer; text-align: center;
+}
+.cas-choice-btn--primary { background: var(--primary); border: none; color: #fff; }
+.cas-choice-btn--outline { background: #fff; border: 2px solid var(--primary); color: var(--primary); }
+
+/* 자주 발생하는 문제 */
+.cas-quick-problems { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.cas-quick-problem {
+  display: flex; align-items: center; gap: 6px;
+  background: #f5f3ff; border: 1px solid #d4ccff;
+  border-radius: 20px; padding: 7px 14px;
+  font-size: 12px; font-weight: 500; color: var(--text-dark);
+  cursor: pointer; transition: background 0.15s;
+}
+.cas-quick-problem:hover { background: #ede8ff; }
+.cas-quick-hint { font-size: 11px; color: var(--text-muted); }
+.cas-quick-hint__link { color: var(--primary); font-weight: 600; cursor: pointer; }
+
+/* 사이드바 */
+.cas-flow-sidebar {
+  display: flex; flex-direction: column; gap: 12px;
+  position: sticky; top: 20px;
+}
+
+/* 선택된 제품 */
+.cas-selected-product {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.cas-selected-product__img  { font-size: 28px; flex-shrink: 0; }
+.cas-selected-product__name { font-size: 13px; font-weight: 700; }
+.cas-selected-product__model{ font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+.cas-product-meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.cas-product-meta__row {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--text-muted);
+  border-bottom: 1px solid var(--border); padding-bottom: 5px;
+}
+.cas-product-meta__row span:last-child { color: var(--text-dark); font-weight: 600; text-align: right; }
+.cas-product-meta__warranty em { font-style: normal; font-size: 10px; background: #e8f9f0; color: #22c55e; padding: 1px 5px; border-radius: 6px; }
+
+.cas-product-links { display: flex; flex-direction: column; gap: 4px; }
+.cas-product-link {
+  background: none; border: none; font-size: 11px;
+  color: var(--primary); text-align: left; cursor: pointer;
+  padding: 2px 0; font-weight: 600;
+}
+.cas-product-link:hover { text-decoration: underline; }
+
+/* 최근 상담 내역 */
+.cas-recent-list { display: flex; flex-direction: column; gap: 8px; }
+.cas-recent-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.cas-recent-item:last-child { border-bottom: none; }
+
+.cas-recent-icon {
+  width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.cas-recent-icon--blue  { background: #eff6ff; color: #3b82f6; }
+.cas-recent-icon--green { background: #e8f9f0; color: #22c55e; }
+
+.cas-recent-info  { flex: 1; }
+.cas-recent-title { font-size: 11px; font-weight: 600; color: var(--text-dark); }
+.cas-recent-date  { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+.cas-recent-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
+.cas-recent-badge--blue  { background: #eff6ff; color: #3b82f6; }
+.cas-recent-badge--green { background: #e8f9f0; color: #22c55e; }

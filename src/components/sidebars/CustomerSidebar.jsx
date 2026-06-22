@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import "../../styles/Sidebars.css";
-import {House, WashingMachine, Wrench, ShieldCheck, HandCoins, RefreshCw, Bell} from "lucide-react"
+// import {House, WashingMachine, Wrench, ShieldCheck, HandCoins, RefreshCw, Bell} from "lucide-react"
+import {House, WashingMachine, Wrench, ShieldCheck, HandCoins, Bell} from "lucide-react"
 
 
 const MENU = [
@@ -9,7 +10,7 @@ const MENU = [
   { label: "가전별 수리 이력", path: "/customer/repair-history", icon: (active) => <Wrench size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "A/S 신청 / 예약", path: "/customer/as", icon: (active) => <ShieldCheck size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "정산 / 결제", path: "/customer/payment", icon: (active) => <HandCoins size={18} color={ active ? "#ffffff" : "#000000"} />},
-  { label: "중고 마켓", path: "/customer/market",icon: (active) => <RefreshCw size={18} color={ active ? "#ffffff" : "#000000"} />},
+  // { label: "중고 마켓", path: "/customer/market",icon: (active) => <RefreshCw size={18} color={ active ? "#ffffff" : "#000000"} />},
   { label: "알림", path: "/customer/notice", icon: (active) => <Bell size={18} color={ active ? "#ffffff" : "#000000"} />},
 ];
 
