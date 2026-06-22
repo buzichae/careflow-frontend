@@ -6,6 +6,7 @@ import CustomerAS from "./pages/customer/CustomerAS.jsx";
 import CustomerNotice from "./pages/customer/CustomerNotice.jsx";
 import CustomerPayment from "./pages/customer/CustomerPayment.jsx";
 import CustomerRepairHistory from "./pages/customer/CustomerRepairHistory.jsx";
+// import LandingPage from "../src/pages/Landing/LandingPage.jsx";
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -15,7 +16,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/customer/home" replace />} />
+        {/* <Route path="/" element={<LandingPage title="메인페이지"/>} /> */}
 
         <Route element={<MainLayout />}>
 
@@ -30,14 +31,14 @@ export default function App() {
 
           {/* 기사 */}
           <Route path="/engineer/dashboard" element={<TempPage title="기사 - 대시보드" />} />
-          <Route path="/engineer/schedule" element={<TempPage title="기사 - 오늘의 일정" />} />
-          <Route path="/engineer/work" element={<TempPage title="기사 - 작업 목록" />} />
-          <Route path="/engineer/work-done" element={<TempPage title="기사 - 작업 완료 내역" />} />
-          <Route path="/engineer/settlement" element={<TempPage title="기사 - 정산/수익" />} />
+          <Route path="/engineer/schedule" element={<TempPage title="기사 - 작업 일정" />} />
+          <Route path="/engineer/work" element={<TempPage title="기사 - 작업 관리" />} />
+          <Route path="/engineer/customers" element={<TempPage title="기사 - 고객 정보 조회" />} />
+          <Route path="/engineer/report" element={<TempPage title="기사 - 작업 보고서" />} />
+          <Route path="/engineer/settlement" element={<TempPage title="기사 - 실적/정산" />} />
           <Route path="/engineer/reviews" element={<TempPage title="기사 - 고객 평가" />} />
-          <Route path="/engineer/notice" element={<TempPage title="기사 - 공지사항" />} />
-          <Route path="/engineer/profile" element={<TempPage title="기사 - 내 정보" />} />
-          <Route path="/engineer/help" element={<TempPage title="기사 - 도움말" />} />
+          <Route path="/engineer/profile" element={<TempPage title="기사 - 프로필 관리" />} />
+          <Route path="/engineer/notice" element={<TempPage title="기사 - 알림" />} />
 
           {/* 대행사 */}
           <Route path="/agency/dashboard" element={<TempPage title="대행사 - 대시보드" />} />

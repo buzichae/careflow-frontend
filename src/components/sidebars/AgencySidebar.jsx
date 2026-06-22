@@ -1,37 +1,43 @@
 import { NavLink } from "react-router-dom";
 import "../../styles/Sidebars.css";
+import {House, UserRound, ClipboardList, HandCoins, UsersRound , Star , ChartNoAxesCombined, Bell, Settings} from "lucide-react"
 
 const MENU = [
-  { label: "대시보드", path: "/agency/dashboard", icon: "⊞" },
-  { label: "작업 관리", path: "/agency/work", icon: "📋" },
-  { label: "기사 관리", path: "/agency/engineers", icon: "👥" },
-  { label: "정산 관리", path: "/agency/settlement", icon: "💰" },
-  { label: "고객 관리", path: "/agency/customers", icon: "👤" },
-  { label: "평가 및 리뷰", path: "/agency/reviews", icon: "⭐" },
-  { label: "통계 및 리포트", path: "/agency/statistics", icon: "📊" },
-  { label: "공지사항", path: "/agency/notice", icon: "🔔" },
-  { label: "설정", path: "/agency/settings", icon: "⚙️" },
+  { label: "대시보드", path: "/agency/dashboard", icon: (active) => <House size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "작업 관리", path: "/agency/work", icon: (active) => <UserRound size={18} color={ active ? "#ffffff" : "#000000"}/> },
+  { label: "기사 관리", path: "/agency/engineers", icon: (active) => <ClipboardList size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "정산 관리", path: "/agency/settlement", icon: (active) =>  <HandCoins size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "고객 관리", path: "/agency/customers", icon: (active) =>  <UsersRound size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "평가 및 리뷰", path: "/agency/reviews", icon: (active) => <Star size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "통계 및 리포트", path: "/agency/statistics", icon: (active) =>  <ChartNoAxesCombined size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "알림", path: "/agency/notice", icon: (active) =>  <Bell size={18}color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "설정", path: "/agency/settings", icon: (active) =>  <Settings size={18} color={ active ? "#ffffff" : "#000000"} /> },
 ];
 
 export default function AgencySidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__logo">
-        <span>💜</span> CareFlow
-      </div>
+  <img src="/src/assets/logo.png" alt="CareFlow" className="sidebar__logo-img" />
+  CareFlow
+</div>
       <nav className="sidebar__nav">
         {MENU.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `sidebar__item ${isActive ? "sidebar__item--active" : ""}`
+             `sidebar__item ${isActive ? "sidebar__item--active" : ""}`
             }
           >
-            <span className="sidebar__icon">{item.icon}</span>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+        {({ isActive }) => (
+         <>
+         <span className="sidebar__icon">{item.icon(isActive)}</span>
+         <span>{item.label}</span>
+      </>
+    )}
+  </NavLink>
+))}
       </nav>
       <div className="sidebar__footer">
         <p className="sidebar__cs-label">고객센터</p>
