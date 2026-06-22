@@ -7,6 +7,10 @@ import CustomerNotice from "./pages/customer/CustomerNotice.jsx";
 import CustomerPayment from "./pages/customer/CustomerPayment.jsx";
 import CustomerRepairHistory from "./pages/customer/CustomerRepairHistory.jsx";
 // import LandingPage from "../src/pages/Landing/LandingPage.jsx";
+import LandingPage from "../src/pages/Landing/LandingPage.jsx";
+import ServicePage from "../src/pages/Landing/ServicePage.jsx"
+import FeaturePage from "../src/pages/Landing/FeaturePage.jsx";
+import GuidePage from "../src/pages/Landing/GuidePage.jsx";
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -16,7 +20,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* <Route path="/" element={<LandingPage title="메인페이지"/>} /> */}
+        <Route path="/" element={<LandingPage title="메인페이지"/>} />
+        <Route path="/service" element={<ServicePage title="메인페이지-서비스소개"/>} />
+        <Route path="/features" element={<FeaturePage title="메인페이지-주요소개"/>} />
+        <Route path="/guide" element={<GuidePage title="메인페이지-기능"/>} />
 
         <Route element={<MainLayout />}>
 
