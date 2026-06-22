@@ -4,8 +4,8 @@ import {House, UserRound, ClipboardList, HandCoins, UsersRound , Star , ChartNoA
 
 const MENU = [
   { label: "대시보드", path: "/agency/dashboard", icon: (active) => <House size={18} color={ active ? "#ffffff" : "#000000"} /> },
-  { label: "작업 관리", path: "/agency/work", icon: (active) => <UserRound size={18} color={ active ? "#ffffff" : "#000000"}/> },
-  { label: "기사 관리", path: "/agency/engineers", icon: (active) => <ClipboardList size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "작업 관리", path: "/agency/work", icon: (active) => <ClipboardList size={18} color={ active ? "#ffffff" : "#000000"}/> },
+  { label: "기사 관리", path: "/agency/engineers", icon: (active) => <UserRound size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "정산 관리", path: "/agency/settlement", icon: (active) =>  <HandCoins size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "고객 관리", path: "/agency/customers", icon: (active) =>  <UsersRound size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "평가 및 리뷰", path: "/agency/reviews", icon: (active) => <Star size={18} color={ active ? "#ffffff" : "#000000"} /> },
