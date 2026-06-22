@@ -1,0 +1,387 @@
+/* ===========================
+   CustomerPayment
+=========================== */
+.cp-wrap {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 헤더 */
+.cp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cp-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+.cp-header p  { font-size: 13px; color: var(--text-muted); }
+
+.cp-header__right { display: flex; align-items: center; gap: 14px; }
+
+.cp-icon-btn { background: none; border: none; padding: 6px; color: var(--text-mid); cursor: pointer; }
+
+.cp-profile { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
+
+.cp-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #8b7cf7; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+}
+
+/* Hero */
+.cp-hero {
+  background: linear-gradient(135deg, #7c5cf7 0%, #5b9cf6 100%);
+  border-radius: var(--radius-lg);
+  padding: 28px 36px;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  color: #fff;
+}
+
+.cp-hero__sub        { font-size: 13px; opacity: 0.8; margin-bottom: 6px; }
+.cp-hero__amount     { font-size: 38px; font-weight: 900; letter-spacing: -1px; }
+.cp-hero__trend      { display: inline-block; margin-top: 8px; font-size: 12px; background: rgba(255,255,255,0.2); padding: 3px 12px; border-radius: 20px; }
+.cp-hero__divider    { width: 1px; height: 72px; background: rgba(255,255,255,0.25); }
+.cp-hero__save-amount{ font-size: 28px; font-weight: 800; color: #a8f0c6; }
+.cp-hero__save-label { font-size: 11px; opacity: 0.7; margin-top: 6px; }
+
+/* KPI 6개 */
+.cp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.cp-kpi {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 3px solid transparent;
+}
+
+.cp-kpi--purple { border-top-color: #734bcf; }
+.cp-kpi--blue   { border-top-color: #3b82f6; }
+.cp-kpi--red    { border-top-color: #ef4444; }
+.cp-kpi--green  { border-top-color: #22c55e; }
+.cp-kpi--teal   { border-top-color: #14b8a6; }
+.cp-kpi--orange { border-top-color: #f59e0b; }
+
+.cp-kpi__icon  { font-size: 20px; margin-bottom: 4px; }
+.cp-kpi__value { font-size: 17px; font-weight: 800; color: var(--text-dark); }
+.cp-kpi__label { font-size: 11px; font-weight: 600; color: var(--text-mid); }
+.cp-kpi__sub   { font-size: 10px; color: var(--text-muted); }
+
+/* 바디 2열 */
+.cp-body {
+  display: grid;
+  grid-template-columns: 1fr 268px;
+  gap: 20px;
+  align-items: start;
+}
+
+.cp-main    { display: flex; flex-direction: column; gap: 16px; }
+.cp-sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 20px; }
+
+/* 공통 카드 */
+.cp-card {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.cp-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cp-card__header h2 { font-size: 14px; font-weight: 700; }
+.cp-card__sub       { font-size: 11px; color: var(--text-muted); }
+
+.cp-link-btn {
+  background: none; border: none;
+  font-size: 12px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 2px; cursor: pointer;
+}
+
+/* 결제 필요 Action Card */
+.cp-action-card {
+  background: #fff;
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.cp-action-card__left { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+
+.cp-action-card__alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff7e6;
+  color: #f59e0b;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.cp-action-card__product { font-size: 20px; font-weight: 800; }
+
+.cp-action-card__meta {
+  display: flex;
+  gap: 28px;
+}
+
+.cp-action-card__meta div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cp-action-card__meta span  { font-size: 11px; color: var(--text-muted); }
+.cp-action-card__meta strong{ font-size: 14px; font-weight: 700; }
+.cp-action-card__price      { color: #ef4444 !important; font-size: 18px !important; }
+
+.cp-action-card__btns { display: flex; gap: 10px; }
+
+.cp-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+}
+
+.cp-btn--outline { background: #fff; border: 1px solid var(--border); color: var(--text-mid); }
+.cp-btn--primary { background: var(--primary); border: none; color: #fff; }
+
+/* 원형 진행률 */
+.cp-circle-progress { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cp-circle-label    { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+/* 차트 행 */
+.cp-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 14px;
+}
+
+/* 막대 그래프 */
+.cp-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 8px;
+  height: 140px;
+  padding-top: 20px;
+}
+
+.cp-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.cp-bar-label-top { font-size: 10px; color: var(--text-muted); }
+
+.cp-bar-track {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: flex-end;
+  background: #f8f7ff;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+}
+
+.cp-bar-fill {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s;
+}
+
+.cp-bar-month { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+
+/* 도넛 */
+.cp-donut-card { display: flex; flex-direction: column; }
+
+.cp-donut { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.cp-donut__legend { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+
+.cp-legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-mid);
+}
+
+.cp-legend-dot   { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cp-legend-label { flex: 1; }
+.cp-legend-pct   { font-weight: 700; color: var(--text-dark); }
+
+/* 최근 수리 가전 */
+.cp-repair-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.cp-repair-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.cp-repair-card__img {
+  width: 100%; height: 72px;
+  background: #f3f3f7;
+}
+
+.cp-repair-card__info { padding: 10px 10px; }
+
+.cp-repair-card__top {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+}
+
+.cp-repair-card__name  { font-size: 12px; font-weight: 700; }
+.cp-repair-card__model { font-size: 10px; color: var(--text-muted); }
+.cp-repair-card__date  { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.cp-repair-card__cost  { font-size: 13px; font-weight: 800; color: var(--primary); margin-top: 4px; }
+
+/* 배지 */
+.cp-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px;
+}
+
+.cp-badge--green  { background: #e8f9f0; color: #22c55e; }
+.cp-badge--orange { background: #fff7e6; color: #f59e0b; }
+.cp-badge--purple { background: #f0edff; color: #734bcf; }
+.cp-badge--blue   { background: #eff6ff; color: #3b82f6; }
+
+/* 결제 내역 테이블 */
+.cp-table { display: flex; flex-direction: column; }
+
+.cp-table__head,
+.cp-table__row {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr 1fr 1.2fr 0.8fr 0.5fr;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.cp-table__head {
+  background: #f8f7ff;
+  border-radius: 8px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.cp-table__row { border-bottom: 1px solid var(--border); }
+.cp-table__row:last-child { border-bottom: none; }
+.cp-table__row:hover { background: #faf9ff; border-radius: 8px; }
+
+.cp-table__product  { font-weight: 600; color: var(--text-dark); }
+.cp-table__engineer { display: flex; align-items: center; gap: 4px; color: var(--text-mid); }
+.cp-table__amount   { font-weight: 700; }
+.cp-table__date     { color: var(--text-muted); }
+
+.cp-receipt-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 8px;
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center;
+}
+
+/* 이번 달 요약 */
+.cp-summary-list { display: flex; flex-direction: column; gap: 10px; }
+
+.cp-summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cp-summary-row:last-child { border-bottom: none; }
+.cp-summary-row__label { font-size: 12px; color: var(--text-muted); }
+.cp-summary-row__value { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+
+/* CareFlow 인증 혜택 */
+.cp-cert-card { background: linear-gradient(135deg, #faf9ff 0%, #f0edff 100%); }
+
+.cp-cert-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+.cp-cert-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: #fff; border-radius: 10px; padding: 12px 6px;
+}
+
+.cp-cert-item__icon  { font-size: 20px; }
+.cp-cert-item__value { font-size: 13px; font-weight: 800; color: var(--primary); }
+.cp-cert-item__label { font-size: 10px; color: var(--text-muted); text-align: center; }
+
+/* 기사 만족도 */
+.cp-engineer-card { display: flex; flex-direction: column; gap: 10px; }
+
+.cp-engineer-card__top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+
+.cp-engineer-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #8b7cf7; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+}
+
+.cp-engineer-name  { font-size: 13px; font-weight: 700; }
+.cp-engineer-stars { font-size: 12px; color: #f59e0b; margin-top: 2px; }
+.cp-engineer-stars strong { color: var(--text-dark); }
+
+.cp-meter-row { display: flex; align-items: center; gap: 8px; }
+.cp-meter-label { font-size: 11px; color: var(--text-muted); width: 64px; flex-shrink: 0; }
+
+.cp-meter-bar {
+  flex: 1; height: 6px;
+  background: #f0f0f8; border-radius: 4px; overflow: hidden;
+}
+
+.cp-meter-fill { height: 100%; background: var(--primary); border-radius: 4px; }
+.cp-meter-pct  { font-size: 11px; font-weight: 700; color: var(--text-dark); width: 32px; text-align: right; }
+
+/* 추천 */
+.cp-recommend-card { border: 1px solid #d4ccff; background: #faf9ff; }
+
+.cp-recommend-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #fff; border-radius: 8px; padding: 12px;
+  margin-bottom: 10px;
+}
+
+.cp-recommend-icon { font-size: 18px; flex-shrink: 0; }
+.cp-recommend-item p { font-size: 12px; color: var(--text-mid); line-height: 1.6; }
+.cp-recommend-item strong { color: var(--primary); }
+
+.cp-recommend-btn {
+  width: 100%; padding: 9px 0;
+  border-radius: var(--radius-sm);
+  border: none; background: var(--primary); color: #fff;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}

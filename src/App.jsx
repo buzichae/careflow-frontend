@@ -4,6 +4,8 @@ import CustomerHome from "./pages/customer/CustomerHome.jsx";
 import CustomerAppliances from "./pages/customer/CustomerAppliances.jsx";
 import CustomerAS from "./pages/customer/CustomerAS.jsx";
 import CustomerNotice from "./pages/customer/CustomerNotice.jsx";
+import CustomerPayment from "./pages/customer/CustomerPayment.jsx";
+import CustomerRepairHistory from "./pages/customer/CustomerRepairHistory.jsx";
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -20,9 +22,9 @@ export default function App() {
           {/* 고객 */}
           <Route path="/customer/home" element={<CustomerHome />} />
           <Route path="/customer/appliances" element={<CustomerAppliances />} />
-          <Route path="/customer/repair-history" element={<TempPage title="고객 - 가전별 수리 이력" />} />
+          <Route path="/customer/repair-history" element={<CustomerRepairHistory />} />
           <Route path="/customer/as" element={<CustomerAS />} />
-          <Route path="/customer/payment" element={<TempPage title="고객 - 정산/결제" />} />
+          <Route path="/customer/payment" element={<CustomerPayment />} />
           <Route path="/customer/market" element={<TempPage title="고객 - 중고 마켓" />} />
           <Route path="/customer/notice" element={<CustomerNotice />} />
 
