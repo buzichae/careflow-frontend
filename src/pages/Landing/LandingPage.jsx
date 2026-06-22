@@ -1,7 +1,12 @@
-import "../../styles/LandingPage.css";
+import "../../styles/Landing/LandingPage.css";
 import { UsersRound , ShieldCheck, Star ,Bell , LayoutGrid ,Wrench , RefreshCw , ChartNoAxesCombined} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const NAV_LINKS = ["서비스 소개", "주요 기능", "이용 방법"];
+const NAV_LINKS = [
+  { label: "서비스 소개", path: "/service" },
+  { label: "주요 기능", path: "/features" },
+  { label: "이용 방법", path: "/guide" },
+];
 
 const FEATURES = [
   { icon: <LayoutGrid size={22} color="#5B4FF5" />, title: "통합 관리", desc: "여러 브랜드의 가전을 한 곳에서 편리하게 관리" },
@@ -24,16 +29,21 @@ const BADGES = [
 ];
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  
   return (
     <div className="landing">
       <nav className="landing__nav">
-        <div className="landing__logo">
+        <div className="landing__logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
           <img src="/src/assets/logo.png" alt="CareFlow" className="landing__logo-img" />
           CareFlow
         </div>
         <div className="landing__nav-links">
           {NAV_LINKS.map((l) => (
-            <a key={l} href="#" className="landing__nav-link">{l}</a>
+           <a key={l.label} href="#" className="landing__nav-link"
+            onClick={(e) => { e.preventDefault(); navigate(l.path); }}>
+            {l.label}
+           </a>
           ))}
         </div>
         <div className="landing__nav-actions">
@@ -56,7 +66,7 @@ export default function LandingPage() {
           </p>
           <div className="landing__hero-buttons">
             <button className="landing__btn landing__btn--primary landing__btn--lg">무료로 시작하기</button>
-            <button className="landing__btn landing__btn--outline landing__btn--lg">서비스 소개 보기 ▶</button>
+            <button className="landing__btn landing__btn--outline landing__btn--lg" onClick={() => navigate("/service")}>서비스 소개 보기 ▶</button>
           </div>
           <div className="landing__badges">
             {BADGES.map((b) => (
