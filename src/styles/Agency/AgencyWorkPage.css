@@ -1,0 +1,593 @@
+/* ===========================
+   공통
+=========================== */
+.aw-page {
+  padding: 16px 24px;
+  background: #fff;
+  min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px;
+  color: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aw-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+}
+
+.aw-more-link {
+  font-size: 12px;
+  color: #5B4FF5;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ===========================
+   헤더
+=========================== */
+.aw-header__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.aw-header__sub {
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* ===========================
+   탭
+=========================== */
+.aw-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1.5px solid #f0f0f8;
+}
+
+.aw-tab {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #aaa;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: -1.5px;
+  transition: all 0.15s;
+}
+
+.aw-tab--active {
+  color: #5B4FF5;
+  font-weight: 700;
+  border-bottom-color: #5B4FF5;
+}
+
+.aw-tab:hover {
+  color: #5B4FF5;
+}
+
+/* ===========================
+   통계 카드
+=========================== */
+.aw-stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.aw-stat-card {
+  background: #fff;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.aw-stat-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aw-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
+.aw-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
+.aw-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
+.aw-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
+.aw-stat-card__icon--teal   { background: #d9faf4; color: #0d9488; }
+.aw-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
+
+.aw-stat-card__label {
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 2px;
+}
+
+.aw-stat-card__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  line-height: 1.2;
+}
+
+.aw-stat-card__value span {
+  font-size: 13px;
+  font-weight: 400;
+  margin-left: 1px;
+}
+
+.aw-stat-card__today {
+  font-size: 11px;
+  color: #5B4FF5;
+  margin-top: 2px;
+}
+
+/* ===========================
+   콘텐츠 레이아웃
+=========================== */
+.aw-content {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+.aw-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aw-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===========================
+   배정 대기 목록
+=========================== */
+.aw-pending {
+  background: #fff;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.aw-pending__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.aw-pending__count {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.aw-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.aw-filter-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0.5px solid #e0dcff;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: #444;
+  cursor: pointer;
+}
+
+.aw-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0.5px solid #e0dcff;
+  border-radius: 8px;
+  padding: 7px 12px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.aw-search input {
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: #444;
+  width: 100%;
+  font-family: inherit;
+}
+
+.aw-table__header {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.7fr 1fr 0.6fr 0.6fr 1.1fr 0.8fr 0.8fr 0.7fr;
+  padding: 8px 4px;
+  border-bottom: 0.5px solid #f0f0f8;
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.aw-table__row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.7fr 1fr 0.6fr 0.6fr 1.1fr 0.8fr 0.8fr 0.7fr;
+  padding: 11px 4px;
+  border-bottom: 0.5px solid #f9f9ff;
+  align-items: center;
+  font-size: 12px;
+  color: #444;
+}
+
+.aw-table__id {
+  font-size: 11px;
+  color: #5B4FF5;
+  font-weight: 600;
+}
+
+.aw-table__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.aw-badge {
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+
+.aw-badge--pending { background: #fef0e0; color: #d97706; }
+.aw-badge--assigned { background: #e6f1fb; color: #2563eb; }
+.aw-badge--done { background: #eaf3de; color: #16a34a; }
+
+.aw-assign-btn {
+  font-size: 11px;
+  background: #5B4FF5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.aw-more-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+}
+
+.aw-more-load {
+  width: 100%;
+  margin-top: 14px;
+  padding: 9px;
+  text-align: center;
+  font-size: 12px;
+  color: #5B4FF5;
+  font-weight: 600;
+  background: #f8f7ff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: inherit;
+}
+
+/* ===========================
+   오늘 일정 요약
+=========================== */
+.aw-today {
+  background: #fff;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.aw-today__cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.aw-today__card {
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.aw-today__card--purple { background: #eeeaff; }
+.aw-today__card--blue   { background: #e6f1fb; }
+.aw-today__card--green  { background: #eaf3de; }
+.aw-today__card--red    { background: #fee2e2; }
+
+.aw-today__icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+  color: #5B4FF5;
+}
+
+.aw-today__card--blue   .aw-today__icon { color: #2563eb; }
+.aw-today__card--green  .aw-today__icon { color: #16a34a; }
+.aw-today__card--red    .aw-today__icon { color: #dc2626; }
+
+.aw-today__label {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.aw-today__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.aw-today__value span {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* ===========================
+   실시간 배정 현황
+=========================== */
+.aw-realtime {
+  background: #fff;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.aw-realtime__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.aw-engineer-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 0.5px solid #f9f9ff;
+}
+
+.aw-engineer-item:last-of-type {
+  border-bottom: none;
+}
+
+.aw-engineer-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8c0f0, #5B4FF5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(91,79,245,0.15);
+}
+
+.aw-engineer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.aw-engineer-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.aw-engineer-info__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.aw-engineer-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.aw-engineer-status {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.aw-engineer-status--working { color: #16a34a; background: #eaf3de; }
+.aw-engineer-status--moving  { color: #2563eb; background: #e6f1fb; }
+.aw-engineer-status--waiting { color: #aaa;    background: #f5f5f5; }
+
+.aw-engineer-specialty {
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+
+.aw-engineer-product {
+  font-size: 11px;
+  color: #444;
+  margin-bottom: 5px;
+}
+
+.aw-progress-bar {
+  height: 5px;
+  background: #eeeaff;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.aw-progress-bar__fill {
+  height: 100%;
+  background: #5B4FF5;
+  border-radius: 99px;
+  transition: width 0.3s;
+}
+
+.aw-progress-label {
+  font-size: 10px;
+  color: #5B4FF5;
+  font-weight: 600;
+}
+
+.aw-engineer-empty {
+  font-size: 11px;
+  color: #bbb;
+}
+
+.aw-schedule-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid #e0dcff;
+  border-radius: 10px;
+  background: none;
+  color: #5B4FF5;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ===========================
+   공지사항
+=========================== */
+.aw-notice {
+  background: #fff;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.aw-notice__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.aw-notice-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid #f9f9ff;
+  font-size: 12px;
+}
+
+.aw-notice-item:last-child {
+  border-bottom: none;
+}
+
+.aw-notice-item__left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.aw-notice-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 4px;
+  padding: 2px 5px;
+  flex-shrink: 0;
+}
+
+.aw-notice-text {
+  color: #444;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aw-notice-date {
+  color: #bbb;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.aw-badge--pending   { background: #eeeaff; color: #5B4FF5; }
+.aw-badge--accepted  { background: #d9faf4; color: #0d9488; }
+.aw-badge--completed { background: #faeeda; color: #d97706; }
+.aw-badge--paid      { background: #eaf3de; color: #16a34a; }
+.aw-badge--cancelled { background: #f5f5f5; color: #aaa;    }
+
+.aw-engineer-lms-warn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #e24b4a;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.aw-engineer-status--lms-fail {
+  color: #e24b4a;
+  background: #fcebeb;
+}
+
+.aw-assign-type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.aw-assign-type-badge--auto   { background: #eeeaff; color: #5B4FF5; }
+.aw-assign-type-badge--manual { background: #f0f0f0; color: #666;    }
