@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/MainLayout.jsx";
-import AuthPage from "./pages/auth/AuthPage.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import SignupPage from "./pages/auth/SignupPage.jsx";
 import CustomerHome from "./pages/customer/CustomerHome.jsx";
