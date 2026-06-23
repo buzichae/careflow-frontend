@@ -55,12 +55,6 @@
   margin-top: 4px;
 }
 
-.agency-dashboard__profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .agency-dashboard__avatar {
   width: 40px;
   height: 40px;
@@ -835,8 +829,3 @@
   color: #5B4FF5;
 }
 
-.agency-dropdown__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}

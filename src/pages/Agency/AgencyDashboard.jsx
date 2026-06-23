@@ -1,9 +1,7 @@
-import { useState, useRef, useEffect } from "react";
 import engineerImg from "../../assets/기사.png";
 import {
   ClipboardList, CheckCircle, Users, HandCoins, Star,
-  UserPlus, Megaphone, ChartNoAxesCombined, ChevronDown, ChevronUp,
-  User, Settings, LogOut,
+  UserPlus, Megaphone, ChartNoAxesCombined,
 } from "lucide-react";
 import "../../styles/Agency/AgencyDashboard.css";
 
@@ -68,24 +66,8 @@ function EngineerAvatar({ name, profileImageUrl }) {
 }
  
 export default function AgencyDashboard() {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
  
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
  
-  // ──────────────────────────────────────────
-  // TODO: API 연동
-  // GET /api/agency/me → agencies + users JOIN
-  // ──────────────────────────────────────────
-  const agency = { name: "퀵케어 서비스", role: "대행사 관리자" };
  
   // ──────────────────────────────────────────
   // TODO: API 연동 
@@ -111,52 +93,8 @@ export default function AgencyDashboard() {
     pendingAmount:    1250000,
   };
  
-  // ──────────────────────────────────────────
-  // TODO: API 연동 
-  // POST /api/auth/logout
-  // ──────────────────────────────────────────
-  const handleLogout = async () => {
-    // await axios.post("/api/auth/logout");
-    // navigate("/login");
-    alert("로그아웃");
-  };
- 
   return (
     <div className="agency-dashboard">
-      {/* 상단 */}
-      <div className="agency-dashboard__topbar">
-        <div>
-          <p className="agency-dashboard__greeting">안녕하세요, {agency.name}님! 👋</p>
-          <p className="agency-dashboard__sub">오늘도 효율적인 운영과 고객 만족을 함께 만들어가요.</p>
-        </div>
-        <div className="agency-dashboard__profile-wrap" ref={dropdownRef}>
-          <button className="agency-dashboard__profile" onClick={() => setDropdownOpen(p => !p)}>
-            <div className="agency-dashboard__avatar">🏢</div>
-            <div>
-              <p className="agency-dashboard__profile-name">{agency.name}</p>
-              <p className="agency-dashboard__profile-role">{agency.role}</p>
-            </div>
-            {dropdownOpen
-              ? <ChevronUp size={14} color="#aaa" />
-              : <ChevronDown size={14} color="#aaa" />
-            }
-          </button>
-          {dropdownOpen && (
-            <div className="agency-dropdown">
-              <button className="agency-dropdown__item" onClick={() => {}}>
-                <User size={14} /> 내 정보
-              </button>
-              <button className="agency-dropdown__item" onClick={() => {}}>
-                <Settings size={14} /> 설정
-              </button>
-              <div className="agency-dropdown__divider" />
-              <button className="agency-dropdown__item agency-dropdown__item--logout" onClick={handleLogout}>
-                <LogOut size={14} /> 로그아웃
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
  
       {/* 통계 카드 */}
       <div className="agency-stats">

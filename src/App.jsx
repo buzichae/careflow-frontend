@@ -14,7 +14,9 @@ import ServicePage from "../src/pages/Landing/ServicePage.jsx"
 import FeaturePage from "../src/pages/Landing/FeaturePage.jsx";
 import GuidePage from "../src/pages/Landing/GuidePage.jsx";
 
+import ReassignAlertPage from "../src/pages/Agency/ReassignAlertPage.jsx";
 import AgencyDashboard from "../src/pages/Agency/AgencyDashboard";
+import AgencyWorkPage from "./pages/Agency/AgencyWorkPage";
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -58,7 +60,8 @@ export default function App() {
 
           {/* 대행사 */}
           <Route path="/agency/dashboard" element={<AgencyDashboard  title="대행사 - 대시보드" />} />
-          <Route path="/agency/work" element={<TempPage title="대행사 - 작업 관리" />} />
+          <Route path="/agency/work" element={<AgencyWorkPage  title="대행사 - 작업 관리" />} />
+          <Route path="/agency/reassign-alerts" element={<ReassignAlertPage title="대행사 - 재배차알림"/>} />
           <Route path="/agency/engineers" element={<TempPage title="대행사 - 기사 관리" />} />
           <Route path="/agency/settlement" element={<TempPage title="대행사 - 정산 관리" />} />
           <Route path="/agency/customers" element={<TempPage title="대행사 - 고객 관리" />} />

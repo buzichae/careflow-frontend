@@ -1,0 +1,536 @@
+/* ===========================
+   오버레이
+=========================== */
+.wdm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* ===========================
+   모달
+=========================== */
+.wdm {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+
+/* ===========================
+   헤더
+=========================== */
+.wdm__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f0f0f8;
+  flex-shrink: 0;
+}
+
+.wdm__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.wdm__id {
+  font-size: 12px;
+  color: #5B4FF5;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.wdm__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f4ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+}
+
+.wdm__close:hover { background: #eeeaff; color: #5B4FF5; }
+
+/* ===========================
+   바디
+=========================== */
+.wdm__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px;
+}
+
+.wdm__section {
+  padding: 20px 0;
+  border-bottom: 1px solid #f5f4ff;
+}
+
+.wdm__section:last-child { border-bottom: none; }
+
+.wdm__section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5B4FF5;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wdm__section-title::before {
+  content: "";
+  display: block;
+  width: 3px;
+  height: 13px;
+  background: #5B4FF5;
+  border-radius: 2px;
+}
+
+/* ===========================
+   그리드 필드
+=========================== */
+.wdm__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+}
+
+.wdm__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wdm__field--full {
+  grid-column: 1 / -1;
+}
+
+.wdm__label {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.wdm__value {
+  font-size: 13px;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+.wdm__value--id { color: #5B4FF5; font-weight: 700; }
+.wdm__value--note { color: #666; font-size: 12px; }
+.wdm__value--desc {
+  white-space: pre-line;
+  color: #444;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* ===========================
+   상태 배지
+=========================== */
+.wdm__status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 3px 10px;
+  width: fit-content;
+}
+
+.wdm__status-badge--pending         { background: #eeeaff; color: #5B4FF5; }
+.wdm__status-badge--agency_received { background: #fef0e0; color: #d97706; }
+.wdm__status-badge--assigned        { background: #e6f1fb; color: #2563eb; }
+.wdm__status-badge--accepted        { background: #fef9e0; color: #b45309; }
+.wdm__status-badge--in_progress     { background: #eaf3de; color: #16a34a; }
+.wdm__status-badge--completed       { background: #faeeda; color: #d97706; }
+.wdm__status-badge--paid            { background: #eaf3de; color: #16a34a; }
+.wdm__status-badge--cancelled       { background: #fee2e2; color: #dc2626; }
+
+/* ===========================
+   무상기간
+=========================== */
+.wdm__warranty {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+.wdm__warranty--expired { background: #fee2e2; color: #dc2626; }
+.wdm__warranty--valid   { background: #eaf3de; color: #16a34a; }
+
+/* ===========================
+   버튼 행
+=========================== */
+.wdm__btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.wdm__btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wdm__btn--outline {
+  border: 1px solid #5B4FF5;
+  background: none;
+  color: #5B4FF5;
+}
+
+.wdm__btn--ghost {
+  border: 1px solid #e0dcff;
+  background: none;
+  color: #666;
+}
+
+.wdm__btn--outline:hover { background: #eeeaff; }
+.wdm__btn--ghost:hover   { background: #f5f4ff; }
+
+/* ===========================
+   증상 이미지
+=========================== */
+.wdm__images {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.wdm__image-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  border: 1px solid #e0dcff;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.wdm__image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wdm__image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #f8f7ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #aaa;
+}
+
+/* ===========================
+   예상 비용
+=========================== */
+.wdm__cost-box {
+  background: #f8f7ff;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.wdm__cost-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #5B4FF5;
+}
+
+.wdm__cost-note {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+/* ===========================
+   이전 수리 이력 테이블
+=========================== */
+.wdm__table-header {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr 1fr;
+  padding: 8px 12px;
+  background: #f8f7ff;
+  border-radius: 8px 8px 0 0;
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.wdm__table-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr 1fr;
+  padding: 10px 12px;
+  border-bottom: 0.5px solid #f5f4ff;
+  font-size: 12px;
+  color: #444;
+}
+
+.wdm__empty {
+  font-size: 12px;
+  color: #bbb;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ===========================
+   기사 배정
+=========================== */
+.wdm__engineer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wdm__engineer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e8e4ff;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.wdm__engineer-item:hover { background: #f8f7ff; }
+
+.wdm__engineer-item--selected {
+  border-color: #5B4FF5;
+  background: #eeeaff;
+}
+
+.wdm__engineer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8c0f0, #5B4FF5);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wdm__engineer-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wdm__engineer-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.wdm__engineer-brand { font-size: 11px; color: #888; }
+
+.wdm__engineer-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.wdm__engineer-rating { font-size: 12px; color: #f5a623; font-weight: 600; }
+.wdm__engineer-avail  { font-size: 11px; color: #888; }
+
+.wdm__engineer-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #5B4FF5;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ===========================
+   처리 이력 타임라인
+=========================== */
+.wdm__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wdm__timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.wdm__timeline-item:last-child { padding-bottom: 0; }
+
+.wdm__timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #5B4FF5;
+  flex-shrink: 0;
+  margin-top: 3px;
+  position: relative;
+  z-index: 1;
+}
+
+.wdm__timeline-line {
+  position: absolute;
+  left: 4px;
+  top: 13px;
+  width: 2px;
+  height: calc(100% - 13px);
+  background: #e0dcff;
+}
+
+.wdm__timeline-time {
+  font-size: 11px;
+  color: #aaa;
+  white-space: nowrap;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.wdm__timeline-label {
+  font-size: 12px;
+  color: #444;
+  font-weight: 500;
+}
+
+/* ===========================
+   하단 액션 버튼
+=========================== */
+.wdm__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f8;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.wdm__footer-right {
+  display: flex;
+  gap: 8px;
+}
+
+.wdm__action-btn {
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.wdm__action-btn--danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.wdm__action-btn--danger:hover { background: #fecaca; }
+
+.wdm__action-btn--secondary {
+  background: #f0eeff;
+  color: #5B4FF5;
+}
+
+.wdm__action-btn--secondary:hover { background: #eeeaff; }
+
+.wdm__action-btn--primary {
+  background: #5B4FF5;
+  color: #fff;
+}
+
+.wdm__action-btn--primary:hover { opacity: 0.9; }
+.wdm__action-btn--primary:disabled {
+  background: #c8c0f0;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* ===========================
+   이미지 확대
+=========================== */
+.wdm__zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.wdm__zoom-overlay img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.wdm__cost-na {
+  font-size: 14px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+/* 수정 4: 비용 */
+.wdm__cost-na {
+  font-size: 14px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+/* 수정 2,3: LMS 미이수 기사 */
+.wdm__engineer-item--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #fafafa;
+}
+
+.wdm__lms-fail {
+  font-size: 10px;
+  font-weight: 700;
+  background: #fcebeb;
+  color: #a32d2d;
+  border-radius: 4px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
