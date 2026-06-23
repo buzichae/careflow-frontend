@@ -3,7 +3,7 @@ import {
   Wrench, CalendarCheck, PlusCircle, ShoppingCart,
   Activity, MapPin, Star,
 } from "lucide-react";
-import "../../styles/CustomerHome.css";
+import "../../styles/Customer/CustomerHome.css";
 
 /* ── 데이터 ── */
 const mockAppliances = [

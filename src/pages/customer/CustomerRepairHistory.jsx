@@ -3,7 +3,7 @@ import {
   Bell, MessageSquare, ChevronDown, ChevronLeft,
   ChevronRight, ArrowLeft, Info,
 } from "lucide-react";
-import "../../styles/CustomerRepairHistory.css";
+import "../../styles/Customer/CustomerRepairHistory.css";
 
 /* ── 가전 목록 ── */
 const APPLIANCES = [

@@ -1,5 +1,5 @@
 import { Bell, MessageSquare, ChevronDown, ChevronRight, FileText, CreditCard, TrendingUp, Shield, Wrench, User } from "lucide-react";
-import "../../styles/CustomerPayment.css";
+import "../../styles/Customer/CustomerPayment.css";
 
 /* ── 데이터 ── */
 const KPI = [

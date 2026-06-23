@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/MainLayout.jsx";
+import AuthPage from "./pages/auth/AuthPage.jsx";
 import CustomerHome from "./pages/customer/CustomerHome.jsx";
 import CustomerAppliances from "./pages/customer/CustomerAppliances.jsx";
 import CustomerAS from "./pages/customer/CustomerAS.jsx";
@@ -26,6 +27,9 @@ export default function App() {
         <Route path="/service" element={<ServicePage title="메인페이지-서비스소개"/>} />
         <Route path="/features" element={<FeaturePage title="메인페이지-주요소개"/>} />
         <Route path="/guide" element={<GuidePage title="메인페이지-기능"/>} />
+
+        {/* 인증 (MainLayout 밖) */}
+        <Route path="/auth" element={<AuthPage />} />
 
         <Route element={<MainLayout />}>
 
@@ -70,7 +74,7 @@ export default function App() {
 
         </Route>
 
-        <Route path="*" element={<Navigate to="/customer/home" replace />} />
+        <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>
     </BrowserRouter>
   );

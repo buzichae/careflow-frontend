@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Bell, MessageSquare, ChevronDown, CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Bot, Wrench, Plus } from "lucide-react";
-import "../../styles/CustomerAS.css";
+import "../../styles/Customer/CustomerAS.css";
 
 /* ─────────────────────────────────
    A/S 예약 플로우 컴포넌트

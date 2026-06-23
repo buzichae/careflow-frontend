@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Bell, MessageSquare, ChevronDown, Settings, Search, Trash2, Star, ChevronRight, ChevronLeft } from "lucide-react";
-import "../../styles/CustomerNotice.css";
+import "../../styles/Customer/CustomerNotice.css";
 
 /* ─── 데이터 ─── */
 const CATEGORY_STATS = [

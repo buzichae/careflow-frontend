@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Bell, MessageSquare, ChevronDown, Plus, CalendarCheck, AlertTriangle, ShieldCheck, ArrowLeft, Upload, X, Check, ChevronRight, RotateCcw } from "lucide-react";
-import "../../styles/CustomerAppliances.css";
+import "../../styles/Customer/CustomerAppliances.css";
 
 /* ─────────────────────────────────
    가전 등록 플로우
