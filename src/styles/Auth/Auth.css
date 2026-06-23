@@ -29,6 +29,15 @@
   object-fit: contain;
 }
 
+.auth-nav__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #5B4FF5;
+}
+
 .auth-nav__right {
   display: flex;
   align-items: center;

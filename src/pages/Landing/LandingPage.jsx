@@ -47,8 +47,8 @@ export default function LandingPage() {
           ))}
         </div>
         <div className="landing__nav-actions">
-          <button className="landing__btn landing__btn--ghost">로그인</button>
-          <button className="landing__btn landing__btn--primary">회원가입</button>
+          <button className="landing__btn landing__btn--ghost" onClick={() => navigate("/auth/login")}>로그인</button>
+          <button className="landing__btn landing__btn--primary" onClick={() => navigate("/auth/signup")}>회원가입</button>
         </div>
       </nav>
 

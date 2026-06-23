@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/MainLayout.jsx";
 import AuthPage from "./pages/auth/AuthPage.jsx";
+import LoginPage from "./pages/auth/LoginPage.jsx";
+import SignupPage from "./pages/auth/SignupPage.jsx";
 import CustomerHome from "./pages/customer/CustomerHome.jsx";
 import CustomerAppliances from "./pages/customer/CustomerAppliances.jsx";
 import CustomerAS from "./pages/customer/CustomerAS.jsx";
@@ -29,7 +31,9 @@ export default function App() {
         <Route path="/guide" element={<GuidePage title="메인페이지-기능"/>} />
 
         {/* 인증 (MainLayout 밖) */}
-        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/signup" element={<SignupPage />} />
+        <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
 
         <Route element={<MainLayout />}>
 
