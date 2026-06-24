@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, MessageSquare, ChevronDown, Settings, Search, Trash2, Star, ChevronRight, ChevronLeft } from "lucide-react";
+import { Bell, Settings, Search, Trash2, Star, ChevronRight, ChevronLeft, ChevronDown } from "lucide-react";
 import "../../styles/Customer/CustomerNotice.css";
 
 /* ─── 데이터 ─── */
@@ -152,21 +152,6 @@ export default function CustomerNotice() {
   return (
     <div className="cn-wrap">
       {/* 헤더 */}
-      <header className="cn-header">
-        <div className="cn-header__left">
-          <h1>알림</h1>
-          <p>중요한 서비스 알림과 시스템 소식을 확인하세요.</p>
-        </div>
-        <div className="cn-header__right">
-          <button className="cn-icon-btn"><Bell size={20} /></button>
-          <button className="cn-icon-btn"><MessageSquare size={20} /></button>
-          <div className="cn-profile">
-            <div className="cn-avatar">혜</div>
-            <span>혜민님</span>
-            <ChevronDown size={16} />
-          </div>
-        </div>
-      </header>
 
       <div className="cn-body">
         {/* ── 왼쪽 콘텐츠 ── */}

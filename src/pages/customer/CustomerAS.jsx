@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, MessageSquare, ChevronDown, CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Bot, Wrench, Plus } from "lucide-react";
+import { CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Bot, Wrench, Plus } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
 
 /* ─────────────────────────────────
@@ -299,26 +299,11 @@ export default function CustomerAS() {
   if (showReserve) {
     return (
       <div className="cas-wrap">
-        <header className="cas-header">
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button className="cas-back-btn" onClick={() => setShowReserve(false)}>
-              <ArrowLeft size={18} /> 뒤로
-            </button>
-            <div>
-              <h1>A/S 예약하기</h1>
-              <p>문제가 발생한 제품을 선택하고 진단 방법을 결정하세요.</p>
-            </div>
-          </div>
-          <div className="cas-header__right">
-            <button className="cas-icon-btn"><Bell size={20} /></button>
-            <button className="cas-icon-btn"><MessageSquare size={20} /></button>
-            <div className="cas-profile">
-              <div className="cas-avatar">혜</div>
-              <span>혜민님</span>
-              <ChevronDown size={16} />
-            </div>
-          </div>
-        </header>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0 0" }}>
+          <button className="cas-back-btn" onClick={() => setShowReserve(false)}>
+            <ArrowLeft size={18} /> 뒤로
+          </button>
+        </div>
         <ASReserveFlow onClose={() => setShowReserve(false)} />
       </div>
     );
@@ -327,22 +312,6 @@ export default function CustomerAS() {
   return (
     <div className="cas-wrap">
 
-      {/* 헤더 */}
-      <header className="cas-header">
-        <div>
-          <h1>A/S 신청 · 예약</h1>
-          <p>접수한 A/S 현황과 방문 일정을 확인하세요.</p>
-        </div>
-        <div className="cas-header__right">
-          <button className="cas-icon-btn"><Bell size={20} /></button>
-          <button className="cas-icon-btn"><MessageSquare size={20} /></button>
-          <div className="cas-profile">
-            <div className="cas-avatar">혜</div>
-            <span>혜민님</span>
-            <ChevronDown size={16} />
-          </div>
-        </div>
-      </header>
 
       {/* 통계 카드 4개 */}
       <div className="cas-stats">

@@ -1,4 +1,4 @@
-import { Bell, MessageSquare, ChevronDown, ChevronRight, FileText, CreditCard, TrendingUp, Shield, Wrench, User } from "lucide-react";
+import { ChevronRight, FileText, CreditCard, TrendingUp, Shield, Wrench, User } from "lucide-react";
 import "../../styles/Customer/CustomerPayment.css";
 
 /* ── 데이터 ── */
@@ -153,21 +153,6 @@ export default function CustomerPayment() {
     <div className="cp-wrap">
 
       {/* 헤더 */}
-      <header className="cp-header">
-        <div>
-          <h1>정산 / 결제</h1>
-          <p>이번 달 수리 비용과 결제 현황을 확인하세요.</p>
-        </div>
-        <div className="cp-header__right">
-          <button className="cp-icon-btn"><Bell size={20} /></button>
-          <button className="cp-icon-btn"><MessageSquare size={20} /></button>
-          <div className="cp-profile">
-            <div className="cp-avatar">혜</div>
-            <span>혜민님</span>
-            <ChevronDown size={16} />
-          </div>
-        </div>
-      </header>
 
       {/* Hero */}
       {/* <div className="cp-hero">

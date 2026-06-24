@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Bell, MessageSquare, ChevronDown, ChevronLeft,
+  ChevronLeft,
   ChevronRight, ArrowLeft, Info,
 } from "lucide-react";
 import "../../styles/Customer/CustomerRepairHistory.css";
@@ -74,28 +74,11 @@ export default function CustomerRepairHistory() {
 
   return (
     <div className="crh-wrap">
-      <header className="crh-header">
-        <div className="crh-header__left">
-          {selected && (
-            <button className="crh-back-btn" onClick={() => setSelected(null)}>
-              <ArrowLeft size={18} />
-            </button>
-          )}
-          <div>
-            <h1>{selected ? "상세 정보 및 수리 이력" : "가전별 수리 이력"}</h1>
-            {!selected && <p>가전을 선택하면 상세 수리 이력을 확인할 수 있습니다.</p>}
-          </div>
-        </div>
-        <div className="crh-header__right">
-          <button className="crh-icon-btn"><Bell size={20} /></button>
-          <button className="crh-icon-btn"><MessageSquare size={20} /></button>
-          <div className="crh-profile">
-            <div className="crh-avatar">혜</div>
-            <span>혜민님</span>
-            <ChevronDown size={16} />
-          </div>
-        </div>
-      </header>
+      {selected && (
+        <button className="crh-back-btn" onClick={() => setSelected(null)} style={{ margin: "12px 0 0" }}>
+          <ArrowLeft size={18} /> 목록으로
+        </button>
+      )}
 
       {selected
         ? <DetailView appliance={selected} detail={DETAIL} />

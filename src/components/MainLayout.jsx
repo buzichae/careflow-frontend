@@ -6,9 +6,10 @@ import AdminSidebar from "../components/sidebars/AdminSidebar.jsx";
 
 import AgencyNavbar from "../pages/Agency/AgencyNavbar.jsx"
 import "../styles/Sidebars.css"
+import CustomerNavbar from "../pages/customer/CustomerNavbar.jsx";
 
 // 임시 role - 나중에 로그인 상태(Context or zustand)로 교체
-const MOCK_ROLE = "AGENCY"; // "CUSTOMER" | "ENGINEER" | "AGENCY" | "ADMIN"
+const MOCK_ROLE = "CUSTOMER"; // "CUSTOMER" | "ENGINEER" | "AGENCY" | "ADMIN"
 
 const SIDEBARS = {
   CUSTOMER: <CustomerSidebar />,
@@ -18,7 +19,7 @@ const SIDEBARS = {
 };
 
 const NAVBARS = {
-  CUSTOMER: null,   // 나중에 CustomerNavbar 만들면 교체
+  CUSTOMER: <CustomerNavbar />,
   ENGINEER: null,   // 나중에 EngineerNavbar 만들면 교체
   AGENCY: <AgencyNavbar />,
   ADMIN: null,      // 나중에 AdminNavbar 만들면 교체

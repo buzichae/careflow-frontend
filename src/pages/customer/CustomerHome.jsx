@@ -1,5 +1,5 @@
 import {
-  Bell, MessageSquare, ChevronDown, ChevronRight,
+  ChevronRight,
   Wrench, CalendarCheck, PlusCircle, ShoppingCart,
   Activity, MapPin, Star,
 } from "lucide-react";
@@ -44,23 +44,6 @@ const mockUnreadNotices = [
 export default function CustomerHome() {
   return (
     <div className="ch-wrap">
-
-      {/* ── 헤더 ── */}
-      <header className="ch-header">
-        <div className="ch-header__left">
-          <h1>안녕하세요 혜민님!</h1>
-          <p>오늘도 우리집 가전의 건강을 체크해보세요.</p>
-        </div>
-        <div className="ch-header__right">
-          <button className="ch-icon-btn"><Bell size={20} /></button>
-          <button className="ch-icon-btn"><MessageSquare size={20} /></button>
-          <div className="ch-profile">
-            <div className="ch-avatar">혜</div>
-            <span>혜민님</span>
-            <ChevronDown size={16} />
-          </div>
-        </div>
-      </header>
 
       {/* ── 바디: 좌측 메인 + 우측 사이드바 ── */}
       <div className="ch-body">

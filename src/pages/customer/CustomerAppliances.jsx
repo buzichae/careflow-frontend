@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Bell, MessageSquare, ChevronDown, Plus, CalendarCheck, AlertTriangle, ShieldCheck, ArrowLeft, Upload, X, Check, ChevronRight, RotateCcw } from "lucide-react";
+import { Plus, CalendarCheck, AlertTriangle, ShieldCheck, ArrowLeft, Upload, X, Check, ChevronRight, RotateCcw, ChevronDown } from "lucide-react";
 import "../../styles/Customer/CustomerAppliances.css";
 
 /* ─────────────────────────────────
@@ -352,35 +352,6 @@ export default function CustomerAppliances() {
     <div className="ca-wrap">
 
       {/* 헤더 */}
-      <header className="ca-header">
-        <div className="ca-header__left">
-          {showRegister ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button className="ca-back-btn" onClick={() => setShowRegister(false)}>
-                <ArrowLeft size={16} /> 뒤로
-              </button>
-              <div>
-                <h1>가전 등록하기</h1>
-                <p>새로운 가전을 등록하여 체계적으로 관리하세요.</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <h1>내 가전</h1>
-              <p>보유하고 있는 가전제품을 한눈에 확인하고 관리하세요.</p>
-            </>
-          )}
-        </div>
-        <div className="ca-header__right">
-          <button className="ca-icon-btn"><Bell size={20} /></button>
-          <button className="ca-icon-btn"><MessageSquare size={20} /></button>
-          <div className="ca-profile">
-            <div className="ca-avatar">혜</div>
-            <span>혜민님</span>
-            <ChevronDown size={16} />
-          </div>
-        </div>
-      </header>
 
       {showRegister && <ApplianceRegisterFlow onClose={() => setShowRegister(false)} />}
 
