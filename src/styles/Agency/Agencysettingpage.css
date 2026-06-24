@@ -1,0 +1,110 @@
+.asp3 {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 16px 24px; background: #fff; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+.asp3-header__title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.asp3-header__arrow { color: #aaa; margin: 0 6px; }
+.asp3-header__sub   { font-size: 13px; color: #aaa; }
+
+.asp3-body { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+.asp3-left { display: flex; flex-direction: column; gap: 20px; }
+
+/* 섹션 */
+.asp3-section { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 20px; }
+.asp3-section__header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+}
+.asp3-section__title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+
+/* 폼 */
+.asp3-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.asp3-form-field { display: flex; flex-direction: column; gap: 6px; }
+.asp3-form-field--full { grid-column: 1 / -1; }
+
+.asp3-label { font-size: 12px; font-weight: 600; color: #444; }
+
+.asp3-input {
+  border: 1px solid #e0dcff; border-radius: 8px;
+  padding: 9px 12px; font-size: 13px; color: #1a1a2e;
+  font-family: inherit; outline: none; width: 100%; box-sizing: border-box;
+}
+.asp3-input:focus { border-color: #5B4FF5; box-shadow: 0 0 0 3px #eeeaff; }
+.asp3-input--suffix { padding-right: 36px; }
+
+.asp3-input-suffix { position: relative; }
+.asp3-suffix {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; color: #888; font-weight: 600;
+}
+.asp3-hint { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+.asp3-save-btn {
+  background: #5B4FF5; color: #fff; border: none;
+  border-radius: 8px; padding: 9px 18px;
+  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.asp3-save-btn:hover { opacity: 0.9; }
+
+/* 우측 패널 */
+.asp3-right { display: flex; flex-direction: column; gap: 14px; }
+.asp3-panel { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 16px; }
+.asp3-panel__header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.asp3-panel__title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; }
+.asp3-panel__avatar {
+  width: 36px; height: 36px; border-radius: 50%; background: #eeeaff;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.asp3-panel__row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-bottom: 0.5px solid #f5f4ff; font-size: 12px;
+}
+.asp3-panel__row:last-of-type { border-bottom: none; }
+.asp3-panel__label { color: #aaa; }
+.asp3-panel__value { color: #1a1a2e; font-weight: 500; font-size: 11px; }
+
+.asp3-pw-btn {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  margin-top: 10px; width: 100%;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #5B4FF5;
+  background: none; cursor: pointer; font-family: inherit; font-weight: 600;
+}
+.asp3-pw-btn:hover { background: #eeeaff; }
+
+/* 보안 */
+.asp3-security-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; border-bottom: 0.5px solid #f5f4ff;
+}
+.asp3-security-row:last-child { border-bottom: none; }
+.asp3-security-label { font-size: 12px; color: #444; font-weight: 600; }
+.asp3-security-right { display: flex; align-items: center; gap: 6px; }
+
+.asp3-security-badge { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
+.asp3-security-badge--on      { background: #eaf3de; color: #16a34a; }
+.asp3-security-badge--neutral { background: #f5f5f5; color: #666; }
+
+.asp3-manage-btn {
+  font-size: 11px; color: #5B4FF5; font-weight: 600;
+  background: none; border: 0.5px solid #e0dcff; border-radius: 6px;
+  padding: 3px 8px; cursor: pointer; font-family: inherit;
+}
+
+/* 데이터 관리 */
+.asp3-data-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 0; font-size: 12px; color: #444; font-weight: 500;
+  background: none; border: none; border-bottom: 0.5px solid #f5f4ff;
+  cursor: pointer; font-family: inherit; justify-content: space-between;
+}
+.asp3-data-btn:last-child { border-bottom: none; }
+.asp3-data-btn:hover { color: #5B4FF5; }
+.asp3-data-btn--danger { color: #dc2626; }
+.asp3-data-btn--danger:hover { color: #a32d2d; }
+
+.asp3-label__note { font-size: 10px; color: #f59e0b; font-weight: 500; margin-left: 4px; }

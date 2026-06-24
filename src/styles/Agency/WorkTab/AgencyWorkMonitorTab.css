@@ -164,7 +164,7 @@
 
 .wmt-table__row:last-child { border-bottom: none; }
 .wmt-table__row:hover { background: #fafaff; }
-.wmt-table__row--selected { background: #eeeaff; border-left: 3px solid #5B4FF5; }
+.wmt-table__row--selected { background: #e0d9ff; border-left: 3px solid #5B4FF5; }
 
 .wmt-table__id { font-size: 11px; color: #5B4FF5; font-weight: 600; display: block; }
 .wmt-table__date { font-size: 10px; color: #aaa; }
@@ -204,6 +204,17 @@
 .wmt-more-btn {
   background: none; border: none; cursor: pointer; color: #aaa;
   display: flex; align-items: center;
+}
+
+.wmt-detail-btn:hover {
+  background: #eeeaff;
+  border-color: #5B4FF5;
+}
+
+.wmt-detail-btn--active {
+  background: #5B4FF5;
+  color: #fff;
+  border-color: #5B4FF5;
 }
 
 /* ===========================
@@ -377,31 +388,6 @@
 
 .wmt-log-label { font-size: 12px; font-weight: 700; color: #1a1a2e; }
 .wmt-log-desc  { font-size: 11px; color: #888; margin-top: 1px; }
-
-/* ===========================
-   하단 버튼
-=========================== */
-.wmt-detail__footer {
-  display: flex; gap: 6px; padding-top: 14px;
-  border-top: 0.5px solid #f0f0f8; margin-top: 4px;
-}
-
-.wmt-detail__footer-btn {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 600;
-  border-radius: 8px; padding: 8px 12px;
-  cursor: pointer; font-family: inherit; border: none; flex: 1; justify-content: center;
-}
-
-.wmt-detail__footer-btn--primary  { background: #5B4FF5; color: #fff; }
-.wmt-detail__footer-btn--outline  { background: none; border: 1px solid #e0dcff; color: #5B4FF5; }
-
-.wmt-detail__footer-dropdown {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 600; color: #444;
-  border: 1px solid #e0dcff; border-radius: 8px; padding: 8px 12px;
-  cursor: pointer; white-space: nowrap;
-}
 
 /* ===========================
    아바타

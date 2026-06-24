@@ -1,0 +1,266 @@
+.asp {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 16px 24px; background: #fff; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+/* 헤더 */
+.asp-header { display: flex; align-items: flex-start; justify-content: space-between; }
+.asp-header__title { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.asp-header__sub   { font-size: 13px; color: #aaa; }
+
+/* 자동 갱신 */
+.asp-refresh-bar { display: flex; align-items: center; gap: 8px; }
+.asp-refresh-label { font-size: 12px; color: #666; font-weight: 600; }
+.asp-toggle {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: #ddd; position: relative; cursor: pointer; transition: background 0.2s;
+}
+.asp-toggle--on { background: #5B4FF5; }
+.asp-toggle__thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.asp-toggle--on .asp-toggle__thumb { left: 21px; }
+.asp-refresh-select {
+  display: flex; align-items: center; gap: 4px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 5px 10px; font-size: 12px; color: #444; cursor: pointer;
+}
+
+/* 통계 카드 */
+.asp-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.asp-stat-card {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
+  padding: 16px; display: flex; align-items: flex-start; gap: 12px;
+}
+.asp-stat-card__icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.asp-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
+.asp-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
+.asp-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
+.asp-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
+.asp-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
+
+.asp-stat-card__label { font-size: 11px; color: #aaa; margin-bottom: 4px; }
+.asp-stat-card__value { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+.asp-stat-card__sub   { font-size: 11px; color: #aaa; }
+.asp-stat-card__sub--up   { color: #5B4FF5; font-weight: 600; }
+.asp-stat-card__sub--down { color: #dc2626; font-weight: 600; }
+
+/* 필터 */
+.asp-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.asp-filter-date {
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #444; cursor: pointer; white-space: nowrap;
+}
+.asp-filter-select {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 10px; font-size: 12px; color: #444; cursor: pointer; white-space: nowrap;
+}
+.asp-search {
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; flex: 1; min-width: 180px;
+}
+.asp-search input { border: none; outline: none; font-size: 12px; color: #444; width: 100%; font-family: inherit; }
+.asp-reset-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #666;
+  background: none; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.asp-excel-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #5B4FF5; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #5B4FF5;
+  background: none; cursor: pointer; font-family: inherit; white-space: nowrap; font-weight: 600;
+}
+
+/* 바디 */
+.asp-body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+.asp-left { display: flex; flex-direction: column; gap: 12px; }
+
+/* 탭 */
+.asp-tabs { display: flex; gap: 0; border-bottom: 1px solid #f0f0f8; }
+.asp-tab {
+  padding: 8px 20px; font-size: 13px; font-weight: 500; color: #aaa;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; font-family: inherit;
+}
+.asp-tab--active { color: #5B4FF5; font-weight: 700; border-bottom-color: #5B4FF5; }
+
+/* 테이블 */
+.asp-table { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; overflow: hidden; }
+.asp-table__header {
+  display: grid;
+  grid-template-columns: 1.3fr 0.5fr 1.1fr 1.2fr 0.5fr 1fr 1.1fr 1fr 0.9fr 0.8fr 0.8fr 0.8fr;
+  padding: 10px 14px;
+  background: #f8f7ff; font-size: 11px; color: #aaa; font-weight: 600;
+  border-bottom: 0.5px solid #e8e4ff;
+}
+.asp-table__row {
+  display: grid;
+  grid-template-columns: 1.3fr 0.5fr 1.1fr 1.2fr 0.5fr 1fr 1.1fr 1fr 0.9fr 0.8fr 0.8fr 0.8fr;
+  padding: 11px 14px;
+  border-bottom: 0.5px solid #f5f4ff;
+  align-items: center; font-size: 12px; color: #444;
+  transition: background 0.1s;
+}
+.asp-table__row:last-child { border-bottom: none; }
+.asp-table__row--selected { background: #ddd8ff; border-left: 3px solid #5B4FF5; }
+
+.asp-table__id { font-size: 11px; color: #5B4FF5; font-weight: 600; }
+.asp-table__name { font-weight: 600; color: #1a1a2e; display: block; font-size: 12px; }
+.asp-table__sub-id { font-size: 10px; color: #aaa; }
+.asp-table__period { font-size: 11px; color: #666; }
+.asp-table__count { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.asp-table__amount { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.asp-table__fee { font-size: 11px; color: #666; }
+.asp-table__fee-rate { font-size: 10px; color: #aaa; }
+.asp-table__net { font-size: 12px; font-weight: 700; color: #5B4FF5; }
+.asp-table__settled-at { font-size: 11px; color: #888; }
+
+/* 유형 배지 */
+.asp-type-badge { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 7px; }
+.asp-type-badge--engineer { background: #eeeaff; color: #5B4FF5; }
+.asp-type-badge--agency   { background: #e6f1fb; color: #2563eb; }
+
+/* 상태 배지 */
+.asp-status-badge { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
+.asp-status-badge--success { background: #eaf3de; color: #16a34a; }
+.asp-status-badge--ready   { background: #fef0e0; color: #d97706; }
+.asp-status-badge--hold    { background: #fee2e2; color: #dc2626; }
+.asp-status-badge--cancel  { background: #f5f5f5; color: #888;    }
+
+/* 버튼 */
+.asp-detail-btn {
+  font-size: 11px; border: 0.5px solid #e0dcff; border-radius: 6px;
+  padding: 4px 10px; color: #5B4FF5; background: none;
+  cursor: pointer; font-weight: 600; font-family: inherit; white-space: nowrap;
+}
+.asp-detail-btn:hover { background: #eeeaff; border-color: #5B4FF5; }
+.asp-detail-btn--active { background: #5B4FF5; color: #fff; border-color: #5B4FF5; }
+
+/* 페이지네이션 */
+.asp-pagination { display: flex; align-items: center; justify-content: space-between; }
+.asp-pagination__left { display: flex; align-items: center; gap: 4px; }
+.asp-pagination__left button {
+  width: 30px; height: 30px; border: 0.5px solid #e0dcff; border-radius: 6px;
+  background: none; cursor: pointer; font-size: 13px; color: #666;
+  display: flex; align-items: center; justify-content: center; font-family: inherit;
+}
+.asp-pagination__left button:disabled { color: #ccc; cursor: default; }
+.asp-pagination__active { background: #5B4FF5 !important; color: #fff !important; border-color: #5B4FF5 !important; font-weight: 700; }
+.asp-pagination__ellipsis { font-size: 13px; color: #aaa; padding: 0 4px; }
+.asp-page-size {
+  display: flex; align-items: center; gap: 4px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; color: #444; cursor: pointer;
+}
+
+.asp-footnote { font-size: 11px; color: #aaa; }
+
+/* 아바타 */
+.asp-avatar {
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8c0f0, #5B4FF5);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; overflow: hidden; flex-shrink: 0;
+}
+
+/* ===========================
+   우측 상세 패널
+=========================== */
+.asp-detail {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
+  display: flex; flex-direction: column;
+  position: sticky; top: 16px; max-height: 90vh; overflow: hidden;
+}
+.asp-detail__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px; border-bottom: 0.5px solid #f0f0f8; flex-shrink: 0;
+}
+.asp-detail__title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.asp-detail__header-right { display: flex; align-items: center; gap: 6px; }
+.asp-detail__close {
+  width: 26px; height: 26px; border: none; background: #f5f4ff;
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #666;
+}
+.asp-detail__close:hover { background: #eeeaff; color: #5B4FF5; }
+
+.asp-detail__body { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+.asp-detail__id { font-size: 16px; font-weight: 700; color: #5B4FF5; padding: 12px 0 8px; }
+
+.asp-detail__profile {
+  display: flex; align-items: center; gap: 10px;
+  background: #f8f7ff; border-radius: 10px; padding: 12px;
+  margin-bottom: 4px;
+}
+.asp-detail__profile-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.asp-detail__profile-sub  { font-size: 11px; color: #aaa; margin-top: 1px; }
+.asp-detail__profile-phone { font-size: 11px; color: #5B4FF5; margin-top: 2px; }
+
+.asp-detail__agency-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #e6f1fb; color: #2563eb;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+.asp-detail__section { padding: 12px 0; border-bottom: 0.5px solid #f5f4ff; }
+.asp-detail__section:last-child { border-bottom: none; }
+.asp-detail__section-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 8px; }
+
+.asp-detail__row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 0; font-size: 12px;
+}
+.asp-detail__label { color: #aaa; }
+.asp-detail__value { color: #1a1a2e; font-weight: 500; }
+.asp-detail__value--amount { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+
+/* 금액 상세 박스 */
+.asp-detail__amount-box {
+  background: #f8f7ff; border-radius: 10px; padding: 12px;
+}
+.asp-detail__amount-row {
+  display: flex; justify-content: space-between; font-size: 12px;
+  color: #444; padding: 4px 0;
+}
+.asp-detail__amount-row--fee { color: #dc2626; }
+.asp-detail__amount-divider { border-top: 0.5px solid #e0dcff; margin: 6px 0; }
+.asp-detail__amount-row--net { font-weight: 700; color: #1a1a2e; }
+.asp-detail__net-amount { color: #5B4FF5; font-size: 15px; font-weight: 700; }
+
+/* 연결 대행사 카드 */
+.asp-detail__agency-card {
+  display: flex; align-items: center; gap: 8px;
+  background: #f8f7ff; border-radius: 8px; padding: 10px 12px;
+}
+.asp-detail__agency-icon--sm {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: #e6f1fb; color: #2563eb;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.asp-detail__agency-name { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.asp-detail__agency-rate { font-size: 11px; color: #888; margin-top: 1px; }
+
+/* 하단 버튼 */
+.asp-detail__footer {
+  padding: 12px 16px; border-top: 0.5px solid #f0f0f8; flex-shrink: 0;
+}
+.asp-detail__footer-btn {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  width: 100%; font-size: 12px; font-weight: 600;
+  border-radius: 8px; padding: 9px;
+  cursor: pointer; font-family: inherit;
+}
+.asp-detail__footer-btn--outline { background: none; border: 1px solid #e0dcff; color: #5B4FF5; }
+.asp-detail__footer-btn--outline:hover { background: #eeeaff; }
