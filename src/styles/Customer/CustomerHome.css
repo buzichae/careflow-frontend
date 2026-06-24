@@ -8,60 +8,6 @@
   gap: 20px;
 }
 
-/* 헤더 */
-.ch-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.ch-header__left h1 {
-  font-size: 26px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.ch-header__left p {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.ch-header__right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.ch-icon-btn {
-  background: none;
-  border: none;
-  padding: 6px;
-  color: var(--text-mid);
-  cursor: pointer;
-}
-
-.ch-profile {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.ch-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #8b7cf7;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-}
-
 /* ── 바디 2열 레이아웃 ── */
 .ch-body {
   display: grid;
@@ -77,56 +23,69 @@
   gap: 18px;
 }
 
-/* 건강지수 + 통계 */
-.ch-summary {
+/* ══════════════════════════
+   상단 요약 섹션
+══════════════════════════ */
+
+/* 진단서 있을 때: 배너(좌) + 2×2 stat(우) */
+.ch-summary--has-diag {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 1fr 220px;
   gap: 14px;
+  align-items: stretch;
 }
 
+/* 진단서 없을 때: 건강지수 카드 + stat 카드 1행 */
+.ch-summary--no-diag {
+  display: grid;
+  grid-template-columns: 220px repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* 건강지수 카드 (진단서 없을 때) */
 .ch-health-card {
   background: linear-gradient(135deg, #7c5cf7 0%, #9b7cf7 100%);
   border-radius: var(--radius-lg);
-  padding: 22px 20px;
+  padding: 18px 16px;
   color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
-.ch-health-card__label {
-  font-size: 12px;
-  opacity: 0.85;
-  margin-bottom: 6px;
-}
+.ch-health-card__left { display: flex; flex-direction: column; gap: 6px; }
+.ch-health-card__label { font-size: 11px; opacity: 0.85; }
 
 .ch-health-card__score {
   display: flex;
   align-items: baseline;
-  gap: 3px;
-  margin-bottom: 10px;
+  gap: 2px;
 }
 
-.ch-health-card__num  { font-size: 46px; font-weight: 800; line-height: 1; }
-.ch-health-card__denom { font-size: 18px; font-weight: 500; opacity: 0.75; }
+.ch-health-card__num   { font-size: 38px; font-weight: 800; line-height: 1; }
+.ch-health-card__denom { font-size: 15px; font-weight: 500; opacity: 0.75; }
 
 .ch-health-badge {
   display: inline-block;
   background: rgba(255,255,255,0.2);
   border-radius: 20px;
-  padding: 3px 11px;
-  font-size: 12px;
+  padding: 3px 10px;
+  font-size: 11px;
   font-weight: 600;
+  width: fit-content;
 }
 
-.ch-health-card__icon { opacity: 0.3; color: #fff; }
+.ch-health-card__icon { opacity: 0.4; flex-shrink: 0; }
 
-.ch-stat-cards {
+/* stat 카드 그룹 — 진단서 있을 때 2×2 */
+.ch-stat-cards--2x2 {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
+/* 개별 stat 카드 */
 .ch-stat {
   background: #fff;
   border-radius: var(--radius-md);
@@ -147,6 +106,7 @@
 }
 
 .ch-stat__icon--gray   { background: #f3f3f7; }
+.ch-stat__icon--purple { background: #f0edff; }
 .ch-stat__icon--green  { background: #e8f9f0; }
 .ch-stat__icon--red    { background: #fff0f0; }
 .ch-stat__icon--orange { background: #fff7e6; }
@@ -154,7 +114,132 @@
 .ch-stat__num   { font-size: 18px; font-weight: 700; }
 .ch-stat__label { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
 
-/* 섹션 헤더 공통 */
+/* ══════════════════════════
+   진단서 배너 카드
+══════════════════════════ */
+.ch-diag-banner {
+  background: linear-gradient(135deg, #7c5cf7 0%, #5b9cf6 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px 22px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 배경 장식 원 */
+.ch-diag-banner::before {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  bottom: -60px;
+  left: -30px;
+  pointer-events: none;
+}
+
+.ch-diag-banner__content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.ch-diag-banner__badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.ch-diag-banner__new {
+  background: #fff;
+  color: #7c5cf7;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+
+.ch-diag-banner__title {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.ch-diag-banner__desc {
+  font-size: 12px;
+  opacity: 0.82;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ch-diag-banner__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+  transition: background .15s;
+}
+.ch-diag-banner__btn:hover { background: rgba(255,255,255,0.3); }
+
+/* 원형 점수 */
+.ch-diag-banner__visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ch-diag-score {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.ch-diag-score svg { display: block; }
+
+.ch-diag-score__inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.ch-diag-score__num   { font-size: 26px; font-weight: 900; line-height: 1; }
+.ch-diag-score__denom { font-size: 11px; opacity: 0.7; }
+
+.ch-diag-banner__status-badge {
+  background: rgba(255,255,255,0.25);
+  border-radius: 20px;
+  padding: 3px 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ══════════════════════════
+   섹션 공통
+══════════════════════════ */
 .ch-section__header {
   display: flex;
   justify-content: space-between;
@@ -175,7 +260,9 @@
   cursor: pointer;
 }
 
-/* 내 가전 */
+/* ══════════════════════════
+   내 가전 관리
+══════════════════════════ */
 .ch-appliances {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -261,10 +348,12 @@
   gap: 4px;
 }
 
-/* 빠른 메뉴 + 이번 달 일정 */
+/* ══════════════════════════
+   빠른 메뉴 + 이번 달 일정
+══════════════════════════ */
 .ch-bottom {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 200px 1fr;
   gap: 14px;
   align-items: start;
 }
@@ -277,29 +366,51 @@
 
 .ch-quick h2 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
 
-.ch-quick__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
+.ch-quick__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.ch-quick-btn {
-  border-radius: var(--radius-sm);
-  padding: 11px 6px;
-  font-size: 11px;
-  font-weight: 600;
+.ch-quick-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  border-radius: 9px;
   border: none;
+  background: none;
   cursor: pointer;
+  transition: background .12s;
+  text-align: left;
+}
+
+.ch-quick-item:hover { background: #f8f7ff; }
+
+.ch-quick-item__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  flex-shrink: 0;
 }
 
-.ch-quick-btn--purple  { background: #7c5cf7; color: #fff; }
-.ch-quick-btn--green   { background: #22c55e; color: #fff; }
-.ch-quick-btn--outline { background: #fff; border: 1px solid var(--border); color: var(--text-mid); }
+.ch-quick-item__icon--purple { background: #f0edff; color: #7c5cf7; }
+.ch-quick-item__icon--blue   { background: #eff6ff; color: #3b82f6; }
+.ch-quick-item__icon--green  { background: #e8f9f0; color: #22c55e; }
 
+.ch-quick-item__label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.ch-quick-item__arrow { color: #ccc; }
+
+/* 이번 달 일정 */
 .ch-schedule {
   background: #fff;
   border-radius: var(--radius-md);
@@ -343,7 +454,9 @@
 .ch-tag--red    { background: #fff0f0; color: #ef4444; }
 .ch-tag--purple { background: #f0edff; color: var(--primary); }
 
-/* 배너 */
+/* ══════════════════════════
+   하단 배너
+══════════════════════════ */
 .ch-banner {
   background: linear-gradient(135deg, #f0edff 0%, #e8f9f0 100%);
   border-radius: var(--radius-lg);
@@ -368,7 +481,9 @@
   white-space: nowrap;
 }
 
-/* ── 우측 사이드바 ── */
+/* ══════════════════════════
+   우측 사이드바
+══════════════════════════ */
 .ch-sidebar {
   display: flex;
   flex-direction: column;
@@ -578,6 +693,288 @@
 .ch-history__title { font-size: 12px; font-weight: 600; }
 .ch-history__sub   { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
 
+/* ══════════════════════════
+   진단서 상세 모달
+══════════════════════════ */
+.ch-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ch-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  animation: ch-modal-in .2s ease;
+}
+
+@keyframes ch-modal-in {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+
+.ch-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #f0f0f8;
+}
+
+.ch-modal__header-left { display: flex; align-items: center; gap: 10px; }
+.ch-modal__sup  { font-size: 11px; color: #aaa; margin-bottom: 2px; }
+.ch-modal__title { font-size: 16px; font-weight: 800; margin: 0; }
+
+.ch-modal__close {
+  background: #f5f5fb;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #888;
+}
+.ch-modal__close:hover { background: #ededff; color: #7c5cf7; }
+
+/* 히어로 */
+/* 히어로 */
+.ch-modal__hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 22px;
+  background: #fafaff;
+  border-bottom: 1px solid #f0f0f8;
+}
+
+.ch-modal__hero-gauge { flex-shrink: 0; }
+
+.ch-modal__hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ch-modal__grade-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 8px;
+  padding: 4px 14px;
+  width: fit-content;
+}
+
+.ch-modal__score-row { display: flex; align-items: baseline; gap: 3px; }
+.ch-modal__score-big  { font-size: 38px; font-weight: 900; color: #1a1a2e; line-height: 1; }
+.ch-modal__score-denom { font-size: 14px; color: #aaa; font-weight: 500; }
+
+.ch-modal__cert {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 20px;
+  width: fit-content;
+  flex-wrap: wrap;
+}
+.ch-modal__cert--yes { background: #dcfce7; color: #16a34a; }
+.ch-modal__cert--no  { background: #f3f3f7; color: #888; }
+.ch-modal__cert-hint { font-size: 10px; font-weight: 400; color: #aaa; margin-left: 2px; }
+
+/* 섹션 공통 */
+.ch-modal__section {
+  padding: 18px 22px;
+  border-bottom: 1px solid #f0f0f8;
+}
+
+.ch-modal__section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3a3a5c;
+  margin: 0 0 4px;
+}
+
+.ch-modal__section-sub {
+  font-size: 11px;
+  color: #aaa;
+  margin: 0 0 14px;
+}
+
+/* ── 항목별 점수 ── */
+.ch-modal__score-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ch-modal__score-item {}
+
+.ch-modal__score-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ch-modal__score-item-icon { font-size: 16px; }
+
+.ch-modal__score-item-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ch-modal__score-item-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  background: #f3f3f7;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.ch-modal__score-item-pts {
+  font-size: 16px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.ch-modal__score-item-pts span { font-size: 11px; color: #ccc; font-weight: 400; }
+
+.ch-modal__score-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ch-modal__score-bar {
+  flex: 1;
+  height: 6px;
+  background: #f0f0f8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ch-modal__score-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width .4s ease;
+}
+
+.ch-modal__score-condition {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+  min-width: 130px;
+  text-align: right;
+}
+
+/* ── 등급 범례 ── */
+.ch-modal__section--grade-legend { background: #fafaff; }
+
+.ch-modal__grade-row {
+  display: flex;
+  gap: 6px;
+}
+
+.ch-modal__grade-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 1.5px solid #f0f0f8;
+  background: #fff;
+}
+
+.ch-modal__grade-cell--active {
+  border-width: 2px;
+}
+
+.ch-modal__grade-cell-g    { font-size: 16px; font-weight: 900; color: #ccc; }
+.ch-modal__grade-cell-desc { font-size: 10px; color: #aaa; }
+
+/* 발급 정보 테이블 */
+.ch-modal__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ch-modal__table td {
+  padding: 9px 4px;
+  border-bottom: 1px solid #f3f3f7;
+  vertical-align: middle;
+}
+
+.ch-modal__table tr:last-child td { border-bottom: none; }
+.ch-modal__table td:first-child { width: 100px; color: #888; font-weight: 600; }
+.ch-modal__table td:last-child  { color: #1a1a2e; font-weight: 500; }
+
+/* 푸터 */
+.ch-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid #f0f0f8;
+}
+
+.ch-modal__footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.ch-modal__footer-btn:hover { opacity: .85; }
+.ch-modal__footer-btn--outline  { background: #f5f5fb; border: 1px solid #e8e8f0; color: #555; }
+.ch-modal__footer-btn--download { background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; }
+.ch-modal__footer-btn--primary  { background: #7c5cf7; border: none; color: #fff; }
+
+/* 원형 게이지 공통 */
+.ch-gauge { position: relative; flex-shrink: 0; }
+.ch-gauge svg { display: block; }
+.ch-gauge__inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ch-gauge__num   { font-size: 26px; font-weight: 900; line-height: 1; }
+.ch-gauge__denom { font-size: 11px; }
+
 .ch-diag-btn {
   font-size: 10px;
   font-weight: 600;
@@ -588,4 +985,11 @@
   color: var(--text-mid);
   cursor: pointer;
   white-space: nowrap;
+}
+
+.ch-diag-btn--none {
+  border: none;
+  background: none;
+  color: #ccc;
+  cursor: default;
 }
