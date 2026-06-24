@@ -322,9 +322,12 @@
 
 /* 스텝 바 */
 .cas-stepper {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; 
+  align-items: center; 
+  gap: 10px;
   background: #fff; border-radius: var(--radius-md);
   border: 1px solid var(--border); padding: 20px 32px;
+  justify-content: center;
 }
 .cas-stepper__item {
   display: flex; align-items: center; gap: 10px;
@@ -338,7 +341,7 @@
 .cas-stepper__circle--active { background: var(--primary); color: #fff; }
 .cas-stepper__label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 .cas-stepper__label--active { color: var(--text-dark); font-weight: 700; }
-.cas-stepper__line { color: #d0d0e0; font-size: 13px; margin: 0 4px; }
+.cas-stepper__line { color: #d0d0e0; font-size: 13px; margin: 0 4px; flex: 1; }
 
 /* 2열 바디 */
 .cas-flow-body {
@@ -512,3 +515,329 @@
 .cas-recent-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
 .cas-recent-badge--blue  { background: #eff6ff; color: #3b82f6; }
 .cas-recent-badge--green { background: #e8f9f0; color: #22c55e; }
+
+/* ===========================================
+   A/S 신청 플로우 (ASRequestFlow)
+=========================================== */
+
+/* 스텝 바 — done 상태 추가 */
+.cas-stepper__circle--done { background: #22c55e; color: #fff; }
+.cas-stepper__label--done  { color: #22c55e; }
+
+/* 스텝 바 연결선 (텍스트 화살표 대신 bar 사용) */
+.cas-stepper__line-bar {
+  flex: 1; min-width: 32px; height: 2px;
+  background: #e8e8f0; margin: 0 12px;
+}
+.cas-stepper__line-bar--done { background: #22c55e; }
+
+/* 신청 플로우 공통 레이아웃 */
+.cas-req-body {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.cas-req-body--complete {
+  align-items: center; text-align: center; padding: 12px 0;
+}
+
+.cas-req-required { color: #ef4444; margin-left: 3px; font-size: 13px; font-weight: 700; }
+.cas-req-optional  { color: var(--text-muted); font-size: 12px; font-weight: 400; margin-left: 4px; }
+.cas-req-sub       { font-size: 12px; color: var(--text-muted); margin: -8px 0 6px; line-height: 1.6; }
+
+/* 푸터 버튼 */
+.cas-req-footer {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;
+}
+.cas-req-footer--center { justify-content: center; }
+
+.cas-req-btn-primary {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--primary); color: #fff; border: none;
+  border-radius: var(--radius-sm); padding: 10px 22px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.cas-req-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.cas-req-btn-secondary {
+  display: flex; align-items: center; gap: 5px;
+  background: #fff; color: var(--text-mid);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+/* 증상 선택 그리드 */
+.cas-symptom-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.cas-symptom-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  border: 2px solid var(--border); border-radius: var(--radius-md);
+  padding: 12px 14px; cursor: pointer; background: #fff; text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cas-symptom-chip:hover { border-color: var(--primary); background: #faf9ff; }
+.cas-symptom-chip--active { border-color: var(--primary); background: #f5f3ff; }
+.cas-symptom-chip__label { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+.cas-symptom-chip__desc  { font-size: 11px; color: var(--text-muted); }
+.cas-symptom-chip__cost  {
+  font-size: 10px; font-weight: 600;
+  color: var(--primary); margin-top: 2px;
+}
+.cas-symptom-chip--active .cas-symptom-chip__cost { color: var(--primary); }
+
+/* 증상 상세 textarea */
+.cas-symptom-textarea {
+  width: 100%; resize: vertical;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 12px; font-size: 13px; color: var(--text-dark);
+  outline: none; font-family: inherit; line-height: 1.6;
+  box-sizing: border-box;
+}
+.cas-symptom-textarea:focus { border-color: var(--primary); }
+
+/* 사진 업로드 */
+.cas-upload-label {
+  font-size: 12px; font-weight: 700; color: var(--text-mid);
+  margin-top: 16px; margin-bottom: 8px; display: block;
+}
+
+.cas-img-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+.cas-img-thumb {
+  position: relative;
+  width: 72px; height: 72px; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border); flex-shrink: 0;
+}
+.cas-img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cas-img-thumb--confirm { width: 80px; height: 80px; }
+
+.cas-img-remove {
+  position: absolute; top: 3px; right: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(0,0,0,0.55); color: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.cas-img-add {
+  width: 72px; height: 72px; border-radius: 8px; flex-shrink: 0;
+  border: 2px dashed #c4b8ff; background: #faf9ff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer; color: var(--primary); font-size: 10px; font-weight: 600;
+  transition: background 0.15s;
+}
+.cas-img-add:hover { background: #f0edff; }
+
+/* 방문 지역 선택 */
+.cas-region-row { display: flex; gap: 10px; }
+.cas-region-select {
+  flex: 1; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 9px 12px; font-size: 13px; color: var(--text-dark);
+  background: #fff; outline: none; cursor: pointer;
+}
+.cas-region-select:focus   { border-color: var(--primary); }
+.cas-region-select:disabled { background: #f5f5f8; color: var(--text-muted); cursor: not-allowed; }
+
+/* 주소 입력 */
+.cas-field-label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: var(--text-mid); margin-bottom: 6px;
+}
+.cas-field-hint { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+.cas-addr-input {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 9px 12px; font-size: 13px; color: var(--text-dark); outline: none;
+}
+.cas-addr-input:focus { border-color: var(--primary); }
+
+/* 날짜 선택 */
+.cas-date-input {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 9px 12px; font-size: 13px; color: var(--text-dark); outline: none;
+}
+.cas-date-input:focus { border-color: var(--primary); }
+
+/* 시간 슬롯 칩 */
+.cas-time-slots { display: flex; gap: 10px; flex-wrap: wrap; }
+.cas-time-chip {
+  padding: 9px 20px; border-radius: var(--radius-sm);
+  border: 2px solid var(--border); background: #fff;
+  font-size: 13px; font-weight: 600; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.cas-time-chip:hover { border-color: var(--primary); color: var(--primary); }
+.cas-time-chip--active {
+  border-color: var(--primary); background: #f5f3ff; color: var(--primary); font-weight: 700;
+}
+
+/* 확인 테이블 */
+.cas-confirm-table { display: flex; flex-direction: column; }
+.cas-confirm-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.cas-confirm-row:last-child { border-bottom: none; }
+.cas-confirm-row__label { color: var(--text-muted); flex-shrink: 0; width: 110px; }
+.cas-confirm-row__value { font-weight: 600; color: var(--text-dark); text-align: right; }
+
+.cas-confirm-row--highlight {
+  background: #fffde7;
+  border-radius: 6px;
+  margin: 2px -8px;
+  padding: 9px 8px;
+  border-bottom: none;
+}
+.cas-confirm-row--highlight .cas-confirm-row__label { color: #92720a; font-weight: 700; }
+.cas-confirm-row--highlight .cas-confirm-row__value { color: #7a5f00; font-size: 15px; font-weight: 800; }
+
+/* 완료 화면 */
+.cas-complete-icon  { font-size: 48px; line-height: 1; }
+.cas-complete-title { font-size: 20px; font-weight: 800; color: var(--text-dark); margin-top: 4px; }
+.cas-complete-sub   { font-size: 13px; color: var(--text-muted); margin-top: 4px; margin-bottom: 16px; }
+
+.cas-complete-card {
+  width: 100%; max-width: 480px;
+  background: #f9f9fc; border-radius: var(--radius-md);
+  border: 1px solid var(--border); padding: 20px;
+}
+.cas-complete-card__appliance {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 4px;
+}
+.cas-complete-card__name  { font-size: 14px; font-weight: 700; }
+.cas-complete-card__model { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* ===========================================
+   배정 방식 선택 카드
+=========================================== */
+.cas-assign-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+
+.cas-assign-card {
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  border: 2px solid var(--border); border-radius: var(--radius-md);
+  padding: 20px 18px; cursor: pointer; background: #fff; text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cas-assign-card:hover { border-color: var(--primary); background: #faf9ff; }
+.cas-assign-card--active { border-color: var(--primary); background: #f5f3ff; }
+
+.cas-assign-check {
+  position: absolute; top: 12px; right: 12px;
+  background: var(--primary); color: #fff;
+  border-radius: 50%; width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.cas-assign-icon  { font-size: 30px; line-height: 1; }
+.cas-assign-title { font-size: 15px; font-weight: 800; color: var(--text-dark); }
+.cas-assign-desc  { font-size: 12px; color: var(--text-mid); line-height: 1.6; }
+
+.cas-assign-tags  { display: flex; gap: 6px; }
+.cas-assign-tags span {
+  font-size: 10px; padding: 3px 8px; border-radius: 8px;
+  background: #f0edff; color: var(--primary); font-weight: 600;
+}
+
+/* ===========================================
+   수동 배정 — 기사 필터
+=========================================== */
+.cas-eng-filter-section {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.cas-eng-filter-group { display: flex; flex-direction: column; gap: 6px; }
+.cas-eng-filter-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+
+.cas-filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.cas-filter-chip {
+  padding: 5px 14px; border-radius: 20px;
+  border: 1px solid var(--border); background: #fff;
+  font-size: 12px; font-weight: 500; color: var(--text-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.cas-filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+.cas-filter-chip--active {
+  background: var(--primary); border-color: var(--primary);
+  color: #fff; font-weight: 700;
+}
+
+/* ===========================================
+   수동 배정 — 기사 카드 그리드
+=========================================== */
+.cas-eng-empty {
+  font-size: 13px; color: var(--text-muted); text-align: center; padding: 24px 0;
+}
+
+.cas-eng-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.cas-eng-card {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 2px solid var(--border); border-radius: var(--radius-md);
+  padding: 18px 14px; cursor: pointer; background: #fff; text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cas-eng-card:hover { border-color: var(--primary); background: #faf9ff; }
+.cas-eng-card--selected { border-color: var(--primary); background: #f5f3ff; }
+
+.cas-eng-card__avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, #8b7cf7, #6254d8);
+  color: #fff; font-weight: 800; font-size: 20px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cas-eng-card__name   { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+.cas-eng-card__rating { font-size: 12px; font-weight: 600; color: var(--text-dark); }
+.cas-eng-card__rating span { color: var(--text-muted); font-weight: 400; font-size: 10px; }
+.cas-eng-card__exp    { font-size: 10px; color: var(--text-muted); }
+
+.cas-eng-card__brands {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 2px;
+}
+.cas-eng-card__brands span {
+  font-size: 10px; background: #fff7e6; color: #d97706;
+  padding: 2px 7px; border-radius: 6px; font-weight: 600;
+}
+
+.cas-eng-card__skills {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
+}
+.cas-eng-card__skills span {
+  font-size: 10px; background: #eff6ff; color: #3b82f6;
+  padding: 2px 7px; border-radius: 6px;
+}
+
+.cas-eng-card__tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.cas-eng-card__tag  {
+  font-size: 10px; background: #f0edff; color: var(--primary);
+  padding: 2px 7px; border-radius: 6px; font-weight: 600;
+}
+
+/* ===========================================
+   가능 날짜 칩
+=========================================== */
+.cas-avail-dates { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.cas-avail-date {
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  border: 2px solid var(--border); background: #fff;
+  font-size: 13px; font-weight: 600; color: var(--text-dark);
+  cursor: pointer; transition: all 0.15s;
+}
+.cas-avail-date:hover        { border-color: var(--primary); color: var(--primary); }
+.cas-avail-date--active      { border-color: var(--primary); background: #f5f3ff; color: var(--primary); }
+.cas-avail-date--sat         { color: #3b82f6; }
+.cas-avail-date--sun         { color: #ef4444; }
+.cas-avail-date--sat.cas-avail-date--active { border-color: #3b82f6; background: #eff6ff; }
+.cas-avail-date--sun.cas-avail-date--active { border-color: #ef4444; background: #fff0f0; }

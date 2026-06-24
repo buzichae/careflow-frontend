@@ -1,73 +1,275 @@
-import { useState } from "react";
-import { CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Bot, Wrench, Plus } from "lucide-react";
+import { useState, useRef } from "react";
+import { CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, Zap, UserCheck } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
 
 /* ─────────────────────────────────
-   A/S 예약 플로우 컴포넌트
+   A/S 신청 플로우 데이터
 ───────────────────────────────── */
 const MY_APPLIANCES = [
-  { id: 1, name: "LG 오브제 냉장고",   model: "M875GBB231",    purchased: "2025.01.20", warranty: "2028.01.20", icon: "❄️" },
-  { id: 2, name: "삼성 그랑대 세탁기", model: "WF24T6500KV",   purchased: "2024.03.15", warranty: "2027.03.15", icon: "🫧" },
-  { id: 3, name: "LG 휘센 에어컨",     model: "FQ18VCWWA2",    purchased: "2023.06.10", warranty: "2026.06.10", icon: "💨" },
-  { id: 4, name: "LG 올레드 TV",       model: "OLED55C4KNA",   purchased: "2024.11.05", warranty: "2027.11.05", icon: "📺" },
+  { id: 1, name: "LG 오브제 냉장고",   model: "M875GBB231",  purchased: "2025.01.20", warranty: "2028.01.20", icon: "❄️" },
+  { id: 2, name: "삼성 그랑데 세탁기", model: "WF24T6500KV", purchased: "2024.03.15", warranty: "2027.03.15", icon: "🫧" },
+  { id: 3, name: "LG 휘센 에어컨",     model: "FQ18VCWWA2",  purchased: "2023.06.10", warranty: "2026.06.10", icon: "💨" },
+  { id: 4, name: "LG 올레드 TV",       model: "OLED55C4KNA", purchased: "2024.11.05", warranty: "2027.11.05", icon: "📺" },
 ];
 
-const RECENT_HISTORY = [
-  { appliance: "냉장고 냉각 불량",  date: "2026.06.12", type: "AI 상담",  color: "blue"   },
-  { appliance: "에어컨 냄새",       date: "2026.05.28", type: "AI 상담",  color: "blue"   },
-  { appliance: "세탁기 진동",       date: "2026.05.10", type: "A/S 완료", color: "green"  },
-  { appliance: "TV 화면 이상",      date: "2026.04.30", type: "A/S 완료", color: "green"  },
+/* symptom_code — expected_repair_costs 테이블 기준 (category_id + symptom_code) */
+const SYMPTOMS = {
+  /* 냉장고 category_id=11 */
+  "❄️": [
+    { code: "COOL-FAIL",  label: "냉각 불량",       desc: "냉장·냉동이 잘 안돼요",          avgCost: 112000 },
+    { code: "TEMP-ERR",   label: "냉장 온도 이상",   desc: "온도가 제대로 유지되지 않아요",   avgCost: 112000 },
+    { code: "FROST-ERR",  label: "냉동실 성에",      desc: "성에가 너무 많이 끼어요",         avgCost: 112000 },
+    { code: "TEMP-HIGH",  label: "냉장실 온도 높음", desc: "냉장실이 충분히 차갑지 않아요",   avgCost:  90000 },
+    { code: "FAN-NOISE",  label: "냉각팬 소음",      desc: "팬에서 이상한 소리가 나요",       avgCost: 122000 },
+    { code: "SMELL-ERR",  label: "냄새 이상",        desc: "냉장고에서 냄새가 나요",          avgCost:  88000 },
+    { code: "FROZ-ERR",   label: "냉동 기능 이상",   desc: "냉동 기능이 작동하지 않아요",     avgCost:  92000 },
+  ],
+  /* 세탁기 category_id=21 */
+  "🫧": [
+    { code: "STOP-MID",   label: "세탁 중 멈춤",  desc: "세탁 도중 갑자기 멈춰요",         avgCost: 113000 },
+    { code: "SPIN-FAIL",  label: "탈수 미작동",   desc: "탈수가 전혀 안 돼요",             avgCost: 115000 },
+    { code: "SMELL-WM",   label: "세탁물 냄새",   desc: "세탁 후에도 냄새가 나요",         avgCost:  95000 },
+    { code: "RINSE-FAIL", label: "헹굼 불량",     desc: "헹굼이 제대로 안 돼요",           avgCost: 105000 },
+    { code: "LEAK-WM",    label: "세탁조 누수",   desc: "물이 새고 있어요",                avgCost: null   },
+    { code: "VIBRATE",    label: "진동 과다",     desc: "진동이나 소음이 너무 심해요",     avgCost: null   },
+  ],
+  /* 에어컨 category_id=23 */
+  "💨": [
+    { code: "COOL-FAIL",  label: "냉방 불량",       desc: "냉방이 전혀 안 돼요",             avgCost:  80000 },
+    { code: "COOL-WEAK",  label: "냉방 성능 저하",  desc: "예전보다 덜 시원해요",            avgCost: 135000 },
+    { code: "NO-COOL",    label: "냉방 안됨",       desc: "차갑게 안 나와요",               avgCost: 108000 },
+    { code: "OUT-NOISE",  label: "실외기 소음",     desc: "실외기에서 이상한 소리가 나요",   avgCost: 145000 },
+    { code: "WIND-WEAK",  label: "바람 약함",       desc: "바람이 너무 약해요",             avgCost:  68000 },
+    { code: "COOL-CUT",   label: "냉방 중단 반복",  desc: "켜졌다 꺼졌다를 반복해요",       avgCost:  90000 },
+    { code: "POWER-OFF",  label: "전원 꺼짐",       desc: "갑자기 전원이 꺼져요",           avgCost: 250000 },
+    { code: "RC-ERR",     label: "리모컨 오류",     desc: "리모컨이 작동하지 않아요",       avgCost: 135000 },
+    { code: "LEAK-AC",    label: "누수",            desc: "물이 새고 있어요",               avgCost: null   },
+  ],
+  /* TV category_id=31 */
+  "📺": [
+    { code: "SCREEN-BL",  label: "화면 깜빡임",     desc: "화면이 깜빡거려요",              avgCost: 178000 },
+    { code: "HDMI-FAIL",  label: "HDMI 연결 안됨",  desc: "HDMI 기기가 인식되지 않아요",    avgCost: 112000 },
+    { code: "RC-FAIL",    label: "리모컨 반응 없음", desc: "리모컨이 작동하지 않아요",       avgCost:  68000 },
+    { code: "VIDEO-LAG",  label: "영상 지연",       desc: "영상이 끊기거나 느려요",         avgCost: 195000 },
+    { code: "SCREEN-OFF", label: "화면 먹통",       desc: "화면이 전혀 안 나와요",          avgCost: 195000 },
+    { code: "LINE-ERR",   label: "화면 줄 생김",    desc: "화면에 세로·가로 줄이 생겼어요", avgCost: null   },
+    { code: "NO-SOUND",   label: "소리 안남",       desc: "소리가 전혀 안 나요",            avgCost: null   },
+  ],
+  /* 기타 가전 (fallback) */
+  default: [
+    { code: "POWER-OFF",  label: "전원 꺼짐",   desc: "전원이 안 켜져요",              avgCost: null },
+    { code: "FUNC-FAIL",  label: "기능 오작동", desc: "특정 기능이 작동하지 않아요",   avgCost: null },
+    { code: "NOISE",      label: "소음 발생",   desc: "이상한 소리가 나요",            avgCost: null },
+  ],
+};
+
+/* regions — depth=1(시·도) → depth=2(구·시), visit_region_id는 depth=2 ID */
+const REGIONS = {
+  서울특별시: ["강남구", "강서구", "노원구", "마포구", "서초구", "송파구", "용산구", "종로구"],
+  경기도:     ["부천시", "성남시", "수원시", "시흥시", "안양시", "의정부시", "화성시"],
+  인천광역시: ["남동구", "부평구", "서구",   "연수구", "중구"],
+  부산광역시: ["동래구", "부산진구", "사상구", "수영구", "해운대구"],
+  대구광역시: ["달서구", "동구", "북구", "수성구", "중구"],
+  대전광역시: ["대덕구", "서구", "유성구", "중구"],
+};
+
+/* 방문 시간 슬롯 (scheduled_time = 시작 시각 HH:MM) */
+const TIME_SLOTS = [
+  { value: "09:00", label: "오전 9시 ~ 11시" },
+  { value: "11:00", label: "오전 11시 ~ 오후 1시" },
+  { value: "14:00", label: "오후 2시 ~ 4시" },
+  { value: "16:00", label: "오후 4시 ~ 6시" },
 ];
 
-const QUICK_PROBLEMS = [
-  { icon: "❄️", label: "냉장고가 안 시원해요" },
-  { icon: "🫧", label: "세탁기에서 소음이 나요" },
-  { icon: "💨", label: "에어컨이 작동하지 않아요" },
-  { icon: "📺", label: "TV 화면이 안 나와요" },
-  { icon: "•••", label: "기타 문제 문의하기" },
+const TIME_LABEL = Object.fromEntries(TIME_SLOTS.map(t => [t.value, t.label]));
+
+/* 수동 배정 — 기사 목록 (mock) */
+const MOCK_ENGINEERS = [
+  {
+    id: 1, name: "김민준", rating: 4.9, reviewCount: 128,
+    brands: ["LG", "삼성"], skills: ["냉장고", "에어컨", "세탁기"],
+    experience: "8년", tags: ["친절함", "신속", "정확"],
+    available: {
+      "2026-06-28": ["09:00", "14:00"],
+      "2026-06-30": ["11:00", "16:00"],
+      "2026-07-01": ["09:00", "11:00", "14:00"],
+      "2026-07-03": ["14:00", "16:00"],
+    },
+  },
+  {
+    id: 2, name: "이재훈", rating: 4.8, reviewCount: 97,
+    brands: ["삼성", "위니아"], skills: ["세탁기", "건조기", "에어컨"],
+    experience: "6년", tags: ["꼼꼼함", "친절함"],
+    available: {
+      "2026-06-27": ["11:00", "14:00"],
+      "2026-06-28": ["16:00"],
+      "2026-07-02": ["09:00", "11:00"],
+      "2026-07-04": ["14:00", "16:00"],
+    },
+  },
+  {
+    id: 3, name: "박현우", rating: 4.7, reviewCount: 214,
+    brands: ["LG"], skills: ["냉장고", "TV", "공기청정기"],
+    experience: "11년", tags: ["경력 풍부", "신속"],
+    available: {
+      "2026-06-29": ["09:00", "11:00"],
+      "2026-06-30": ["14:00"],
+      "2026-07-01": ["16:00"],
+      "2026-07-05": ["09:00", "14:00"],
+    },
+  },
+  {
+    id: 4, name: "최지훈", rating: 4.9, reviewCount: 73,
+    brands: ["LG", "삼성", "위니아"], skills: ["에어컨", "냉장고", "세탁기", "건조기"],
+    experience: "5년", tags: ["다기종", "정확"],
+    available: {
+      "2026-06-27": ["09:00", "16:00"],
+      "2026-06-29": ["11:00", "14:00"],
+      "2026-07-02": ["09:00"],
+      "2026-07-03": ["11:00", "14:00", "16:00"],
+    },
+  },
+  {
+    id: 5, name: "정수빈", rating: 4.8, reviewCount: 56,
+    brands: ["삼성"], skills: ["TV", "세탁기", "건조기"],
+    experience: "4년", tags: ["친절함", "꼼꼼함"],
+    available: {
+      "2026-06-28": ["11:00"],
+      "2026-07-01": ["09:00", "14:00"],
+      "2026-07-04": ["09:00", "11:00"],
+      "2026-07-05": ["16:00"],
+    },
+  },
 ];
 
-function ASReserveFlow({ onClose }) {
-  const [selectedAppliance, setSelectedAppliance] = useState(MY_APPLIANCES[0]);
+const ALL_BRANDS = ["LG", "삼성", "위니아", "대우"];
+const ALL_SKILLS = ["냉장고", "세탁기", "에어컨", "건조기", "TV", "공기청정기"];
+
+const AS_STEPS = ["가전 & 증상", "방문 일정", "최종 확인", "접수 완료"];
+
+/* ── 스텝 바 ── */
+function ASSteps({ step }) {
+  return (
+    <div className="cas-stepper">
+      {AS_STEPS.map((label, i) => {
+        const n = i + 1;
+        const done   = step > n;
+        const active = step === n;
+        return (
+          <div key={n} className="cas-stepper__item">
+            <div className={`cas-stepper__circle ${active ? "cas-stepper__circle--active" : ""} ${done ? "cas-stepper__circle--done" : ""}`}>
+              {done ? <Check size={12} /> : n}
+            </div>
+            <span className={`cas-stepper__label ${active ? "cas-stepper__label--active" : ""} ${done ? "cas-stepper__label--done" : ""}`}>
+              {label}
+            </span>
+            {i < AS_STEPS.length - 1 && (
+              <div className={`cas-stepper__line-bar ${done ? "cas-stepper__line-bar--done" : ""}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── A/S 신청 플로우 ── */
+function ASRequestFlow({ onClose }) {
+  const [step, setStep]                   = useState(1);
+  const [appliance, setAppliance]         = useState(null);
+  const [symptomCode, setSymptomCode]     = useState("");
+  const [symptomDesc, setSymptomDesc]     = useState("");
+  const [images, setImages]               = useState([]);        // { file, url }[]
+  const [regionParent, setRegionParent]   = useState("");
+  const [regionSub, setRegionSub]         = useState("");
+  const [addressDetail, setAddressDetail] = useState("");
+  /* 배정 방식 */
+  const [assignType, setAssignType]       = useState("");        // "AUTO" | "MANUAL"
+  /* 수동 배정 */
+  const [engBrand, setEngBrand]           = useState("");
+  const [engSkill, setEngSkill]           = useState("");
+  const [selectedEng, setSelectedEng]     = useState(null);
+  /* 날짜·시간 (기사 선택 후 → 기사 가능 일정 기반) */
+  const [schedDate, setSchedDate]         = useState("");
+  const [schedTime, setSchedTime]         = useState("");
+  const imgRef = useRef(null);
+
+  const symptoms    = appliance ? (SYMPTOMS[appliance.icon] ?? SYMPTOMS.default) : [];
+  const subRegions  = regionParent ? REGIONS[regionParent] : [];
+  const selectedSym = symptoms.find(s => s.code === symptomCode);
+
+  /* 수동: 필터 적용 기사 목록 */
+  const filteredEngs = MOCK_ENGINEERS.filter(e =>
+    (!engBrand || e.brands.includes(engBrand)) &&
+    (!engSkill || e.skills.includes(engSkill))
+  );
+
+  /* 수동: 선택된 기사의 가능 날짜 목록 */
+  const availableDates = selectedEng ? Object.keys(selectedEng.available).sort() : [];
+  /* 수동: 선택된 날짜의 가능 시간 슬롯 */
+  const availableTimes = (selectedEng && schedDate) ? (selectedEng.available[schedDate] ?? []) : [];
+
+  /* 유효성 */
+  const step1Valid = appliance && symptomCode;
+  const baseStep2  = regionSub && addressDetail.trim() && schedDate && schedTime;
+  const step2Valid = assignType === "AUTO"
+    ? baseStep2
+    : assignType === "MANUAL"
+      ? regionSub && addressDetail.trim() && selectedEng && schedDate && schedTime
+      : false;
+
+  function addImages(files) {
+    const remaining = 5 - images.length;
+    const added = Array.from(files).slice(0, remaining).map(f => ({ file: f, url: URL.createObjectURL(f) }));
+    setImages(prev => [...prev, ...added]);
+  }
+  function removeImage(i) { setImages(prev => prev.filter((_, idx) => idx !== i)); }
+  function handleRegionParent(v) { setRegionParent(v); setRegionSub(""); }
+  function handleSelectEng(eng) {
+    setSelectedEng(eng === selectedEng ? null : eng);
+    setSchedDate(""); setSchedTime("");
+  }
+  function handleSchedDate(d) { setSchedDate(d); setSchedTime(""); }
+
+  /* 확인 화면용 요약 행 */
+  const confirmRows = [
+    { label: "신청 가전",  value: appliance ? `${appliance.name} (${appliance.model})` : "" },
+    { label: "증상",       value: selectedSym ? `${selectedSym.label} (${symptomCode})` : "" },
+    { label: "증상 상세",  value: symptomDesc || "—" },
+    {
+      label: "예상 수리 비용",
+      value: selectedSym?.avgCost != null
+        ? `${selectedSym.avgCost.toLocaleString()} 원`
+        : "데이터 수집 중",
+      highlight: true,
+    },
+    { label: "배정 방식",  value: assignType === "AUTO" ? "자동 배정" : "수동 배정" },
+    ...(assignType === "MANUAL" && selectedEng ? [{ label: "선택 기사", value: `${selectedEng.name} 기사 (⭐ ${selectedEng.rating})` }] : []),
+    { label: "방문 지역",  value: regionSub ? `${regionParent} ${regionSub}` : "" },
+    { label: "상세 주소",  value: addressDetail },
+    { label: "방문 날짜",  value: schedDate },
+    { label: "방문 시간",  value: TIME_LABEL[schedTime] ?? "" },
+  ];
 
   return (
     <div className="cas-flow-wrap">
-      {/* 스텝 바 */}
-      <div className="cas-stepper">
-        {[
-          { n: 1, label: "제품 선택" },
-          { n: 2, label: "AI 진단 또는 A/S 신청" },
-          { n: 3, label: "예약 완료" },
-        ].map((s, i) => (
-          <div key={s.n} className="cas-stepper__item">
-            <div className={`cas-stepper__circle ${s.n === 1 ? "cas-stepper__circle--active" : ""}`}>
-              {s.n}
-            </div>
-            <span className={`cas-stepper__label ${s.n === 1 ? "cas-stepper__label--active" : ""}`}>
-              {s.label}
-            </span>
-            {i < 2 && <div className="cas-stepper__line">──────────→</div>}
-          </div>
-        ))}
-      </div>
+      <ASSteps step={step} />
 
-      {/* 바디 2열 */}
-      <div className="cas-flow-body">
+      {/* ── Step 1: 가전 선택 + 증상 입력 ── */}
+      {step === 1 && (
+        <div className="cas-req-body">
 
-        {/* ══ 좌측 메인 ══ */}
-        <div className="cas-flow-main">
-
-          {/* 제품 선택 */}
+          {/* 가전 선택 */}
           <div className="cas-flow-card">
-            <h3 className="cas-flow-card__title">문제가 발생한 제품을 선택해주세요</h3>
+            <h3 className="cas-flow-card__title">문제가 발생한 가전을 선택해주세요 <span className="cas-req-required">*</span></h3>
             <div className="cas-product-grid">
               {MY_APPLIANCES.map((a) => (
                 <button
                   key={a.id}
-                  className={`cas-product-card ${selectedAppliance?.id === a.id ? "cas-product-card--selected" : ""}`}
-                  onClick={() => setSelectedAppliance(a)}
+                  className={`cas-product-card ${appliance?.id === a.id ? "cas-product-card--selected" : ""}`}
+                  onClick={() => { setAppliance(a); setSymptomCode(""); }}
                 >
-                  {selectedAppliance?.id === a.id && (
+                  {appliance?.id === a.id && (
                     <span className="cas-product-card__check"><Check size={12} /></span>
                   )}
                   <div className="cas-product-card__img">{a.icon}</div>
@@ -75,138 +277,371 @@ function ASReserveFlow({ onClose }) {
                   <p className="cas-product-card__model">{a.model}</p>
                 </button>
               ))}
-              <button className="cas-product-card cas-product-card--add">
-                <div className="cas-product-card__img"><Plus size={22} strokeWidth={1.5} /></div>
-                <p className="cas-product-card__name">다른 제품<br />선택하기</p>
-              </button>
             </div>
           </div>
 
-          {/* AI 진단 배너 */}
-          <div className="cas-ai-banner">
-            <div className="cas-ai-banner__left">
-              <div className="cas-ai-banner__bot">🤖</div>
-              <div>
-                <p className="cas-ai-banner__title">AI 진단으로 약 60%의 간단한 고장은 출장 없이 해결할 수 있어요!</p>
-                <p className="cas-ai-banner__sub">빠르고 정확한 AI 진단을 먼저 경험해보세요.</p>
-              </div>
-            </div>
-            <div className="cas-ai-banner__stats">
-              <div className="cas-ai-banner__stat">
-                <span className="cas-ai-banner__stat-icon">⏱</span>
-                <p className="cas-ai-banner__stat-val">평균 3분 진단</p>
-                <p className="cas-ai-banner__stat-sub">빠른 문제 파악</p>
-              </div>
-              <div className="cas-ai-banner__stat">
-                <span className="cas-ai-banner__stat-icon">✅</span>
-                <p className="cas-ai-banner__stat-val">해결률 62%</p>
-                <p className="cas-ai-banner__stat-sub">출장 없이 해결</p>
-              </div>
-              <div className="cas-ai-banner__stat">
-                <span className="cas-ai-banner__stat-icon">💬</span>
-                <p className="cas-ai-banner__stat-val">24시간 상담</p>
-                <p className="cas-ai-banner__stat-sub">언제든 AI 상담</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 선택 카드: AI 자가진단 vs A/S 신청 */}
-          <div className="cas-choice-row">
-            <div className="cas-choice-card">
-              <div className="cas-choice-card__icon cas-choice-card__icon--ai">🤖</div>
-              <div className="cas-choice-card__body">
-                <p className="cas-choice-card__title">AI 자가 진단</p>
-                <p className="cas-choice-card__desc">증상을 입력하면 AI가 빠르게 원인과 방법을 안내해드립니다.</p>
-                <div className="cas-choice-card__tags">
-                  <span>평균 3분 소요</span>
-                  <span>해결률 62%</span>
-                </div>
-              </div>
-              <button className="cas-choice-btn cas-choice-btn--primary">AI 상담 시작 →</button>
-            </div>
-            <div className="cas-choice-card">
-              <div className="cas-choice-card__icon cas-choice-card__icon--as">👷</div>
-              <div className="cas-choice-card__body">
-                <p className="cas-choice-card__title">A/S 신청</p>
-                <p className="cas-choice-card__desc">기사 방문을 바로 예약하고 싶으신가요? 빠르게 접수해 드립니다.</p>
-                <div className="cas-choice-card__tags">
-                  <span>기사 방문</span>
-                  <span>예약 접수</span>
-                </div>
-              </div>
-              <button className="cas-choice-btn cas-choice-btn--outline">A/S 접수하기 →</button>
-            </div>
-          </div>
-
-          {/* 자주 발생하는 문제 */}
-          <div className="cas-flow-card">
-            <h3 className="cas-flow-card__title">자주 발생하는 문제</h3>
-            <div className="cas-quick-problems">
-              {QUICK_PROBLEMS.map((p, i) => (
-                <button key={i} className="cas-quick-problem">
-                  <span>{p.icon}</span>
-                  <span>{p.label}</span>
-                </button>
-              ))}
-            </div>
-            <p className="cas-quick-hint">원하는 증상이 없나요? AI 상담으로 정확한 진단을 받아보세요. <span className="cas-quick-hint__link">AI 상담 시작 →</span></p>
-          </div>
-        </div>
-
-        {/* ══ 우측 사이드바 ══ */}
-        <aside className="cas-flow-sidebar">
-
-          {/* 선택된 제품 */}
-          {selectedAppliance && (
-            <div className="cas-side-card">
-              <p className="cas-side-card__head" style={{ marginBottom: 12, fontWeight: 700, fontSize: 13 }}>선택된 제품</p>
-              <div className="cas-selected-product">
-                <div className="cas-selected-product__img">{selectedAppliance.icon}</div>
-                <div>
-                  <p className="cas-selected-product__name">{selectedAppliance.name}</p>
-                  <p className="cas-selected-product__model">{selectedAppliance.model}</p>
-                </div>
-              </div>
-              <div className="cas-product-meta">
-                <div className="cas-product-meta__row">
-                  <span>구매일</span><span>{selectedAppliance.purchased}</span>
-                </div>
-                <div className="cas-product-meta__row">
-                  <span>보증기간</span>
-                  <span className="cas-product-meta__warranty">{selectedAppliance.warranty} 까지<br /><em>보증기간 내</em></span>
-                </div>
-              </div>
-              <div className="cas-product-links">
-                <button className="cas-product-link">제품 매뉴얼 보기 →</button>
-                <button className="cas-product-link">제품 정보 확인 →</button>
+          {/* 증상 선택 */}
+          {appliance && (
+            <div className="cas-flow-card">
+              <h3 className="cas-flow-card__title">증상을 선택해주세요 <span className="cas-req-required">*</span></h3>
+              <div className="cas-symptom-grid">
+                {symptoms.map((s) => (
+                  <button
+                    key={s.code}
+                    className={`cas-symptom-chip ${symptomCode === s.code ? "cas-symptom-chip--active" : ""}`}
+                    onClick={() => setSymptomCode(s.code)}
+                  >
+                    <span className="cas-symptom-chip__label">{s.label}</span>
+                    <span className="cas-symptom-chip__desc">{s.desc}</span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {/* 최근 상담 내역 */}
-          <div className="cas-side-card">
-            <div className="cas-side-card__head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontWeight: 700, fontSize: 13 }}>최근 상담 내역</span>
-              <button className="cas-product-link">전체보기 →</button>
+          {/* 증상 상세 + 사진 */}
+          {symptomCode && (
+            <div className="cas-flow-card">
+              <h3 className="cas-flow-card__title">증상을 더 자세히 알려주세요 <span className="cas-req-optional">(선택)</span></h3>
+
+              <textarea
+                className="cas-symptom-textarea"
+                placeholder="예: 냉장고 아래 칸이 설정 온도보다 2~3도 높게 유지됩니다. 밤에 소리가 심해집니다."
+                value={symptomDesc}
+                onChange={(e) => setSymptomDesc(e.target.value)}
+                rows={3}
+              />
+
+              {/* 사진 첨부 (image_urls → JSON) */}
+              <p className="cas-upload-label">사진 첨부 <span className="cas-req-optional">(선택, 최대 5장)</span></p>
+              <div className="cas-img-row">
+                {images.map((img, i) => (
+                  <div key={i} className="cas-img-thumb">
+                    <img src={img.url} alt={`첨부${i + 1}`} />
+                    <button className="cas-img-remove" onClick={() => removeImage(i)}><X size={12} /></button>
+                  </div>
+                ))}
+                {images.length < 5 && (
+                  <div
+                    className="cas-img-add"
+                    onClick={() => imgRef.current?.click()}
+                  >
+                    <Upload size={18} />
+                    <span>추가</span>
+                    <input
+                      type="file" accept="image/*" multiple ref={imgRef} style={{ display: "none" }}
+                      onChange={(e) => addImages(e.target.files)}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="cas-recent-list">
-              {RECENT_HISTORY.map((h, i) => (
-                <div key={i} className="cas-recent-item">
-                  <div className={`cas-recent-icon cas-recent-icon--${h.color}`}>
-                    {h.color === "blue" ? <Bot size={13} /> : <Wrench size={13} />}
+          )}
+
+          <div className="cas-req-footer">
+            <button className="cas-req-btn-secondary" onClick={onClose}>취소</button>
+            <button className="cas-req-btn-primary" disabled={!step1Valid} onClick={() => setStep(2)}>
+              다음 — 방문 일정 <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 2: 방문 일정 ── */}
+      {step === 2 && (
+        <div className="cas-req-body">
+
+          {/* 배정 방식 선택 */}
+          <div className="cas-flow-card">
+            <h3 className="cas-flow-card__title">기사 배정 방식을 선택해주세요 <span className="cas-req-required">*</span></h3>
+            <div className="cas-assign-row">
+              <button
+                className={`cas-assign-card ${assignType === "AUTO" ? "cas-assign-card--active" : ""}`}
+                onClick={() => { setAssignType("AUTO"); setSelectedEng(null); setSchedDate(""); setSchedTime(""); }}
+              >
+                {assignType === "AUTO" && <span className="cas-assign-check"><Check size={11} /></span>}
+                <div className="cas-assign-icon">🤖</div>
+                <p className="cas-assign-title">자동 배정</p>
+                <p className="cas-assign-desc">지역·브랜드·보유 기술 기반 우선순위 점수로 최적의 기사를 자동으로 배정해 드립니다.</p>
+                <div className="cas-assign-tags">
+                  <span>빠른 접수</span><span>최적 매칭</span>
+                </div>
+              </button>
+              <button
+                className={`cas-assign-card ${assignType === "MANUAL" ? "cas-assign-card--active" : ""}`}
+                onClick={() => { setAssignType("MANUAL"); setSchedDate(""); setSchedTime(""); }}
+              >
+                {assignType === "MANUAL" && <span className="cas-assign-check"><Check size={11} /></span>}
+                <div className="cas-assign-icon">👷</div>
+                <p className="cas-assign-title">수동 배정</p>
+                <p className="cas-assign-desc">지역·브랜드·보유 기술 필터로 기사를 직접 검색하고 선택할 수 있습니다.</p>
+                <div className="cas-assign-tags">
+                  <span>직접 선택</span><span>일정 조율</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* 방문 지역 + 상세 주소 (공통) */}
+          {assignType && (
+            <div className="cas-flow-card">
+              <h3 className="cas-flow-card__title"><MapPin size={15} style={{ verticalAlign: "middle" }} /> 방문 지역 <span className="cas-req-required">*</span></h3>
+              <div className="cas-region-row">
+                <select className="cas-region-select" value={regionParent} onChange={(e) => handleRegionParent(e.target.value)}>
+                  <option value="">시·도 선택</option>
+                  {Object.keys(REGIONS).map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <select className="cas-region-select" value={regionSub} onChange={(e) => setRegionSub(e.target.value)} disabled={!regionParent}>
+                  <option value="">구·시 선택</option>
+                  {subRegions.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <label className="cas-field-label" style={{ marginTop: 14 }}>
+                상세 주소 <span className="cas-req-required">*</span>
+                <span className="cas-field-hint"> (동·호수·번지 등)</span>
+              </label>
+              <input
+                className="cas-addr-input"
+                placeholder="예: 역삼동 123-45, 101동 502호"
+                value={addressDetail}
+                onChange={(e) => setAddressDetail(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* ── 자동 배정: 날짜·시간 자유 선택 ── */}
+          {assignType === "AUTO" && (
+            <div className="cas-flow-card">
+              <h3 className="cas-flow-card__title"><Calendar size={15} style={{ verticalAlign: "middle" }} /> 희망 방문 날짜 <span className="cas-req-required">*</span></h3>
+              <p className="cas-req-sub">배정된 기사의 일정에 따라 실제 방문 날짜가 조정될 수 있습니다.</p>
+              <input
+                type="date"
+                className="cas-date-input"
+                value={schedDate}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => { setSchedDate(e.target.value); setSchedTime(""); }}
+              />
+              {schedDate && (
+                <>
+                  <h3 className="cas-flow-card__title" style={{ marginTop: 18 }}>희망 시간대 <span className="cas-req-required">*</span></h3>
+                  <div className="cas-time-slots">
+                    {TIME_SLOTS.map((t) => (
+                      <button
+                        key={t.value}
+                        className={`cas-time-chip ${schedTime === t.value ? "cas-time-chip--active" : ""}`}
+                        onClick={() => setSchedTime(t.value)}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
                   </div>
-                  <div className="cas-recent-info">
-                    <p className="cas-recent-title">{h.appliance}</p>
-                    <p className="cas-recent-date">{h.date}</p>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── 수동 배정: 기사 검색 + 선택 + 일정 ── */}
+          {assignType === "MANUAL" && (
+            <>
+              {/* 기사 필터 */}
+              <div className="cas-flow-card">
+                <h3 className="cas-flow-card__title">기사 필터</h3>
+                <div className="cas-eng-filter-section">
+                  <div className="cas-eng-filter-group">
+                    <p className="cas-eng-filter-label">브랜드</p>
+                    <div className="cas-filter-chips">
+                      <button
+                        className={`cas-filter-chip ${engBrand === "" ? "cas-filter-chip--active" : ""}`}
+                        onClick={() => setEngBrand("")}
+                      >전체</button>
+                      {ALL_BRANDS.map(b => (
+                        <button
+                          key={b}
+                          className={`cas-filter-chip ${engBrand === b ? "cas-filter-chip--active" : ""}`}
+                          onClick={() => setEngBrand(engBrand === b ? "" : b)}
+                        >{b}</button>
+                      ))}
+                    </div>
                   </div>
-                  <span className={`cas-recent-badge cas-recent-badge--${h.color}`}>{h.type}</span>
+                  <div className="cas-eng-filter-group">
+                    <p className="cas-eng-filter-label">보유 기술</p>
+                    <div className="cas-filter-chips">
+                      <button
+                        className={`cas-filter-chip ${engSkill === "" ? "cas-filter-chip--active" : ""}`}
+                        onClick={() => setEngSkill("")}
+                      >전체</button>
+                      {ALL_SKILLS.map(s => (
+                        <button
+                          key={s}
+                          className={`cas-filter-chip ${engSkill === s ? "cas-filter-chip--active" : ""}`}
+                          onClick={() => setEngSkill(engSkill === s ? "" : s)}
+                        >{s}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 기사 목록 */}
+              <div className="cas-flow-card">
+                <h3 className="cas-flow-card__title">기사 선택 <span className="cas-req-required">*</span>
+                  <span className="cas-req-optional"> — {filteredEngs.length}명</span>
+                </h3>
+                {filteredEngs.length === 0 ? (
+                  <p className="cas-eng-empty">필터 조건에 맞는 기사가 없습니다.</p>
+                ) : (
+                  <div className="cas-eng-grid">
+                    {filteredEngs.map(eng => (
+                      <button
+                        key={eng.id}
+                        className={`cas-eng-card ${selectedEng?.id === eng.id ? "cas-eng-card--selected" : ""}`}
+                        onClick={() => handleSelectEng(eng)}
+                      >
+                        {selectedEng?.id === eng.id && <span className="cas-assign-check"><Check size={11} /></span>}
+                        <div className="cas-eng-card__avatar">{eng.name[0]}</div>
+                        <p className="cas-eng-card__name">{eng.name} 기사</p>
+                        <p className="cas-eng-card__rating">⭐ {eng.rating} <span>({eng.reviewCount}건)</span></p>
+                        <p className="cas-eng-card__exp">경력 {eng.experience}</p>
+                        <div className="cas-eng-card__brands">
+                          {eng.brands.map(b => <span key={b}>{b}</span>)}
+                        </div>
+                        <div className="cas-eng-card__skills">
+                          {eng.skills.map(s => <span key={s}>{s}</span>)}
+                        </div>
+                        <div className="cas-eng-card__tags">
+                          {eng.tags.map(t => <span key={t} className="cas-eng-card__tag">{t}</span>)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 선택 기사 가능 날짜 */}
+              {selectedEng && (
+                <div className="cas-flow-card">
+                  <h3 className="cas-flow-card__title">
+                    <Calendar size={15} style={{ verticalAlign: "middle" }} /> {selectedEng.name} 기사 가능 날짜 <span className="cas-req-required">*</span>
+                  </h3>
+                  <p className="cas-req-sub">기사님의 스케줄 기반으로 예약 가능한 날짜입니다.</p>
+                  <div className="cas-avail-dates">
+                    {availableDates.map(d => {
+                      const dt = new Date(d);
+                      const weekday = ["일","월","화","수","목","금","토"][dt.getDay()];
+                      const label = `${dt.getMonth()+1}/${dt.getDate()} (${weekday})`;
+                      return (
+                        <button
+                          key={d}
+                          className={`cas-avail-date ${schedDate === d ? "cas-avail-date--active" : ""} ${weekday === "토" ? "cas-avail-date--sat" : ""} ${weekday === "일" ? "cas-avail-date--sun" : ""}`}
+                          onClick={() => handleSchedDate(d)}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 선택된 날짜의 가능 시간 */}
+                  {schedDate && (
+                    <>
+                      <h3 className="cas-flow-card__title" style={{ marginTop: 18 }}>가능 시간대 <span className="cas-req-required">*</span></h3>
+                      <div className="cas-time-slots">
+                        {availableTimes.map(t => (
+                          <button
+                            key={t}
+                            className={`cas-time-chip ${schedTime === t ? "cas-time-chip--active" : ""}`}
+                            onClick={() => setSchedTime(t)}
+                          >
+                            {TIME_LABEL[t]}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="cas-req-footer">
+            <button className="cas-req-btn-secondary" onClick={() => setStep(1)}><ArrowLeft size={14} /> 이전</button>
+            <button className="cas-req-btn-primary" disabled={!step2Valid} onClick={() => setStep(3)}>
+              다음 — 최종 확인 <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 3: 최종 확인 ── */}
+      {step === 3 && (
+        <div className="cas-req-body">
+          <div className="cas-flow-card">
+            <h3 className="cas-flow-card__title">신청 내용을 확인해주세요</h3>
+            <p className="cas-req-sub">접수 후 대행사 배정 → 기사 확정 순으로 진행됩니다. 초기 상태: <strong>접수 대기(PENDING)</strong></p>
+
+            {images.length > 0 && (
+              <div className="cas-img-row" style={{ marginBottom: 16 }}>
+                {images.map((img, i) => (
+                  <div key={i} className="cas-img-thumb cas-img-thumb--confirm">
+                    <img src={img.url} alt={`첨부${i + 1}`} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="cas-confirm-table">
+              {confirmRows.map(({ label, value, highlight }) => (
+                <div key={label} className={`cas-confirm-row${highlight ? " cas-confirm-row--highlight" : ""}`}>
+                  <span className="cas-confirm-row__label">{label}</span>
+                  <span className="cas-confirm-row__value">{value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-        </aside>
-      </div>
+          <div className="cas-req-footer">
+            <button className="cas-req-btn-secondary" onClick={() => setStep(2)}><ArrowLeft size={14} /> 이전</button>
+            <button className="cas-req-btn-primary" onClick={() => setStep(4)}>
+              A/S 신청 접수 <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 4: 접수 완료 ── */}
+      {step === 4 && (
+        <div className="cas-req-body cas-req-body--complete">
+          <div className="cas-complete-icon">📋</div>
+          <h2 className="cas-complete-title">A/S 신청이 접수되었어요!</h2>
+          <p className="cas-complete-sub">
+            {assignType === "AUTO"
+              ? "대행사에서 최적 기사를 배정하면 알림으로 안내해 드립니다."
+              : `${selectedEng?.name} 기사님과 방문 일정이 확정되었습니다.`}
+          </p>
+
+          <div className="cas-complete-card">
+            <div className="cas-complete-card__appliance">
+              <span style={{ fontSize: 32 }}>{appliance?.icon}</span>
+              <div>
+                <p className="cas-complete-card__name">{appliance?.name}</p>
+                <p className="cas-complete-card__model">{appliance?.model}</p>
+              </div>
+            </div>
+            <div className="cas-confirm-table" style={{ marginTop: 12 }}>
+              {confirmRows.slice(1).map(({ label, value, highlight }) => (
+                <div key={label} className={`cas-confirm-row${highlight ? " cas-confirm-row--highlight" : ""}`}>
+                  <span className="cas-confirm-row__label">{label}</span>
+                  <span className="cas-confirm-row__value">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="cas-req-footer cas-req-footer--center">
+            <button className="cas-req-btn-primary" onClick={onClose}>신청 내역으로 돌아가기</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -304,7 +739,7 @@ export default function CustomerAS() {
             <ArrowLeft size={18} /> 뒤로
           </button>
         </div>
-        <ASReserveFlow onClose={() => setShowReserve(false)} />
+        <ASRequestFlow onClose={() => setShowReserve(false)} />
       </div>
     );
   }
@@ -339,7 +774,7 @@ export default function CustomerAS() {
           {/* 목록 헤더 */}
           <div className="cas-list-header">
             <h2>내 신청 내역</h2>
-            <button className="cas-reserve-btn" onClick={() => setShowReserve(true)}>A/S 예약하기</button>
+            <button className="cas-reserve-btn" onClick={() => setShowReserve(true)}>+ A/S 신청하기</button>
           </div>
 
           {/* 필터 탭 */}
@@ -480,7 +915,7 @@ export default function CustomerAS() {
           <div className="cas-side-card cas-side-card--cta">
             <p className="cas-cta-title">새 A/S 신청</p>
             <p className="cas-cta-desc">가전 고장이나 점검이 필요하신가요?</p>
-            <button className="cas-cta-btn" onClick={() => setShowReserve(true)}>A/S 예약하기 <ChevronRight size={13} /></button>
+            <button className="cas-cta-btn" onClick={() => setShowReserve(true)}>A/S 신청하기 <ChevronRight size={13} /></button>
           </div>
 
         </aside>

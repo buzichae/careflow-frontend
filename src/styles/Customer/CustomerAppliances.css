@@ -280,7 +280,9 @@
 
 /* 스텝 바 */
 .car-stepper {
-  display: flex; align-items: center;
+  display: flex; 
+  align-items: center;
+  justify-content: center;
   background: #fff; border-radius: var(--radius-md);
   border: 1px solid var(--border); padding: 20px 32px; gap: 0;
 }
