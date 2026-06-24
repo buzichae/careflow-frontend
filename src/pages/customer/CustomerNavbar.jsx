@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../../styles/Customer/CustomerNavbar.css";
 
 const PAGE_INFO = {
@@ -11,6 +11,7 @@ const PAGE_INFO = {
   "/customer/payment":        { title: "정산 / 결제",         subtitle: "이번 달 수리 비용과 결제 현황을 확인하세요." },
   "/customer/notice":         { title: "알림",                subtitle: "중요한 서비스 알림과 시스템 소식을 확인하세요." },
   "/customer/market":         { title: "중고 마켓",           subtitle: "중고 가전을 안전하게 거래하세요." },
+  "/customer/mypage":         { title: "마이페이지",          subtitle: "내 정보를 확인하고 수정하세요." },
 };
 
 export default function CustomerNavbar() {
@@ -18,6 +19,7 @@ export default function CustomerNavbar() {
   const dropdownRef = useRef(null);
   const location = useLocation();
 
+  const navigate = useNavigate();
   const customer = { name: "플로우", role: "고객" };
   const pageInfo = PAGE_INFO[location.pathname] || { title: "", subtitle: "" };
 
@@ -34,7 +36,7 @@ export default function CustomerNavbar() {
   return (
     <div className="customer-navbar">
       <div className="customer-navbar__left">
-        <h2 className="customer-navbar__title">{pageInfo.title}</h2>
+        <h1 className="customer-navbar__title">{pageInfo.title}</h1>
         {pageInfo.subtitle && <p className="customer-navbar__subtitle">{pageInfo.subtitle}</p>}
       </div>
 
@@ -50,7 +52,9 @@ export default function CustomerNavbar() {
           </button>
           {dropdownOpen && (
             <div className="customer-dropdown">
-              <button className="customer-dropdown__item"><User size={14} /> 내 정보</button>
+              <button className="customer-dropdown__item" onClick={() => { setDropdownOpen(false); navigate("/customer/mypage"); }}>
+                <User size={14} /> 내 정보
+              </button>
               <button className="customer-dropdown__item"><Settings size={14} /> 설정</button>
               <div className="customer-dropdown__divider" />
               <button className="customer-dropdown__item customer-dropdown__item--logout" onClick={() => alert("로그아웃")}>

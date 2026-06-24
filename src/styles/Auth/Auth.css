@@ -498,6 +498,48 @@
   pointer-events: none;
 }
 
+/* 거주지 입력 */
+.auth-region-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.auth-addr-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  background: #f0f0ff;
+  border: 1px solid #dddaf8;
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin-bottom: 2px;
+}
+.auth-addr-banner__icon { color: #5B4FF5; flex-shrink: 0; margin-top: 2px; }
+.auth-addr-banner p { font-size: 12px; color: #4a4a6a; line-height: 1.5; margin: 0; }
+.auth-addr-banner strong { color: #5B4FF5; }
+.auth-addr-preview {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #888;
+  background: #f8f8fc;
+  border-radius: 7px;
+  padding: 7px 10px;
+  margin-top: -4px;
+}
+.auth-addr-preview strong { color: #3a3a5c; }
+
+/* 유효성 오류 메시지 */
+.auth-field-error {
+  font-size: 12px;
+  color: #e53e3e;
+  margin-top: -8px;
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
 /* 체크박스 행 */
 .auth-row {
   display: flex;

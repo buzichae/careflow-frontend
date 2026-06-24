@@ -1,9 +1,21 @@
 import { useState } from "react";
-import { Eye, EyeOff, ChevronDown, Check, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ChevronDown, Check, ArrowLeft, MapPin, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import { ROLES } from "./authConstants";
 import "../../styles/Auth/Auth.css";
+
+/* 지역 데이터 — regions 테이블 (depth=1 → depth=2) */
+const REGIONS = {
+  서울특별시: ["강남구", "강서구", "노원구", "마포구", "서초구", "송파구", "용산구", "종로구"],
+  경기도:     ["부천시", "성남시", "수원시", "시흥시", "안양시", "의정부시", "화성시"],
+  인천광역시: ["남동구", "부평구", "서구",   "연수구", "중구"],
+  부산광역시: ["동래구", "부산진구", "사상구", "수영구", "해운대구"],
+  대구광역시: ["달서구", "동구",    "북구",   "수성구", "중구"],
+  대전광역시: ["대덕구", "서구",    "유성구", "중구"],
+  광주광역시: ["광산구", "남구",    "동구",   "북구",   "서구"],
+  울산광역시: ["남구",   "동구",    "북구",   "울주군", "중구"],
+};
 
 function TopNav({ showBack, onBack }) {
   return (
@@ -134,23 +146,51 @@ function RoleSelect({ onSelect }) {
 function SignupForm({ roleKey, onBack }) {
   const navigate = useNavigate();
   const role = ROLES.find((r) => r.key === roleKey) || ROLES[0];
-  const [step, setStep] = useState(1);
+  const isCustomer = roleKey === "customer";
+
+  const [step, setStep]   = useState(1);
   const [showPw, setShowPw]   = useState(false);
   const [showPw2, setShowPw2] = useState(false);
-  const [email,    setEmail]    = useState("");
-  const [pw,       setPw]       = useState("");
-  const [pw2,      setPw2]      = useState("");
-  const [name,     setName]     = useState("");
-  const [phone,    setPhone]    = useState("");
+
+  /* 공통 */
+  const [email,   setEmail]   = useState("");
+  const [pw,      setPw]      = useState("");
+  const [pw2,     setPw2]     = useState("");
+  const [name,    setName]    = useState("");
+  const [phone,   setPhone]   = useState("");
+  const [agree,   setAgree]   = useState(false);
+
+  /* 고객 전용 — 거주지 (선택) */
+  const [regionParent,   setRegionParent]   = useState("");
+  const [regionSub,      setRegionSub]      = useState("");
+  const [addressDetail,  setAddressDetail]  = useState("");
+
+  /* 대행사 / 기사 전용 */
   const [company,  setCompany]  = useState("");
   const [bizNum,   setBizNum]   = useState("");
   const [agencyId, setAgencyId] = useState("");
-  const [agree,    setAgree]    = useState(false);
+
+  const subRegions = regionParent ? REGIONS[regionParent] : [];
+
+  /* 비밀번호 확인 일치 여부 */
+  const pwMatch = !pw2 || pw === pw2;
+
+  /* 스텝별 제출 버튼 활성화 조건 */
+  const step1Disabled = (() => {
+    if (!agree) return true;
+    if (isCustomer) return !email || !name || !pw || !pw2 || !pwMatch;
+    return !email || !pw;
+  })();
 
   function handleNext(e) {
     e.preventDefault();
     if (step < 3) setStep(step + 1);
     else navigate("/auth/login");
+  }
+
+  function handleRegionParent(v) {
+    setRegionParent(v);
+    setRegionSub("");
   }
 
   return (
@@ -164,8 +204,19 @@ function SignupForm({ roleKey, onBack }) {
           <div className="auth-card auth-card--form">
             <form onSubmit={handleNext} className="auth-form">
 
+              {/* ── Step 1: 필수 계정 정보 ── */}
               {step === 1 && (
                 <>
+                  {/* 고객: 이름을 필수로 Step 1에서 수집 */}
+                  {isCustomer && (
+                    <AuthInput
+                      label="이름"
+                      placeholder="이름을 입력해주세요"
+                      value={name}
+                      onChange={setName}
+                    />
+                  )}
+
                   <AuthInput
                     label="이메일 주소"
                     type="email"
@@ -186,20 +237,26 @@ function SignupForm({ roleKey, onBack }) {
                       </button>
                     }
                   />
-                  {roleKey === "customer" && (
-                    <AuthInput
-                      label="비밀번호 확인"
-                      type={showPw2 ? "text" : "password"}
-                      placeholder="비밀번호를 다시 입력해주세요"
-                      value={pw2}
-                      onChange={setPw2}
-                      rightEl={
-                        <button type="button" className="auth-eye-btn" onClick={() => setShowPw2(!showPw2)}>
-                          {showPw2 ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      }
-                    />
+                  {isCustomer && (
+                    <>
+                      <AuthInput
+                        label="비밀번호 확인"
+                        type={showPw2 ? "text" : "password"}
+                        placeholder="비밀번호를 다시 입력해주세요"
+                        value={pw2}
+                        onChange={setPw2}
+                        rightEl={
+                          <button type="button" className="auth-eye-btn" onClick={() => setShowPw2(!showPw2)}>
+                            {showPw2 ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        }
+                      />
+                      {pw2 && !pwMatch && (
+                        <p className="auth-field-error">비밀번호가 일치하지 않습니다.</p>
+                      )}
+                    </>
                   )}
+
                   {roleKey === "agency" && (
                     <>
                       <AuthInput label="회사명" placeholder="회사명을 입력해주세요" value={company} onChange={setCompany} />
@@ -224,6 +281,7 @@ function SignupForm({ roleKey, onBack }) {
                       </div>
                     </>
                   )}
+
                   <label className="auth-checkbox-label auth-checkbox-label--block">
                     <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
                     <span>
@@ -237,14 +295,86 @@ function SignupForm({ roleKey, onBack }) {
                 </>
               )}
 
+              {/* ── Step 2: 추가 정보 ── */}
               {step === 2 && (
                 <>
-                  {roleKey === "customer" && (
+                  {/* 고객: 연락처 + 거주지 (모두 선택) */}
+                  {isCustomer && (
                     <>
-                      <AuthInput label="이름 (선택)" placeholder="이름을 입력해주세요" value={name} onChange={setName} />
-                      <AuthInput label="휴대폰 번호 (선택)" placeholder="- 없이 숫자만 입력해주세요" value={phone} onChange={setPhone} />
+                      <AuthInput
+                        label="연락처 (선택)"
+                        placeholder="- 없이 숫자만 입력해주세요"
+                        value={phone}
+                        onChange={setPhone}
+                      />
+
+                      {/* 거주지 안내 배너 */}
+                      <div className="auth-addr-banner">
+                        <MapPin size={14} className="auth-addr-banner__icon" />
+                        <p>
+                          거주 지역을 입력하면 <strong>A/S 신청 시 방문 지역이 자동으로 설정</strong>됩니다.
+                          입력하지 않아도 신청 시 직접 선택할 수 있어요.
+                        </p>
+                      </div>
+
+                      {/* 거주 지역 */}
+                      <div className="auth-input-wrap">
+                        <label className="auth-label">
+                          거주 지역 (선택)
+                        </label>
+                        <div className="auth-region-row">
+                          <div className="auth-input-box auth-input-box--select">
+                            <select
+                              className="auth-select"
+                              value={regionParent}
+                              onChange={(e) => handleRegionParent(e.target.value)}
+                            >
+                              <option value="">시·도 선택</option>
+                              {Object.keys(REGIONS).map(r => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={15} className="auth-select-arrow" />
+                          </div>
+                          <div className="auth-input-box auth-input-box--select">
+                            <select
+                              className="auth-select"
+                              value={regionSub}
+                              onChange={(e) => setRegionSub(e.target.value)}
+                              disabled={!regionParent}
+                            >
+                              <option value="">구·시 선택</option>
+                              {subRegions.map(r => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={15} className="auth-select-arrow" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 상세 주소 */}
+                      <AuthInput
+                        label="상세 주소 (선택)"
+                        placeholder="동·호수·번지 등을 입력해주세요"
+                        value={addressDetail}
+                        onChange={setAddressDetail}
+                      />
+
+                      {(regionParent || addressDetail) && (
+                        <div className="auth-addr-preview">
+                          <Info size={13} />
+                          <span>
+                            입력한 주소 —{" "}
+                            <strong>
+                              {[regionParent, regionSub, addressDetail].filter(Boolean).join(" ")}
+                            </strong>
+                          </span>
+                        </div>
+                      )}
                     </>
                   )}
+
                   {roleKey === "agency" && (
                     <>
                       <AuthInput label="대표자명" placeholder="대표자 이름을 입력해주세요" value={name} onChange={setName} />
@@ -260,6 +390,7 @@ function SignupForm({ roleKey, onBack }) {
                 </>
               )}
 
+              {/* ── Step 3: 가입 완료 ── */}
               {step === 3 && (
                 <div className="auth-complete">
                   <div className="auth-complete__avatar" style={{ background: role.bg }}>
@@ -272,8 +403,19 @@ function SignupForm({ roleKey, onBack }) {
                   </p>
                   <div className="auth-complete__info">
                     <div className="auth-complete__info-row">
-                      <span>이메일</span><span>{email || "user@careflow.kr"}</span>
+                      <span>이메일</span><span>{email}</span>
                     </div>
+                    {isCustomer && name && (
+                      <div className="auth-complete__info-row">
+                        <span>이름</span><span>{name}</span>
+                      </div>
+                    )}
+                    {isCustomer && (regionParent || addressDetail) && (
+                      <div className="auth-complete__info-row">
+                        <span>거주지</span>
+                        <span>{[regionParent, regionSub, addressDetail].filter(Boolean).join(" ") || "—"}</span>
+                      </div>
+                    )}
                     <div className="auth-complete__info-row">
                       <span>계정 유형</span>
                       <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -289,9 +431,9 @@ function SignupForm({ roleKey, onBack }) {
                 type="submit"
                 className="auth-submit-btn"
                 style={{ background: role.color }}
-                disabled={step === 1 && !agree}
+                disabled={step === 1 ? step1Disabled : false}
               >
-                {step === 3 ? "로그인하러 가기" : "다음"}
+                {step === 2 && isCustomer ? "건너뛰기 / 다음" : step === 3 ? "로그인하러 가기" : "다음"}
               </button>
             </form>
 
