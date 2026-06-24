@@ -1,276 +1,313 @@
 import { useState, useRef } from "react";
-import { Plus, CalendarCheck, AlertTriangle, ShieldCheck, ArrowLeft, Upload, X, Check, ChevronRight, RotateCcw, ChevronDown } from "lucide-react";
+import { Plus, CalendarCheck, AlertTriangle, ShieldCheck, Upload, X, Check, ChevronRight, ChevronDown } from "lucide-react";
 import "../../styles/Customer/CustomerAppliances.css";
 
-/* ─────────────────────────────────
-   가전 등록 플로우
-───────────────────────────────── */
-const STEPS = ["기본 정보", "상세 정보", "구매 정보", "등록 완료"];
 
-const PARSED_RESULT = {
-  type: "냉장고", brand: "LG", name: "LG 디오스 냉장고",
-  model: "M870SN75", purchased: "2024.05.18", store: "LG 베스트샵",
-  price: "2,350,000원", warranty: "2024.05.18 ~ 2027.05.17 (3년)",
+
+/* ─────────────────────────────────
+   카테고리 데이터
+───────────────────────────────── */
+const CATEGORIES = {
+  1: { label: "주방가전", sub: { 11: "냉장고", 12: "전기밥솥", 13: "인덕션", 14: "오븐", 15: "식기세척기" } },
+  2: { label: "생활가전", sub: { 21: "세탁기", 22: "건조기", 23: "에어컨", 24: "공기청정기", 25: "선풍기", 26: "청소기" } },
+  3: { label: "영상가전", sub: { 31: "TV", 32: "빔프로젝터" } },
+  4: { label: "음향가전", sub: { 41: "사운드바", 42: "홈시어터", 43: "스피커" } },
 };
 
+const STEPS = ["정보 입력", "내용 확인", "등록 완료"];
+
+const EMPTY_FORM = {
+  categoryParent: "",
+  categorySub: "",
+  brand: "",
+  modelName: "",
+  serialNumber: "",
+  purchaseDate: "",
+  warrantyExpiry: "",
+  status: "정상",
+};
+
+function isFormValid(form) {
+  return (
+    form.categoryParent &&
+    form.categorySub &&
+    form.brand.trim() &&
+    form.modelName.trim() &&
+    form.serialNumber.trim() &&
+    form.purchaseDate &&
+    form.warrantyExpiry &&
+    form.status
+  );
+}
+
+/* ─── 스텝 바 ─── */
+function Stepper({ step }) {
+  return (
+    <div className="car-stepper">
+      {STEPS.map((label, i) => {
+        const n = i + 1;
+        const done = step > n;
+        const active = step === n;
+        return (
+          <div key={n} className="car-stepper__item">
+            <div className={`car-stepper__circle ${active ? "car-stepper__circle--active" : ""} ${done ? "car-stepper__circle--done" : ""}`}>
+              {done ? <Check size={12} /> : n}
+            </div>
+            <span className={`car-stepper__label ${active ? "car-stepper__label--active" : ""} ${done ? "car-stepper__label--done" : ""}`}>
+              {label}
+            </span>
+            {i < STEPS.length - 1 && (
+              <div className={`car-stepper__line ${done ? "car-stepper__line--done" : ""}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── 등록 플로우 ─── */
 function ApplianceRegisterFlow({ onClose }) {
   const [step, setStep] = useState(1);
-  const [method, setMethod] = useState(null);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [form, setForm] = useState({ ...PARSED_RESULT });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [imageFile, setImageFile] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
   const fileRef = useRef(null);
 
-  function handleFile(file) {
+  const subCategories = form.categoryParent ? CATEGORIES[form.categoryParent].sub : {};
+
+  function handleChange(k, v) {
+    setForm((prev) => {
+      const next = { ...prev, [k]: v };
+      if (k === "categoryParent") next.categorySub = "";
+      return next;
+    });
+  }
+
+  function handleImage(file) {
     if (!file) return;
-    setUploadedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setImageFile(file);
+    setImageUrl(URL.createObjectURL(file));
   }
 
   function handleDrop(e) {
     e.preventDefault();
-    handleFile(e.dataTransfer.files[0]);
+    handleImage(e.dataTransfer.files[0]);
   }
 
-  function handleFormChange(k, v) {
-    setForm((prev) => ({ ...prev, [k]: v }));
-  }
+  const categoryLabel =
+    form.categoryParent && form.categorySub
+      ? `${CATEGORIES[form.categoryParent].label} > ${subCategories[form.categorySub]}`
+      : "";
+
+  const CONFIRM_ROWS = [
+    { label: "카테고리",     value: categoryLabel },
+    { label: "브랜드",       value: form.brand },
+    { label: "모델명",       value: form.modelName },
+    { label: "시리얼 번호",  value: form.serialNumber },
+    { label: "구매 일자",    value: form.purchaseDate },
+    { label: "보증 만료일",  value: form.warrantyExpiry },
+    { label: "가전 상태",    value: form.status },
+  ];
 
   return (
     <div className="car-flow-wrap">
-      {/* 스텝 바 */}
-      <div className="car-stepper">
-        {STEPS.map((label, i) => {
-          const n = i + 1;
-          const done = step > n;
-          const active = step === n;
-          return (
-            <div key={n} className="car-stepper__item">
-              <div className={`car-stepper__circle ${active ? "car-stepper__circle--active" : ""} ${done ? "car-stepper__circle--done" : ""}`}>
-                {done ? <Check size={12} /> : n}
-              </div>
-              <span className={`car-stepper__label ${active ? "car-stepper__label--active" : ""} ${done ? "car-stepper__label--done" : ""}`}>
-                {label}
-              </span>
-              {i < STEPS.length - 1 && (
-                <div className={`car-stepper__line ${done ? "car-stepper__line--done" : ""}`} />
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <Stepper step={step} />
 
-      {/* Step 1: 등록 방법 선택 */}
+      {/* ── Step 1: 정보 입력 ── */}
       {step === 1 && (
         <div className="car-step-body">
-          <h2 className="car-step-title">등록 방법을 선택해주세요</h2>
-          <p className="car-step-sub">원하는 방법으로 쉽고 빠르게 가전을 등록할 수 있어요.</p>
-          <div className="car-method-grid">
-            {[
-              { key: "direct", icon: "✏️", title: "직접 입력", desc: "제품 정보를 직접 입력하여 가전을 등록합니다." },
-              { key: "receipt", icon: "📷", title: "영수증 등록", desc: "영수증을 촬영하거나 사진을 올려 제품 정보를 자동으로 입력해드립니다." },
-              { key: "qr", icon: "🔲", title: "QR 코드 스캔", desc: "제품의 QR 코드를 스캔하여 간편하게 등록합니다." },
-            ].map((m) => (
-              <button
-                key={m.key}
-                className={`car-method-card ${method === m.key ? "car-method-card--selected" : ""}`}
-                onClick={() => setMethod(m.key)}
-              >
-                {method === m.key && <span className="car-method-check"><Check size={11} /></span>}
-                <div className="car-method-icon">{m.icon}</div>
-                <p className="car-method-title">{m.title}</p>
-                <p className="car-method-desc">{m.desc}</p>
-              </button>
-            ))}
+          <h2 className="car-step-title">가전 정보를 입력해주세요</h2>
+          <p className="car-step-sub">필수 항목을 모두 입력하면 다음 단계로 진행할 수 있습니다.</p>
+
+          <div className="car-input-layout">
+            {/* 왼쪽: 이미지 업로드 */}
+            <div className="car-input-image-col">
+              <p className="car-input-section-label">제품 이미지</p>
+              {!imageUrl ? (
+                <div
+                  className="car-upload-zone car-upload-zone--sm"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <input
+                    type="file" accept="image/*" ref={fileRef} style={{ display: "none" }}
+                    onChange={(e) => handleImage(e.target.files[0])}
+                  />
+                  <div className="car-upload-icon"><Upload size={22} /></div>
+                  <p className="car-upload-text" style={{ fontSize: 12 }}>클릭 또는 드래그</p>
+                  <p className="car-upload-hint">JPG, PNG (최대 10MB)</p>
+                </div>
+              ) : (
+                <div className="car-preview-wrap" style={{ alignItems: "center" }}>
+                  <div className="car-preview-img-wrap">
+                    <img src={imageUrl} alt="제품" className="car-confirm-preview-img" />
+                    <button className="car-preview-remove" onClick={() => { setImageFile(null); setImageUrl(null); }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <p className="car-preview-name" style={{ fontSize: 11 }}>{imageFile?.name}</p>
+                </div>
+              )}
+            </div>
+
+            {/* 오른쪽: 폼 필드 */}
+            <div className="car-input-fields-col">
+              {/* 카테고리 */}
+              <p className="car-input-section-label">카테고리 <span className="car-required">*</span></p>
+              <div className="car-category-row">
+                <div className="car-select-wrap">
+                  <select
+                    value={form.categoryParent}
+                    onChange={(e) => handleChange("categoryParent", e.target.value)}
+                    className="car-select"
+                  >
+                    <option value="">대분류 선택</option>
+                    {Object.entries(CATEGORIES).map(([id, { label }]) => (
+                      <option key={id} value={id}>{label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="car-select-icon" />
+                </div>
+                <div className="car-select-wrap">
+                  <select
+                    value={form.categorySub}
+                    onChange={(e) => handleChange("categorySub", e.target.value)}
+                    className="car-select"
+                    disabled={!form.categoryParent}
+                  >
+                    <option value="">소분류 선택</option>
+                    {Object.entries(subCategories).map(([id, name]) => (
+                      <option key={id} value={id}>{name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="car-select-icon" />
+                </div>
+              </div>
+
+              {/* 기본 정보 */}
+              <p className="car-input-section-label" style={{ marginTop: 16 }}>기본 정보</p>
+              <div className="car-fields-grid">
+                <div className="car-field">
+                  <label>브랜드 <span className="car-required">*</span></label>
+                  <input
+                    placeholder="예: LG, 삼성, 위니아"
+                    value={form.brand}
+                    onChange={(e) => handleChange("brand", e.target.value)}
+                  />
+                </div>
+                <div className="car-field">
+                  <label>모델명 <span className="car-required">*</span></label>
+                  <input
+                    placeholder="예: LG 디오스 냉장고"
+                    value={form.modelName}
+                    onChange={(e) => handleChange("modelName", e.target.value)}
+                  />
+                </div>
+                <div className="car-field car-field--full">
+                  <label>시리얼 번호 <span className="car-required">*</span></label>
+                  <input
+                    placeholder="예: M870SN75"
+                    value={form.serialNumber}
+                    onChange={(e) => handleChange("serialNumber", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* 구매 & 보증 */}
+              <p className="car-input-section-label" style={{ marginTop: 16 }}>구매 및 보증 정보</p>
+              <div className="car-fields-grid">
+                <div className="car-field">
+                  <label>구매 일자 <span className="car-required">*</span></label>
+                  <input
+                    type="date"
+                    value={form.purchaseDate}
+                    onChange={(e) => handleChange("purchaseDate", e.target.value)}
+                  />
+                </div>
+                <div className="car-field">
+                  <label>보증 만료일 <span className="car-required">*</span></label>
+                  <input
+                    type="date"
+                    value={form.warrantyExpiry}
+                    onChange={(e) => handleChange("warrantyExpiry", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* 가전 상태 */}
+              <p className="car-input-section-label" style={{ marginTop: 16 }}>가전 상태 <span className="car-required">*</span></p>
+              <div className="car-status-row">
+                {["정상", "주의", "점검 필요"].map((s) => (
+                  <button
+                    key={s}
+                    className={`car-status-chip ${form.status === s ? `car-status-chip--${s === "정상" ? "green" : s === "주의" ? "orange" : "red"} car-status-chip--active` : ""}`}
+                    onClick={() => handleChange("status", s)}
+                    type="button"
+                  >
+                    {s === "정상" ? "😊" : s === "주의" ? "⚠️" : "🔴"} {s}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <p className="car-method-note">
-            영수증 등록을 선택하면 제품명, 모델번호, 구매일, 보증 정보 등을 자동으로 입력해 드립니다!
-          </p>
+
           <div className="car-step-footer">
             <button className="car-btn-secondary" onClick={onClose}>취소</button>
-            <button className="car-btn-primary" disabled={!method} onClick={() => setStep(2)}>
-              다음 <ChevronRight size={14} />
+            <button
+              className="car-btn-primary"
+              disabled={!isFormValid(form)}
+              onClick={() => setStep(2)}
+            >
+              다음 — 내용 확인 <ChevronRight size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Step 2: 영수증 업로드 */}
+      {/* ── Step 2: 내용 확인 ── */}
       {step === 2 && (
         <div className="car-step-body">
-          <h2 className="car-step-title">영수증 또는 제품 이미지를 업로드</h2>
-          <p className="car-step-sub">구매일, 구매처, 제품명, 보증 정보 등이 표시된 이미지를 올려주세요.</p>
+          <h2 className="car-step-title">입력 내용을 확인해주세요</h2>
+          <p className="car-step-sub">등록 전 정보를 최종 확인합니다. 수정이 필요하면 이전 단계로 돌아가세요.</p>
 
-          {!previewUrl ? (
-            <div
-              className="car-upload-zone"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              onClick={() => fileRef.current?.click()}
-            >
-              <input
-                type="file" accept="image/*" ref={fileRef} style={{ display: "none" }}
-                onChange={(e) => handleFile(e.target.files[0])}
-              />
-              <div className="car-upload-icon"><Upload size={28} /></div>
-              <p className="car-upload-text">이미지를 드래그하거나 클릭해서 업로드</p>
-              <p className="car-upload-hint">JPG, PNG, PDF, 파일 크기 최대 10MB</p>
-              <button className="car-upload-btn" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>
-                파일 선택
-              </button>
-            </div>
-          ) : (
-            <div className="car-preview-wrap">
-              <div className="car-preview-img-wrap">
-                <img src={previewUrl} alt="업로드된 영수증" className="car-preview-img" />
-                <button className="car-preview-remove" onClick={() => { setUploadedFile(null); setPreviewUrl(null); }}>
-                  <X size={14} />
-                </button>
-              </div>
-              <p className="car-preview-name">{uploadedFile?.name}</p>
-              <p className="car-preview-size">{uploadedFile ? (uploadedFile.size / 1024).toFixed(1) + " KB" : ""}</p>
-              <p className="car-preview-hint">영수증의 날짜와 제품명이 선명하게 보이는지 확인해 주세요.</p>
-            </div>
-          )}
-
-          <div className="car-step-footer">
-            <button className="car-btn-secondary" onClick={() => setStep(1)}><ArrowLeft size={14} /> 이전</button>
-            <button className="car-btn-primary" disabled={!previewUrl} onClick={() => setStep(3)}>
-              분석하기 <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: 영수증 분석 결과 */}
-      {step === 3 && (
-        <div className="car-step-body">
-          <h2 className="car-step-title">영수증 분석 결과</h2>
-          <p className="car-step-sub">AI가 분석한 결과입니다. 정보를 확인하고 다음 단계로 진행하세요.</p>
-
-          <div className="car-result-wrap">
-            {/* 영수증 이미지 */}
-            <div className="car-result-receipt">
-              {previewUrl
-                ? <img src={previewUrl} alt="영수증" className="car-result-receipt-img" />
-                : (
-                  <div className="car-result-receipt-mock">
-                    <div className="car-receipt-mock-header">LG BEST SHOP</div>
-                    <div className="car-receipt-mock-body">
-                      <div className="car-receipt-mock-row"><span>거래일시</span><span>2024.05.18 13:21:45</span></div>
-                      <div className="car-receipt-mock-row"><span>제품명</span><span>LG 디오스 냉장고</span></div>
-                      <div className="car-receipt-mock-row"><span>모델번호</span><span>M870SN75</span></div>
-                      <div className="car-receipt-mock-row"><span>판매금액</span><span>2,350,000원</span></div>
-                      <div className="car-receipt-mock-row"><span>제조사</span><span>LG</span></div>
-                      <div className="car-receipt-mock-row"><span>구매처</span><span>LG 베스트샵</span></div>
-                    </div>
-                    <div className="car-receipt-mock-barcode">||||||||||||||</div>
-                  </div>
-                )
+          <div className="car-confirm-wrap">
+            {/* 이미지 프리뷰 */}
+            <div className="car-confirm-preview">
+              {imageUrl
+                ? <img src={imageUrl} alt="제품" className="car-confirm-preview-img" />
+                : <div className="car-confirm-preview-placeholder">📷</div>
               }
+              <p className="car-confirm-preview-name">{form.modelName}</p>
+              <p className="car-confirm-preview-model">{form.serialNumber}</p>
+              <span className={`car-confirm-status car-confirm-status--${form.status === "정상" ? "green" : form.status === "주의" ? "orange" : "red"}`}>
+                {form.status}
+              </span>
             </div>
 
-            {/* 파싱된 정보 */}
+            {/* 정보 목록 */}
             <div className="car-result-info">
-              <p className="car-result-info__title">인식된 정보</p>
-              {[
-                { label: "구매일", value: PARSED_RESULT.purchased },
-                { label: "제품명", value: PARSED_RESULT.name },
-                { label: "모델명", value: PARSED_RESULT.model },
-                { label: "제조사", value: PARSED_RESULT.brand },
-                { label: "금액",   value: PARSED_RESULT.price },
-                { label: "구매처", value: PARSED_RESULT.store },
-              ].map(({ label, value }) => (
+              {CONFIRM_ROWS.map(({ label, value }) => (
                 <div key={label} className="car-result-row">
                   <span className="car-result-row__label">{label}</span>
                   <span className="car-result-row__value">{value}</span>
                 </div>
               ))}
-              <p className="car-result-info__note">
-                번호 정보는 상세 정보 단계에서 더 수정할 수 있습니다.
-              </p>
             </div>
           </div>
 
           <div className="car-step-footer">
-            <button className="car-btn-secondary" onClick={() => setStep(2)}>
-              <RotateCcw size={14} /> 다시 업로드
-            </button>
-            <button className="car-btn-primary" onClick={() => setStep(4)}>
-              다음 <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 4: 정보 확인 및 수정 */}
-      {step === 4 && (
-        <div className="car-step-body">
-          <h2 className="car-step-title">분석 결과를 확인하고 수정해주세요</h2>
-          <p className="car-step-sub">기본 정보를 확인하고 필요시 수정할 수 있습니다.</p>
-
-          <div className="car-confirm-wrap">
-            {/* 제품 이미지 미리보기 */}
-            <div className="car-confirm-preview">
-              {previewUrl
-                ? <img src={previewUrl} alt="제품" className="car-confirm-preview-img" />
-                : <div className="car-confirm-preview-placeholder">📷</div>
-              }
-              <p className="car-confirm-preview-name">{form.name}</p>
-              <p className="car-confirm-preview-model">{form.model}</p>
-            </div>
-
-            {/* 편집 폼 */}
-            <div className="car-confirm-form">
-              <div className="car-form-row">
-                <label>가전 종류</label>
-                <select value={form.type} onChange={(e) => handleFormChange("type", e.target.value)}>
-                  {["냉장고","세탁기","에어컨","TV","건조기","공기청정기","로봇청소기","기타"].map(t => <option key={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="car-form-row">
-                <label>제조사</label>
-                <select value={form.brand} onChange={(e) => handleFormChange("brand", e.target.value)}>
-                  {["LG","삼성","위니아","대우","기타"].map(b => <option key={b}>{b}</option>)}
-                </select>
-              </div>
-              <div className="car-form-row">
-                <label>제품명</label>
-                <input value={form.name} onChange={(e) => handleFormChange("name", e.target.value)} />
-              </div>
-              <div className="car-form-row">
-                <label>모델번호</label>
-                <input value={form.model} onChange={(e) => handleFormChange("model", e.target.value)} />
-              </div>
-              <div className="car-form-row">
-                <label>구매일</label>
-                <input value={form.purchased} onChange={(e) => handleFormChange("purchased", e.target.value)} />
-              </div>
-              <div className="car-form-row">
-                <label>구매처</label>
-                <input value={form.store} onChange={(e) => handleFormChange("store", e.target.value)} />
-              </div>
-              <div className="car-form-warranty">
-                <label>예상 보증기간</label>
-                <div className="car-form-warranty-val">
-                  {form.warranty}
-                  <span className="car-form-warranty-info">ℹ️</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="car-step-footer">
-            <button className="car-btn-secondary" onClick={() => setStep(3)}><ArrowLeft size={14} /> 이전</button>
-            <button className="car-btn-primary" onClick={() => setStep(5)}>
+            <button className="car-btn-secondary" onClick={() => setStep(1)}>이전으로</button>
+            <button className="car-btn-primary" onClick={() => setStep(3)}>
               등록하기 <ChevronRight size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Step 5: 등록 완료 */}
-      {step === 5 && (
+      {/* ── Step 3: 등록 완료 ── */}
+      {step === 3 && (
         <div className="car-step-body car-step-body--complete">
           <div className="car-complete-icon">✅</div>
           <h2 className="car-step-title">가전 등록이 완료되었어요!</h2>
@@ -278,22 +315,15 @@ function ApplianceRegisterFlow({ onClose }) {
 
           <div className="car-complete-card">
             <div className="car-confirm-preview" style={{ alignItems: "center" }}>
-              {previewUrl
-                ? <img src={previewUrl} alt="제품" className="car-confirm-preview-img" />
-                : <div className="car-confirm-preview-placeholder">❄️</div>
+              {imageUrl
+                ? <img src={imageUrl} alt="제품" className="car-confirm-preview-img" />
+                : <div className="car-confirm-preview-placeholder">📦</div>
               }
-              <p className="car-confirm-preview-name">{form.name}</p>
-              <p className="car-confirm-preview-model">{form.model}</p>
+              <p className="car-confirm-preview-name">{form.modelName}</p>
+              <p className="car-confirm-preview-model">{form.serialNumber}</p>
             </div>
             <div className="car-complete-info">
-              {[
-                { label: "가전 종류", value: form.type },
-                { label: "제조사",   value: form.brand },
-                { label: "모델번호", value: form.model },
-                { label: "구매일",   value: form.purchased },
-                { label: "구매처",   value: form.store },
-                { label: "보증기간", value: form.warranty },
-              ].map(({ label, value }) => (
+              {CONFIRM_ROWS.map(({ label, value }) => (
                 <div key={label} className="car-result-row">
                   <span className="car-result-row__label">{label}</span>
                   <span className="car-result-row__value">{value}</span>
