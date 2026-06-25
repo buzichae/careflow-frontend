@@ -8,6 +8,7 @@ import "../../styles/Agency/AgencyWorkPage.css";
 import AgencyWorkReceiptTab from "../../pages/Agency/WorkTab/AgencyWorkReceiptTab";
 import AgencyWorkAssignTab from "../../pages/Agency/WorkTab/AgencyWorkAssignTab";
 import AgencyWorkMonitorTab from "../../pages/Agency/WorkTab/AgencyWorkMonitorTab";
+import AgencyWorkCompleteTab from "../../pages/Agency/WorkTab/AgencyWorkCompleteTab";
 
 
 const STATUS_MAP = {
@@ -122,7 +123,7 @@ export default function AgencyWorkPage() {
       {activeTab === "접수 목록"    && <AgencyWorkReceiptTab />}
       {activeTab === "배정 관리"    && <AgencyWorkAssignTab />}
       {activeTab === "진행 모니터링" && <AgencyWorkMonitorTab />}
-      {activeTab === "완료 내역"    && <div className="aw-temp">완료 내역 준비 중</div>}
+      {activeTab === "완료 내역"    && <AgencyWorkCompleteTab />}
 
       {activeTab === "작업 현황" && <>
         {/* 통계 카드 */}

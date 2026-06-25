@@ -18,6 +18,13 @@ import GuidePage from "../src/pages/Landing/GuidePage.jsx";
 import ReassignAlertPage from "../src/pages/Agency/ReassignAlertPage.jsx";
 import AgencyDashboard from "../src/pages/Agency/AgencyDashboard";
 import AgencyWorkPage from "./pages/Agency/AgencyWorkPage";
+import AgencyEngineerPage from "../src/pages/Agency/AgencyEngineerPage.jsx"
+import AgencySettlementPage from "../src/pages/Agency/Agencysettlementpage.jsx"
+import AgencyCustomerPage from "../src/pages/Agency/AgencyCustomerPage.jsx"
+import AgencyReviewPage from "../src/pages/Agency/Agencyreviewpage.jsx"
+import AgencyStatisticsPage from "../src/pages/Agency/AgencyStatisticsPage.jsx"
+import AgencyNoticePage from "../src/pages/Agency/Agencynoticepage.jsx"
+import AgencySettingPage from "../src/pages/Agency/Agencysettingpage.jsx"
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -64,13 +71,13 @@ export default function App() {
           <Route path="/agency/dashboard" element={<AgencyDashboard  title="대행사 - 대시보드" />} />
           <Route path="/agency/work" element={<AgencyWorkPage  title="대행사 - 작업 관리" />} />
           <Route path="/agency/reassign-alerts" element={<ReassignAlertPage title="대행사 - 재배차알림"/>} />
-          <Route path="/agency/engineers" element={<TempPage title="대행사 - 기사 관리" />} />
-          <Route path="/agency/settlement" element={<TempPage title="대행사 - 정산 관리" />} />
-          <Route path="/agency/customers" element={<TempPage title="대행사 - 고객 관리" />} />
-          <Route path="/agency/reviews" element={<TempPage title="대행사 - 평가 및 리뷰" />} />
-          <Route path="/agency/statistics" element={<TempPage title="대행사 - 통계 및 리포트" />} />
-          <Route path="/agency/notice" element={<TempPage title="대행사 - 공지사항" />} />
-          <Route path="/agency/settings" element={<TempPage title="대행사 - 설정" />} />
+          <Route path="/agency/engineers" element={<AgencyEngineerPage  title="대행사 - 기사 관리" />} />
+          <Route path="/agency/settlement" element={<AgencySettlementPage  title="대행사 - 정산 관리" />} />
+          <Route path="/agency/customers" element={<AgencyCustomerPage  title="대행사 - 고객 관리" />} />
+          <Route path="/agency/reviews" element={<AgencyReviewPage title="대행사 - 평가 및 리뷰" />} />
+          <Route path="/agency/statistics" element={<AgencyStatisticsPage title="대행사 - 통계 및 리포트" />} />
+          <Route path="/agency/notice" element={<AgencyNoticePage  title="대행사 - 공지사항" />} />
+          <Route path="/agency/settings" element={<AgencySettingPage title="대행사 - 설정" />} />
 
           {/* 관리자 */}
           <Route path="/admin/dashboard" element={<TempPage title="관리자 - 운영 대시보드" />} />

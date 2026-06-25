@@ -1,0 +1,181 @@
+.asp2 {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 16px 24px; background: #fff; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+/* 헤더 */
+.asp2-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.asp2-header__title { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.asp2-header__sub   { font-size: 13px; color: #aaa; }
+.asp2-header__right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* 필터 */
+.asp2-filter-date {
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #444; cursor: pointer; white-space: nowrap;
+}
+.asp2-filter-select {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 10px; font-size: 12px; color: #444; cursor: pointer; white-space: nowrap;
+}
+.asp2-filter-select--sm { padding: 4px 8px; font-size: 11px; }
+.asp2-reset-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #666;
+  background: none; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+
+/* 탭 */
+.asp2-tabs { display: flex; border-bottom: 1px solid #f0f0f8; }
+.asp2-tab {
+  padding: 8px 20px; font-size: 13px; font-weight: 500; color: #aaa;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.asp2-tab--active { color: #5B4FF5; font-weight: 700; border-bottom-color: #5B4FF5; }
+
+/* 대시보드 */
+.asp2-dashboard { display: flex; flex-direction: column; gap: 14px; }
+
+/* 통계 카드 */
+.asp2-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.asp2-stat-card {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
+  padding: 14px; display: flex; align-items: flex-start; gap: 10px;
+}
+.asp2-stat-card__icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.asp2-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
+.asp2-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
+.asp2-stat-card__icon--teal   { background: #d0f4f0; color: #0ea5e9; }
+.asp2-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
+.asp2-stat-card__icon--amber  { background: #fef9e0; color: #b45309; }
+.asp2-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
+
+.asp2-stat-card__label { font-size: 10px; color: #aaa; margin-bottom: 3px; }
+.asp2-stat-card__value { font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+.asp2-stat-card__sub   { font-size: 10px; color: #aaa; }
+.asp2-stat-card__sub--up { color: #5B4FF5; font-weight: 600; }
+.asp2-stat-card__sub--down { color: #dc2626; font-weight: 600; }
+
+/* 그리드 - 3단 */
+.asp2-grid { display: grid; grid-template-columns: 1.4fr 1fr 0.9fr; gap: 14px; align-items: start; }
+.asp2-col  { display: flex; flex-direction: column; gap: 14px; }
+
+/* 차트 카드 */
+.asp2-chart-card {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 16px;
+}
+.asp2-chart-card__header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.asp2-chart-title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+
+/* 툴팁 */
+.asp-chart-tooltip {
+  background: #fff; border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 8px 12px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.asp-chart-tooltip__label { font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+
+/* 도넛 */
+.asp2-donut-wrap { display: flex; align-items: center; gap: 0; }
+.asp2-donut-legend { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.asp2-donut-legend__item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.asp2-donut-legend__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.asp2-donut-legend__name { color: #444; flex-shrink: 0; }
+.asp2-donut-legend__pct  { color: #888; font-size: 10px; }
+
+/* 상태별 건수 */
+.asp2-status-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.asp2-status-row:last-child { margin-bottom: 0; }
+.asp2-status-row__label { font-size: 11px; color: #444; width: 56px; flex-shrink: 0; }
+.asp2-status-row__bar-wrap {
+  flex: 1; height: 8px; background: #f0f0f8; border-radius: 4px; overflow: hidden;
+}
+.asp2-status-row__bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.asp2-status-row__val { font-size: 11px; color: #888; white-space: nowrap; width: 100px; text-align: right; }
+
+/* TOP5 */
+.asp2-top-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 0.5px solid #f5f4ff;
+}
+.asp2-top-row:last-child { border-bottom: none; }
+.asp2-top-row__rank { font-size: 16px; width: 24px; flex-shrink: 0; text-align: center; }
+.asp2-top-row__name { flex: 1; font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.asp2-top-row__count { font-size: 12px; color: #5B4FF5; font-weight: 700; }
+
+/* 이달의 요약 */
+.asp2-monthly-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 0.5px solid #f5f4ff; font-size: 12px;
+}
+.asp2-monthly-row:last-child { border-bottom: none; }
+.asp2-monthly-row__label { flex: 1; color: #888; }
+.asp2-monthly-row__value { color: #1a1a2e; font-weight: 600; }
+
+/* 리포트 다운로드 */
+.asp2-report-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 0.5px solid #f5f4ff;
+}
+.asp2-report-row:last-child { border-bottom: none; }
+.asp2-report-row__info { flex: 1; }
+.asp2-report-row__label { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.asp2-report-row__desc  { font-size: 10px; color: #aaa; margin-top: 1px; }
+.asp2-download-btn {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #5B4FF5; font-weight: 600;
+  background: none; border: 0.5px solid #e0dcff; border-radius: 6px;
+  padding: 4px 8px; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.asp2-download-btn:hover { background: #eeeaff; }
+
+.asp2-custom-report-btn {
+  width: 100%; margin-top: 12px;
+  background: #f8f7ff; border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 10px; font-size: 12px; font-weight: 600; color: #5B4FF5;
+  cursor: pointer; font-family: inherit;
+}
+.asp2-custom-report-btn:hover { background: #eeeaff; }
+
+/* 요약 테이블 */
+.asp2-summary-table { overflow-x: auto; }
+.asp2-summary-table__header {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 0.8fr 0.7fr 1fr 0.7fr 1.2fr;
+  padding: 8px 10px; background: #f8f7ff;
+  font-size: 11px; color: #aaa; font-weight: 600;
+  border-radius: 8px 8px 0 0;
+  border: 0.5px solid #e8e4ff;
+}
+.asp2-summary-table__row {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 0.8fr 0.7fr 1fr 0.7fr 1.2fr;
+  padding: 10px 10px; font-size: 12px; color: #444;
+  border-bottom: 0.5px solid #f5f4ff;
+  border-left: 0.5px solid #e8e4ff;
+  border-right: 0.5px solid #e8e4ff;
+}
+.asp2-summary-table__row:last-child {
+  border-bottom: 0.5px solid #e8e4ff;
+  border-radius: 0 0 8px 8px;
+}
+.asp2-summary-table__amount { color: #5B4FF5; font-weight: 700; }
+
+/* 준비 중 */
+.asp2-coming-soon {
+  text-align: center; padding: 60px;
+  color: #aaa; font-size: 14px;
+  border: 1px dashed #e0dcff; border-radius: 12px; margin-top: 8px;
+}
