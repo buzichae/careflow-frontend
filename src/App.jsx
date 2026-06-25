@@ -25,6 +25,11 @@ import AgencyStatisticsPage from "../src/pages/Agency/AgencyStatisticsPage.jsx"
 import AgencyNoticePage from "../src/pages/Agency/Agencynoticepage.jsx"
 import AgencySettingPage from "../src/pages/Agency/Agencysettingpage.jsx"
 
+import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
+import AdminMembersPage from "./pages/Admin/AdminMembersPage.jsx";
+import AdminServicePage from "./pages/Admin/AdminServicePage.jsx";
+import AdminLMSPage from "./pages/Admin/AdminLMSPage.jsx";
+
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
 }
@@ -78,12 +83,10 @@ export default function App() {
           <Route path="/agency/settings" element={<AgencySettingPage title="대행사 - 설정" />} />
 
           {/* 관리자 */}
-          <Route path="/admin/dashboard" element={<TempPage title="관리자 - 운영 대시보드" />} />
-          <Route path="/admin/members" element={<TempPage title="관리자 - 회원 관리" />} />
-          <Route path="/admin/as" element={<TempPage title="관리자 - A/S 운영" />} />
-          <Route path="/admin/settlement" element={<TempPage title="관리자 - 정산 관리" />} />
-          <Route path="/admin/statistics" element={<TempPage title="관리자 - 통계 인사이트" />} />
-          <Route path="/admin/settings" element={<TempPage title="관리자 - 시스템 설정" />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/members"   element={<AdminMembersPage />} />
+          <Route path="/admin/service"   element={<AdminServicePage />} />
+          <Route path="/admin/lms"       element={<AdminLMSPage />} />
 
         </Route>
 
