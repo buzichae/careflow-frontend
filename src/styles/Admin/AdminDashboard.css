@@ -1,0 +1,100 @@
+/* ── 실시간 A/S 현황 ── */
+
+.adash-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: adash-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes adash-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* 단계 플로우 */
+.adash-as-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 18px;
+}
+
+.adash-as-flow__item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 0;
+}
+
+.adash-as-flow__card {
+  flex: 1;
+  border: 1.5px solid;
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  background: #fafafa;
+}
+
+.adash-as-flow__count {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 4px;
+  line-height: 1;
+}
+
+.adash-as-flow__label {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+.adash-as-flow__arrow {
+  flex-shrink: 0;
+  color: #ccc;
+  margin: 0 6px;
+}
+
+/* 비율 바 */
+.adash-as-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.adash-as-bar__seg {
+  height: 100%;
+  transition: width 0.4s;
+}
+
+.adash-as-bar__seg + .adash-as-bar__seg {
+  margin-left: 2px;
+}
+
+/* 범례 레이블 */
+.adash-as-bar-labels {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.adash-as-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #666;
+}
+
+.adash-as-bar-label__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
