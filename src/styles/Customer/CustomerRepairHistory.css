@@ -5,50 +5,26 @@
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
-
-/* 헤더 */
-.crh-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.crh-header__left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.crh-header__left h1 { font-size: 22px; font-weight: 700; margin-bottom: 3px; }
-.crh-header__left p  { font-size: 13px; color: var(--text-muted); }
 
 .crh-back-btn {
   background: none;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 6px 8px;
+  padding: 6px 12px;
   cursor: pointer;
   color: var(--text-mid);
   display: flex;
   align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
 }
+.crh-back-btn:hover { background: #f8f7ff; }
 
-.crh-header__right { display: flex; align-items: center; gap: 14px; }
-
-.crh-icon-btn { background: none; border: none; padding: 6px; color: var(--text-mid); cursor: pointer; }
-
-.crh-profile { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
-
-.crh-avatar {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: #8b7cf7; color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 14px;
-}
-
-/* ── 선택 화면 ── */
+/* ── 가전 선택 그리드 ── */
 .crh-select-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -67,7 +43,6 @@
   flex-direction: column;
   gap: 3px;
 }
-
 .crh-select-card:hover {
   border-color: var(--primary);
   box-shadow: 0 4px 16px rgba(115, 75, 207, 0.12);
@@ -81,11 +56,6 @@
   margin-bottom: 10px;
 }
 
-.crh-select-card__img {
-  width: 72px; height: 72px;
-  background: #f3f3f7; border-radius: 10px;
-}
-
 .crh-select-card__badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 
 .crh-cert-badge {
@@ -94,7 +64,6 @@
   text-align: center; line-height: 1.4;
   padding: 3px 7px; border-radius: 6px;
 }
-
 .crh-cert-pill {
   display: inline-block;
   background: #f0edff; color: var(--primary);
@@ -107,7 +76,6 @@
   font-size: 10px; font-weight: 600;
   padding: 2px 7px; border-radius: 10px;
 }
-
 .crh-status-badge--green  { background: #e8f9f0; color: #22c55e; }
 .crh-status-badge--orange { background: #fff7e6; color: #f59e0b; }
 .crh-status-badge--red    { background: #fff0f0; color: #ef4444; }
@@ -121,49 +89,28 @@
   margin: 8px 0 6px;
   font-size: 11px; font-weight: 600; color: var(--text-mid);
 }
-
-.crh-score-bar {
-  flex: 1; height: 4px; background: #f0f0f8; border-radius: 4px; overflow: hidden;
-}
-
+.crh-score-bar { flex: 1; height: 4px; background: #f0f0f8; border-radius: 4px; overflow: hidden; }
 .crh-score-bar__fill { height: 100%; border-radius: 4px; }
 
 .crh-select-card__footer {
   display: flex; justify-content: space-between; align-items: center;
-  margin-top: 6px;
-  padding-top: 8px;
+  margin-top: 6px; padding-top: 8px;
   border-top: 1px solid var(--border);
 }
-
 .crh-repair-count { font-size: 11px; color: var(--text-muted); }
 .crh-arrow { font-size: 11px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 2px; }
 
-/* ── 상세 화면: 2열 레이아웃 ── */
+/* ── 상세 화면: 단일 컬럼 ── */
 .crh-detail-body {
-  display: grid;
-  grid-template-columns: 1fr 220px;
-  gap: 16px;
-  align-items: start;
-}
-
-.crh-detail-main {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.crh-detail-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: sticky;
-  top: 20px;
-}
-
-/* 상단 2열 패널 (가전정보 + 건강점수) */
+/* 상단 2열 패널 */
 .crh-top-panels {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 220px 1fr;
   gap: 14px;
   align-items: start;
 }
@@ -176,40 +123,28 @@
   flex-direction: column;
   gap: 10px;
 }
-
 .crh-panel__title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-dark);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  font-size: 13px; font-weight: 700; color: var(--text-dark);
+  display: flex; justify-content: space-between; align-items: center;
 }
 
-/* 가전 기본 정보 패널 */
+/* 가전 기본 정보 */
 .crh-appliance-header {
   display: flex; align-items: center; gap: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-
-.crh-appliance-img {
-  width: 70px; height: 80px; background: #f3f3f7; border-radius: 8px; flex-shrink: 0;
-}
-
 .crh-appliance-name  { font-size: 13px; font-weight: 700; }
 .crh-appliance-model { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 .crh-info-rows { display: flex; flex-direction: column; gap: 7px; }
-
 .crh-info-row {
   display: flex; justify-content: space-between; align-items: flex-start;
   font-size: 11px;
 }
-
-.crh-info-label          { color: var(--text-muted); flex-shrink: 0; }
-.crh-info-value          { font-weight: 600; color: var(--text-dark); text-align: right; }
-.crh-info-value--highlight{ color: #ef4444; }
+.crh-info-label           { color: var(--text-muted); flex-shrink: 0; }
+.crh-info-value           { font-weight: 600; color: var(--text-dark); text-align: right; }
+.crh-info-value--highlight { color: #ef4444; }
 
 .crh-edit-btn {
   width: 100%; padding: 8px 0;
@@ -219,200 +154,358 @@
   background: #fff; color: var(--text-mid); cursor: pointer;
 }
 
-/* 건강 점수 패널 */
-.crh-health-status {
-  font-size: 12px; font-weight: 600;
-  background: #e8f9f0; color: #22c55e;
-  padding: 3px 10px; border-radius: 20px;
+/* ── 제품 건강 진단서 패널 ── */
+.crh-panel--diag { gap: 12px; }
+.crh-panel--diag-empty { justify-content: center; min-height: 180px; }
+
+.crh-diag-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 16px 0;
 }
+.crh-diag-empty__msg { font-size: 13px; font-weight: 700; color: var(--text-mid); margin: 0; }
+.crh-diag-empty__sub { font-size: 11.5px; color: var(--text-muted); text-align: center; line-height: 1.6; margin: 0; }
 
-.crh-health-body { display: flex; align-items: center; gap: 16px; }
-
-.crh-health-right { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-
-.crh-score-summary-label { font-size: 12px; font-weight: 700; }
-.crh-score-summary-desc  { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
-
-.crh-score-items { display: flex; flex-direction: column; gap: 6px; }
-
-.crh-score-item {
-  display: flex; align-items: center; gap: 8px; font-size: 11px;
+.crh-diag-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
 }
-
-.crh-score-item__label { width: 56px; color: var(--text-muted); flex-shrink: 0; }
-
-.crh-score-item__bar {
-  flex: 1; height: 5px; background: #f0f0f8; border-radius: 4px; overflow: hidden;
+.crh-diag-header__left { display: flex; align-items: center; gap: 5px; }
+.crh-diag-header__title { font-size: 12.5px; font-weight: 700; color: var(--text-dark); }
+.crh-diag-header__id    { font-size: 11px; color: var(--text-muted); }
+.crh-diag-header__right {
+  display: flex; align-items: center; gap: 8px;
 }
+.crh-diag-header__date  { font-size: 11px; color: var(--text-muted); }
 
-.crh-score-item__fill { height: 100%; border-radius: 4px; }
-.crh-score-item__num  { width: 42px; text-align: right; font-weight: 600; color: var(--text-mid); flex-shrink: 0; }
-
-.crh-score-detail-btn {
-  width: 100%; padding: 8px 0;
-  border-radius: var(--radius-sm);
-  font-size: 12px; font-weight: 600;
-  border: 1px solid var(--primary);
-  background: #fff; color: var(--primary); cursor: pointer;
+/* 다운로드 버튼 — 헤더 인라인 */
+.crh-diag-dl-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+  border: 1.5px solid #7c5cf7; background: #fff; color: #7c5cf7;
+  cursor: pointer; transition: background .15s, color .15s;
+  white-space: nowrap;
 }
+.crh-diag-dl-btn:hover { background: #7c5cf7; color: #fff; }
 
-/* 요약 패널 */
-.crh-summary-rows { display: flex; flex-direction: column; gap: 6px; }
+.crh-diag-hero { display: flex; align-items: center; gap: 14px; }
+.crh-diag-hero__info { display: flex; flex-direction: column; gap: 6px; }
 
-.crh-summary-row {
-  display: flex; justify-content: space-between;
-  font-size: 11px; padding: 2px 0;
+.crh-diag-grade {
+  font-size: 11.5px; font-weight: 700;
+  padding: 3px 12px; border-radius: 20px;
+  display: inline-block; width: fit-content;
 }
+.crh-diag-score-row { display: flex; align-items: baseline; gap: 3px; }
+.crh-diag-score-big  { font-size: 28px; font-weight: 900; color: #7c5cf7; line-height: 1; }
+.crh-diag-score-denom{ font-size: 12px; color: var(--text-muted); }
 
-.crh-summary-label        { color: var(--text-muted); }
-.crh-summary-value        { font-weight: 600; color: var(--text-dark); }
-.crh-summary-value--bold  { color: var(--primary); font-size: 13px; }
-
-.crh-parts-list { display: flex; flex-direction: column; gap: 5px; }
-
-.crh-part-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 11px;
+.crh-diag-cert {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 8px;
+  width: fit-content;
 }
+.crh-diag-cert--yes { background: #f0fdf4; color: #16a34a; }
+.crh-diag-cert--no  { background: #f8f7ff; color: #888; flex-wrap: wrap; }
+.crh-diag-cert__hint { font-weight: 400; color: var(--text-muted); font-size: 10px; }
 
-.crh-part-name          { color: var(--text-mid); }
-.crh-part-count         { color: var(--text-muted); font-weight: 600; }
-.crh-part-count--active { color: var(--primary); }
-
-.crh-link-btn {
-  background: none; border: none;
-  font-size: 11px; color: var(--primary);
-  font-weight: 600; cursor: pointer; text-align: left; padding: 0;
+/* 항목별 점수 바 */
+.crh-diag-items { display: flex; flex-direction: column; gap: 6px; }
+.crh-diag-item {
+  display: flex; align-items: center; gap: 6px; font-size: 11px;
 }
+.crh-diag-item__icon  { font-size: 13px; flex-shrink: 0; }
+.crh-diag-item__label { width: 76px; color: var(--text-muted); flex-shrink: 0; }
+.crh-diag-item__bar   { flex: 1; height: 5px; background: #ede9fe; border-radius: 4px; overflow: hidden; }
+.crh-diag-item__fill  { height: 100%; background: #7c5cf7; border-radius: 4px; }
+.crh-diag-item__score { font-weight: 700; color: #7c5cf7; flex-shrink: 0; }
+.crh-diag-item__score span { font-weight: 400; color: var(--text-muted); }
 
-.crh-rec-item {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 8px;
-  background: #f8f7ff;
-  border-radius: 8px;
-  margin-bottom: 6px;
+
+/* ── 진단서 상세 모달 ── */
+.crh-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9000; padding: 20px;
 }
-
-.crh-rec-dot  { font-size: 14px; color: var(--primary); flex-shrink: 0; margin-top: 1px; }
-
-.crh-rec-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 3px;
+.crh-modal {
+  background: #fff; border-radius: 16px;
+  width: 100%; max-width: 560px; max-height: 88vh;
+  display: flex; flex-direction: column;
+  overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.18);
 }
-
-.crh-rec-title{ font-size: 11px; font-weight: 700; color: var(--text-dark); }
-.crh-rec-desc { font-size: 10px; color: var(--text-muted); line-height: 1.4; }
-
-.crh-rec-link {
-  background: none; border: none;
-  font-size: 10px; color: var(--primary);
-  font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  padding: 0;
+.crh-modal__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+  background: #fafaff; flex-shrink: 0;
 }
-
-/* 탭 */
-.crh-tab-bar {
-  display: flex;
-  border-bottom: 1px solid var(--border);
+.crh-modal__sup   { font-size: 11px; font-weight: 600; color: #7c5cf7; margin: 0 0 2px; }
+.crh-modal__title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin: 0; }
+.crh-modal__close {
+  background: none; border: none; cursor: pointer; color: #aaa;
+  display: flex; padding: 4px; border-radius: 6px;
 }
+.crh-modal__close:hover { background: #f0f0f8; color: #555; }
 
-.crh-tab {
-  padding: 10px 20px;
-  font-size: 14px; font-weight: 500;
-  color: var(--text-muted);
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  margin-bottom: -1px;
+.crh-modal__body { flex: 1; overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+
+.crh-modal__hero { display: flex; align-items: center; gap: 20px; }
+.crh-modal__hero-info { display: flex; flex-direction: column; gap: 8px; }
+
+.crh-modal__section-title {
+  font-size: 13px; font-weight: 700; color: var(--text-dark);
+  padding-bottom: 8px; border-bottom: 1px solid var(--border); margin: 0;
 }
-
-.crh-tab--active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  font-weight: 700;
+.crh-modal__score-items { display: flex; flex-direction: column; gap: 8px; }
+.crh-modal__score-item {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
 }
+.crh-modal__score-icon  { font-size: 14px; flex-shrink: 0; }
+.crh-modal__score-label { width: 90px; color: var(--text-mid); flex-shrink: 0; font-weight: 600; }
+.crh-modal__score-bar   { flex: 1; height: 6px; background: #ede9fe; border-radius: 4px; overflow: hidden; }
+.crh-modal__score-fill  { height: 100%; background: #7c5cf7; border-radius: 4px; }
+.crh-modal__score-num   { width: 40px; text-align: right; font-weight: 700; color: #7c5cf7; flex-shrink: 0; }
+.crh-modal__score-num em { font-style: normal; font-weight: 400; color: var(--text-muted); }
+.crh-modal__score-cond  { font-size: 11px; color: var(--text-muted); min-width: 110px; }
 
-/* 테이블 */
-.crh-table-wrap {
+.crh-modal__info-rows { display: flex; flex-direction: column; gap: 7px; }
+.crh-modal__info-row  { display: flex; justify-content: space-between; font-size: 12px; }
+.crh-modal__info-label { color: var(--text-muted); }
+.crh-modal__info-value { font-weight: 600; color: var(--text-dark); }
+
+.crh-modal__footer {
+  padding: 14px 22px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+  background: #fafaff; flex-shrink: 0;
+}
+.crh-modal__btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 8px 18px; border-radius: 9px;
+  font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+}
+.crh-modal__btn--outline { background: #fff; border: 1.5px solid var(--border); color: #555; }
+.crh-modal__btn--outline:hover { background: #f5f5ff; }
+.crh-modal__btn--dl { background: #7c5cf7; color: #fff; }
+.crh-modal__btn--dl:hover { opacity: .88; }
+
+/* ── 요약 + 부품 가로 바 ── */
+.crh-meta-bar {
   background: #fff;
   border-radius: var(--radius-md);
-  overflow: hidden;
+  padding: 16px 20px;
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
 }
-
-.crh-table__head,
-.crh-table__row {
-  display: grid;
-  grid-template-columns: 130px 110px 130px 1fr 1fr 70px 100px 80px 80px;
-  align-items: center;
-  padding: 12px 16px;
+.crh-meta-bar__section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+.crh-meta-bar__head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.crh-meta-bar__divider {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  margin: 0 24px;
 }
 
-.crh-table__head {
+/* 수리 요약 통계 */
+.crh-meta-bar__stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.crh-meta-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.crh-meta-stat__label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.crh-meta-stat__value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.crh-meta-stat__value--accent { color: var(--primary); }
+
+/* 부품 교체 이력 */
+.crh-meta-bar__parts {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.crh-meta-part {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   background: #f8f7ff;
-  font-weight: 700; color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+}
+.crh-meta-part__name  { color: var(--text-mid); }
+.crh-meta-part__count { font-weight: 700; color: var(--text-muted); }
+.crh-meta-part__count--active { color: var(--primary); }
+
+/* ── 수리 이력 섹션 헤더 ── */
+.crh-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.crh-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.crh-section-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: #f0f0f8;
+  border-radius: 10px;
+  padding: 2px 8px;
 }
 
-.crh-table__row {
-  border-bottom: 1px solid var(--border);
+/* ── 수리 이력 카드 ── */
+.crh-repair-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.crh-table__row:last-of-type { border-bottom: none; }
-.crh-table__row:hover { background: #faf9ff; }
+.crh-repair-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.crh-repair-card:hover { box-shadow: 0 2px 10px rgba(115,75,207,0.08); }
 
-.crh-cell-id   { font-size: 11px; font-weight: 600; color: var(--primary); }
-.crh-cell-date { font-size: 11px; font-weight: 600; display: flex; flex-direction: column; gap: 3px; }
-.crh-cell-time { color: var(--text-muted); font-weight: 400; }
+/* 카드 메타 행 */
+.crh-repair-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  background: #fafaff;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.crh-repair-card__id {
+  font-size: 11px; font-weight: 700; color: var(--primary);
+  flex-shrink: 0;
+}
+.crh-repair-card__date {
+  font-size: 11px; color: var(--text-muted);
+  flex-shrink: 0;
+}
+.crh-repair-card__engineer {
+  font-size: 11.5px; font-weight: 600; color: var(--text-mid);
+  margin-left: auto;
+}
+.crh-repair-card__engineer em {
+  font-style: normal;
+  color: #f59e0b;
+  margin-left: 4px;
+}
+.crh-repair-card__cost {
+  font-size: 12px; font-weight: 700; color: var(--text-dark);
+  flex-shrink: 0;
+}
 
+/* 증상 행 */
+.crh-repair-card__symptom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f5f5fb;
+}
+.crh-repair-card__symptom-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.crh-repair-card__symptom {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+/* 진단 + 처리 2열 */
+.crh-repair-card__content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.crh-repair-card__box {
+  padding: 12px 16px;
+}
+.crh-repair-card__box:first-child {
+  border-right: 1px solid #f0f0f8;
+}
+.crh-repair-card__box-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 6px;
+}
+.crh-repair-card__box-text {
+  font-size: 12.5px;
+  color: var(--text-mid);
+  line-height: 1.7;
+  white-space: pre-line;
+  margin: 0;
+}
+
+/* 공통 배지 */
 .crh-symptom-tag {
-  display: inline-block;
   font-size: 10px; font-weight: 600;
   padding: 2px 7px; border-radius: 8px;
-  margin-top: 3px;
+  flex-shrink: 0;
 }
-
 .crh-symptom-tag--purple { background: #f0edff; color: var(--primary); }
 .crh-symptom-tag--gray   { background: #f3f3f7; color: var(--text-muted); }
 
-.crh-cell-symptom { font-size: 12px; font-weight: 600; }
-
-.crh-cell-text {
-  font-size: 11px; color: var(--text-mid);
-  white-space: pre-line; line-height: 1.6;
-}
-
 .crh-type-badge {
   font-size: 11px; font-weight: 700;
-  padding: 3px 10px; border-radius: 12px;
+  padding: 2px 9px; border-radius: 12px;
+  flex-shrink: 0;
 }
-
 .crh-type-badge--blue   { background: #eff6ff; color: #3b82f6; }
 .crh-type-badge--orange { background: #fff7e6; color: #f59e0b; }
 
-.crh-cell-engineer { font-size: 11px; font-weight: 600; display: flex; flex-direction: column; gap: 2px; }
-.crh-cell-rating   { color: #f59e0b; font-size: 10px; font-weight: 500; }
-
-.crh-cell-cost { font-size: 12px; font-weight: 700; }
-
 .crh-detail-btn {
   font-size: 11px; font-weight: 600;
-  padding: 5px 10px;
+  padding: 4px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: #fff; color: var(--text-mid); cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 4px;
 }
+.crh-detail-btn:hover { background: #f5f5ff; }
 
 /* 페이지네이션 */
 .crh-pagination {
   display: flex; justify-content: center; align-items: center; gap: 4px;
-  padding: 14px 0;
-  border-top: 1px solid var(--border);
+  padding: 6px 0;
 }
-
 .crh-page-btn {
   min-width: 30px; height: 30px;
   border-radius: 6px;
@@ -421,7 +514,6 @@
   color: var(--text-mid); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-
 .crh-page-btn--active {
   background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700;
 }

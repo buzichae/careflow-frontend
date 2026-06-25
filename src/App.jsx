@@ -7,7 +7,6 @@ import CustomerAppliances from "./pages/customer/CustomerAppliances.jsx";
 import CustomerAS from "./pages/customer/CustomerAS.jsx";
 import CustomerNotice from "./pages/customer/CustomerNotice.jsx";
 import CustomerPayment from "./pages/customer/CustomerPayment.jsx";
-import CustomerRepairHistory from "./pages/customer/CustomerRepairHistory.jsx";
 import CustomerMyPage from "./pages/customer/CustomerMyPage.jsx";
 // import LandingPage from "../src/pages/Landing/LandingPage.jsx";
 import LandingPage from "../src/pages/Landing/LandingPage.jsx";
@@ -49,7 +48,6 @@ export default function App() {
           {/* 고객 */}
           <Route path="/customer/home" element={<CustomerHome />} />
           <Route path="/customer/appliances" element={<CustomerAppliances />} />
-          <Route path="/customer/repair-history" element={<CustomerRepairHistory />} />
           <Route path="/customer/as" element={<CustomerAS />} />
           <Route path="/customer/payment" element={<CustomerPayment />} />
           <Route path="/customer/market" element={<TempPage title="고객 - 중고 마켓" />} />

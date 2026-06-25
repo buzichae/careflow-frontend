@@ -372,7 +372,7 @@ export default function CustomerHome() {
                       <div className="ch-score-bar__fill" style={{ width: `${a.score}%`, background: a.statusColor === "orange" ? "#f59e0b" : "#734bcf" }} />
                     </div>
                   </div>
-                  <button className="ch-card-btn">상세 및 이력 보기 &gt;</button>
+                  <button className="ch-card-btn" onClick={() => navigate(`/customer/appliances?applianceId=${a.id}`)}>상세 및 이력 보기 &gt;</button>
                 </div>
               ))}
             </div>
