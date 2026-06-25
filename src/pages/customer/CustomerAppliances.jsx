@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Plus, CalendarCheck, AlertTriangle, ShieldCheck, Upload, X, Check,
   ChevronRight, ChevronDown, ChevronLeft, ArrowLeft,
-  Info, Wrench, Package, FileText, Shield, Download,
+  Info, Wrench, Package, FileText, Shield, Download, Trash2, Pencil,
 } from "lucide-react";
 import "../../styles/Customer/CustomerAppliances.css";
 import "../../styles/Customer/CustomerRepairHistory.css";
@@ -526,9 +526,83 @@ function DiagPanel({ diag }) {
   );
 }
 
+/* ─── 삭제 확인 모달 ─── */
+function DeleteConfirmModal({ appliance, onConfirm, onClose }) {
+  return (
+    <div className="ca-modal-overlay" onClick={onClose}>
+      <div className="ca-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ca-modal__icon"><Trash2 size={28} color="#ef4444" /></div>
+        <h3 className="ca-modal__title">가전을 삭제하시겠어요?</h3>
+        <p className="ca-modal__desc">
+          <strong>{appliance.brand}</strong> ({appliance.model})을<br />
+          목록에서 삭제합니다. 이 작업은 되돌릴 수 없습니다.
+        </p>
+        <div className="ca-modal__footer">
+          <button className="ca-btn-secondary" onClick={onClose}>취소</button>
+          <button className="ca-btn-danger" onClick={onConfirm}>삭제하기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 가전 정보 수정 모달 ─── */
+function ApplianceEditModal({ appliance, onSave, onClose }) {
+  const [form, setForm] = useState({
+    brand: appliance.brand,
+    model: appliance.model,
+    status: appliance.status,
+  });
+
+  function handleChange(k, v) {
+    setForm((prev) => ({ ...prev, [k]: v }));
+  }
+
+  return (
+    <div className="ca-modal-overlay" onClick={onClose}>
+      <div className="ca-modal ca-modal--edit" onClick={(e) => e.stopPropagation()}>
+        <div className="ca-modal__header">
+          <Pencil size={16} color="#734bcf" />
+          <h3 className="ca-modal__title ca-modal__title--sm">가전 정보 수정</h3>
+        </div>
+        <div className="ca-edit-fields">
+          <div className="car-field">
+            <label>브랜드</label>
+            <input value={form.brand} onChange={(e) => handleChange("brand", e.target.value)} />
+          </div>
+          <div className="car-field">
+            <label>모델명</label>
+            <input value={form.model} onChange={(e) => handleChange("model", e.target.value)} />
+          </div>
+          <div className="car-field car-field--full">
+            <label>가전 상태</label>
+            <div className="car-status-row">
+              {["정상", "주의", "점검 필요"].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`car-status-chip ${form.status === s ? `car-status-chip--${s === "정상" ? "green" : s === "주의" ? "orange" : "red"} car-status-chip--active` : ""}`}
+                  onClick={() => handleChange("status", s)}
+                >
+                  {s === "정상" ? "😊" : s === "주의" ? "⚠️" : "🔴"} {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="ca-modal__footer">
+          <button className="ca-btn-secondary" onClick={onClose}>취소</button>
+          <button className="ca-btn-primary" onClick={() => onSave({ ...appliance, ...form })}>저장하기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── 수리 이력 상세 화면 ─── */
-function DetailView({ appliance, onBack }) {
+function DetailView({ appliance, onBack, onUpdate }) {
   const [page, setPage] = useState(1);
+  const [showEdit, setShowEdit] = useState(false);
   const diag = DIAGNOSTICS[appliance.id] ?? null;
   const PER_PAGE = 5;
   const totalPages = Math.ceil(DETAIL.repairs.length / PER_PAGE);
@@ -536,6 +610,14 @@ function DetailView({ appliance, onBack }) {
 
   return (
     <div className="crh-wrap">
+      {showEdit && (
+        <ApplianceEditModal
+          appliance={appliance}
+          onSave={(updated) => { onUpdate(updated); setShowEdit(false); }}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
+
       <button className="crh-back-btn" onClick={onBack} style={{ margin: "12px 0 0" }}>
         <ArrowLeft size={18} /> 내 가전 목록으로
       </button>
@@ -567,7 +649,9 @@ function DetailView({ appliance, onBack }) {
                 </div>
               ))}
             </div>
-            <button className="crh-edit-btn">가전 정보 수정</button>
+            <button className="crh-edit-btn" onClick={() => setShowEdit(true)}>
+              <Pencil size={13} /> 가전 정보 수정
+            </button>
           </div>
 
           <DiagPanel diag={diag} />
@@ -682,6 +766,8 @@ export default function CustomerAppliances() {
   const [activeTab, setActiveTab] = useState("전체");
   const [showRegister, setShowRegister] = useState(false);
   const [selectedAppliance, setSelectedAppliance] = useState(null);
+  const [appliances, setAppliances] = useState(ALL_APPLIANCES);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -691,23 +777,41 @@ export default function CustomerAppliances() {
     }
     const applianceId = searchParams.get("applianceId");
     if (applianceId) {
-      const found = ALL_APPLIANCES.find((a) => a.id === Number(applianceId));
+      const found = appliances.find((a) => a.id === Number(applianceId));
       if (found) setSelectedAppliance(found);
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
 
+  function handleDelete(id) {
+    setAppliances((prev) => prev.filter((a) => a.id !== id));
+    setDeleteTarget(null);
+  }
+
+  function handleUpdate(updated) {
+    setAppliances((prev) => prev.map((a) => a.id === updated.id ? updated : a));
+    setSelectedAppliance(updated);
+  }
+
   const filtered = activeTab === "전체"
-    ? ALL_APPLIANCES
-    : ALL_APPLIANCES.filter((a) => a.status === activeTab);
+    ? appliances
+    : appliances.filter((a) => a.status === activeTab);
 
   /* ── 수리 이력 상세 화면 ── */
   if (selectedAppliance) {
-    return <DetailView appliance={selectedAppliance} onBack={() => setSelectedAppliance(null)} />;
+    return <DetailView appliance={selectedAppliance} onBack={() => setSelectedAppliance(null)} onUpdate={handleUpdate} />;
   }
 
   return (
     <div className="ca-wrap">
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          appliance={deleteTarget}
+          onConfirm={() => handleDelete(deleteTarget.id)}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
 
       {showRegister && <ApplianceRegisterFlow onClose={() => setShowRegister(false)} />}
 
@@ -762,6 +866,13 @@ export default function CustomerAppliances() {
                   <button className="ca-btn-detail" onClick={() => setSelectedAppliance(a)}>상세 및 이력 보기</button>
                   <button className="ca-btn-check"><CalendarCheck size={13} /> A/S 예약</button>
                 </div>
+                <button
+                  className="ca-btn-delete"
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(a); }}
+                  title="가전 삭제"
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
             ))}
 
@@ -824,7 +935,7 @@ export default function CustomerAppliances() {
                 <text x="55" y="66" textAnchor="middle" fontSize="10" fill="#888">/ 100점</text>
               </svg>
               <div className="ca-health-labels">
-                {ALL_APPLIANCES.map((a) => (
+                {appliances.map((a) => (
                   <div key={a.id} className="ca-health-label-row">
                     <span className="ca-health-dot" style={{ background: SCORE_COLOR[a.status] }} />
                     <span className="ca-health-name">{a.name}</span>
@@ -846,7 +957,7 @@ export default function CustomerAppliances() {
               </div>
               <p className="ca-cert-desc">보유 가전의 <strong>75%</strong>가 CareFlow 인증을 받았어요.</p>
               <div className="ca-cert-chips">
-                {ALL_APPLIANCES.map((a) => (
+                {appliances.map((a) => (
                   <span key={a.id} className={`ca-cert-chip ${a.certified ? "ca-cert-chip--on" : "ca-cert-chip--off"}`}>
                     {a.name}
                   </span>

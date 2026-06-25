@@ -88,6 +88,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  position: relative;
 }
 
 .ca-card__top {
@@ -137,6 +138,55 @@
   background: #f0edff; color: var(--primary); cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 4px;
 }
+
+.ca-btn-delete {
+  position: absolute; top: 10px; right: 10px;
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid #fecaca; background: #fff5f5; color: #ef4444;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+.ca-card:hover .ca-btn-delete { opacity: 1; }
+
+/* 삭제/수정 모달 */
+.ca-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+.ca-modal {
+  background: #fff; border-radius: 16px; padding: 32px 28px;
+  width: 380px; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ca-modal--edit { text-align: left; width: 440px; }
+.ca-modal__icon { display: flex; justify-content: center; }
+.ca-modal__title { font-size: 17px; font-weight: 700; color: #1a1a2e; margin: 0; }
+.ca-modal__title--sm { font-size: 15px; }
+.ca-modal__desc { font-size: 13px; color: #666; line-height: 1.6; margin: 0; }
+.ca-modal__header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.ca-modal__footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.ca-btn-primary {
+  padding: 9px 20px; border-radius: 8px; border: none;
+  background: var(--primary, #734bcf); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.ca-btn-primary:hover { background: #5c3aad; }
+.ca-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.ca-btn-secondary {
+  padding: 9px 20px; border-radius: 8px;
+  border: 1px solid var(--border, #e0e0ec); background: #fff; color: #555;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.ca-btn-secondary:hover { background: #f5f5fb; }
+
+.ca-btn-danger {
+  padding: 9px 20px; border-radius: 8px; border: none;
+  background: #ef4444; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.ca-btn-danger:hover { background: #dc2626; }
+.ca-edit-fields { display: flex; flex-direction: column; gap: 12px; }
 
 /* 가전 등록 카드 */
 .ca-card--add {
