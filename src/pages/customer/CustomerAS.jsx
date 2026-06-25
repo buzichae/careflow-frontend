@@ -1,6 +1,8 @@
-import { useState, useRef } from "react";
-import { CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, Zap, UserCheck, AlertTriangle, FileText, Package, Receipt, Timer } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, AlertTriangle, FileText, Package, Receipt, Timer } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
+import ApplianceIcon from "./ApplianceIcon";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
@@ -909,6 +911,126 @@ function ReportModal({ item, report, onClose }) {
   );
 }
 
+/* ── mock 리뷰 데이터 (id 5 = 이미 리뷰 작성된 케이스) ── */
+const MOCK_REVIEWS = {
+  5: {
+    engineerName: "김민수 기사",
+    rating: 5,
+    comment: "기사님이 매우 친절하고 신속하게 수리해주셨어요. 문제를 명확하게 설명해주셔서 좋았습니다. 다음에도 이용하고 싶네요!",
+    createdAt: "2026-05-22",
+  },
+};
+
+/* ── 리뷰 모달 ── */
+function ReviewModal({ item, existingReview, onSubmit, onClose }) {
+  const [rating, setRating]   = useState(existingReview?.rating ?? 0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState(existingReview?.comment ?? "");
+  const readOnly = !!existingReview;
+
+  const STAR_LABELS = ["", "별로예요", "그저 그래요", "보통이에요", "좋아요", "최고예요!"];
+  const displayRating = hovered || rating;
+
+  return (
+    <div className="cas-review-overlay" onClick={onClose}>
+      <div className="cas-review-modal" onClick={(e) => e.stopPropagation()}>
+
+        {/* 헤더 */}
+        <div className="cas-review-modal__header">
+          <div className="cas-review-modal__header-left">
+            <Star size={17} fill="#f59e0b" color="#f59e0b" />
+            <div>
+              <p className="cas-review-modal__sup">{readOnly ? "작성한 리뷰" : "기사님 리뷰 남기기"}</p>
+              <h3 className="cas-review-modal__title">{item.appliance}</h3>
+            </div>
+          </div>
+          <button className="cas-review-modal__close" onClick={onClose}><X size={17} /></button>
+        </div>
+
+        {/* 기사 정보 */}
+        <div className="cas-review-modal__engineer">
+          <div className="cas-review-eng-avatar">{item.engineer[0]}</div>
+          <div>
+            <p className="cas-review-eng-name">{item.engineer}</p>
+            <p className="cas-review-eng-sub">담당 기사 · {item.datetime.slice(0, 10)}</p>
+          </div>
+        </div>
+
+        <div className="cas-review-modal__body">
+          {/* 별점 */}
+          <div className="cas-review-section">
+            <p className="cas-review-section__label">종합 평점<span className="cas-review-required">*</span></p>
+            <div className="cas-review-stars">
+              {[1,2,3,4,5].map((n) => (
+                <button
+                  key={n}
+                  className="cas-review-star-btn"
+                  onMouseEnter={() => !readOnly && setHovered(n)}
+                  onMouseLeave={() => !readOnly && setHovered(0)}
+                  onClick={() => !readOnly && setRating(n)}
+                  disabled={readOnly}
+                >
+                  <Star
+                    size={34}
+                    fill={n <= displayRating ? "#f59e0b" : "none"}
+                    color={n <= displayRating ? "#f59e0b" : "#d1d5db"}
+                    strokeWidth={1.5}
+                  />
+                </button>
+              ))}
+            </div>
+            {displayRating > 0 && (
+              <p className="cas-review-rating-label">{STAR_LABELS[displayRating]}</p>
+            )}
+          </div>
+
+          {/* 상세 후기 */}
+          <div className="cas-review-section">
+            <p className="cas-review-section__label">
+              상세 후기
+              <span className="cas-review-optional"> (선택)</span>
+            </p>
+            {readOnly ? (
+              <p className="cas-review-comment-view">{comment || "작성된 후기가 없습니다."}</p>
+            ) : (
+              <textarea
+                className="cas-review-textarea"
+                placeholder="기사님의 서비스는 어떠셨나요? 다른 고객에게 도움이 될 수 있는 솔직한 후기를 남겨주세요."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                maxLength={500}
+                rows={4}
+              />
+            )}
+            {!readOnly && (
+              <p className="cas-review-char-count">{comment.length} / 500</p>
+            )}
+          </div>
+
+          {readOnly && (
+            <p className="cas-review-date">작성일: {existingReview.createdAt}</p>
+          )}
+        </div>
+
+        <div className="cas-review-modal__footer">
+          <button className="cas-review-modal__btn cas-review-modal__btn--outline" onClick={onClose}>
+            {readOnly ? "닫기" : "취소"}
+          </button>
+          {!readOnly && (
+            <button
+              className="cas-review-modal__btn cas-review-modal__btn--primary"
+              disabled={rating === 0}
+              onClick={() => onSubmit({ rating, comment })}
+            >
+              리뷰 등록하기
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── 예약 취소 모달 ── */
 function CancelModal({ item, onConfirm, onClose }) {
   const [reason, setReason] = useState("");
@@ -974,9 +1096,48 @@ function CancelModal({ item, onConfirm, onClose }) {
 export default function CustomerAS() {
   const [activeFilter, setActiveFilter] = useState("전체");
   const [showReserve, setShowReserve]   = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("reserve") === "true") {
+      setShowReserve(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [asList, setAsList]             = useState(AS_LIST);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null); // { item, existingReview? }
+  const [reviews, setReviews]           = useState(MOCK_REVIEWS);
+
+  function handlePayment(itemId) {
+    setAsList(prev =>
+      prev.map(item =>
+        item.id === itemId
+          ? { ...item, status: "A/S 완료", actions: ["수리 보고서 보기", "기사님 리뷰 남기기"] }
+          : item
+      )
+    );
+  }
+
+  function handleReviewSubmit({ rating, comment }) {
+    const item = reviewTarget.item;
+    const newReview = {
+      engineerName: item.engineer,
+      rating,
+      comment,
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    setReviews(prev => ({ ...prev, [item.id]: newReview }));
+    setAsList(prev =>
+      prev.map(i =>
+        i.id === item.id
+          ? { ...i, actions: ["수리 보고서 보기", "작성한 리뷰 보기"] }
+          : i
+      )
+    );
+    setReviewTarget(null);
+  }
 
   function handleCancelConfirm(reason) {
     setAsList(prev =>
@@ -1015,6 +1176,16 @@ export default function CustomerAS() {
           item={reportTarget.item}
           report={reportTarget.report}
           onClose={() => setReportTarget(null)}
+        />
+      )}
+
+      {/* 리뷰 모달 */}
+      {reviewTarget && (
+        <ReviewModal
+          item={reviewTarget.item}
+          existingReview={reviewTarget.existingReview}
+          onSubmit={handleReviewSubmit}
+          onClose={() => setReviewTarget(null)}
         />
       )}
 
@@ -1077,7 +1248,7 @@ export default function CustomerAS() {
               const st = STATUS_META[item.status];
               return (
                 <div key={item.id} className={`cas-item ${item.status === "결제 대기" ? "cas-item--payment" : ""}`}>
-                  <div className="cas-item__img" />
+                  <ApplianceIcon name={item.appliance} size={68} radius={10} />
                   <div className="cas-item__info">
                     <div className="cas-item__title-row">
                       <span className="cas-item__name">{item.appliance}</span>
@@ -1114,6 +1285,12 @@ export default function CustomerAS() {
                             ? () => setCancelTarget(item)
                             : action === "수리 보고서 보기"
                             ? () => setReportTarget({ item, report: MOCK_REPORTS[item.id] })
+                            : action === "결제하기"
+                            ? () => handlePayment(item.id)
+                            : action === "기사님 리뷰 남기기"
+                            ? () => setReviewTarget({ item })
+                            : action === "작성한 리뷰 보기"
+                            ? () => setReviewTarget({ item, existingReview: reviews[item.id] })
                             : undefined
                         }
                       >

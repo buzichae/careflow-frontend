@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff, ChevronDown, User, Lock, MapPin, Check, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, ChevronDown, User, Lock, MapPin, Check, AlertCircle, UserRound } from "lucide-react";
 import "../../styles/Customer/CustomerMyPage.css";
 
 const REGIONS = {
@@ -124,7 +124,7 @@ export default function CustomerMyPage() {
     <div className="cmp-page">
       {/* 프로필 헤더 */}
       <div className="cmp-profile-hero">
-        <div className="cmp-profile-hero__avatar">🏢</div>
+        <div className="cmp-profile-hero__avatar"><UserRound /></div>
         <div className="cmp-profile-hero__info">
           <p className="cmp-profile-hero__name">{name || "플로우"}</p>
           <p className="cmp-profile-hero__email">user@careflow.kr</p>

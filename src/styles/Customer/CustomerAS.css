@@ -121,10 +121,7 @@
   background: #fffdf7;
 }
 
-.cas-item__img {
-  width: 68px; height: 68px;
-  background: #f3f3f7; border-radius: 10px; flex-shrink: 0;
-}
+.cas-item__img { flex-shrink: 0; }
 
 .cas-item__info { display: flex; flex-direction: column; gap: 5px; }
 
@@ -1063,6 +1060,211 @@
   transition: background .15s;
 }
 .cas-report-modal__btn--outline:hover { background: #f5f5ff; }
+
+/* ─────────────────────────────────
+   리뷰 모달
+───────────────────────────────── */
+.cas-review-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 20px;
+}
+.cas-review-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,.18);
+}
+.cas-review-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f0f0f8;
+  background: #fafaff;
+  flex-shrink: 0;
+}
+.cas-review-modal__header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cas-review-modal__sup {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.cas-review-modal__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+.cas-review-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  display: flex;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background .15s;
+}
+.cas-review-modal__close:hover { background: #f0f0f8; color: #555; }
+
+/* 기사 정보 */
+.cas-review-modal__engineer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-bottom: 1px solid #f0f0f8;
+  background: #f8f7ff;
+  flex-shrink: 0;
+}
+.cas-review-eng-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ede9fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #7c5cf7;
+  flex-shrink: 0;
+}
+.cas-review-eng-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2d2d50;
+  margin: 0 0 2px;
+}
+.cas-review-eng-sub {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+/* 바디 */
+.cas-review-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cas-review-section { display: flex; flex-direction: column; gap: 10px; }
+.cas-review-section__label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #2d2d50;
+  margin: 0;
+}
+.cas-review-required { color: #ef4444; margin-left: 3px; }
+.cas-review-optional { font-size: 12px; font-weight: 400; color: #aaa; margin-left: 4px; }
+
+/* 별점 */
+.cas-review-stars {
+  display: flex;
+  gap: 4px;
+}
+.cas-review-star-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  transition: transform .1s;
+  display: flex;
+}
+.cas-review-star-btn:hover:not(:disabled) { transform: scale(1.15); }
+.cas-review-star-btn:disabled { cursor: default; }
+.cas-review-rating-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin: 0;
+}
+
+/* 텍스트에어리어 */
+.cas-review-textarea {
+  width: 100%;
+  border: 1.5px solid #e8e8f0;
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 13px;
+  color: #1a1a2e;
+  outline: none;
+  resize: vertical;
+  min-height: 90px;
+  transition: border-color .15s;
+  box-sizing: border-box;
+  font-family: inherit;
+  line-height: 1.6;
+}
+.cas-review-textarea:focus { border-color: #f59e0b; }
+.cas-review-textarea::placeholder { color: #c0bdd6; }
+.cas-review-char-count { font-size: 11.5px; color: #aaa; text-align: right; margin: -6px 0 0; }
+
+/* 읽기 전용 후기 */
+.cas-review-comment-view {
+  font-size: 13px;
+  color: #444;
+  line-height: 1.65;
+  background: #fafaff;
+  border: 1px solid #f0f0f8;
+  border-radius: 9px;
+  padding: 12px 14px;
+  margin: 0;
+}
+.cas-review-date { font-size: 12px; color: #aaa; margin: -8px 0 0; }
+
+/* 푸터 */
+.cas-review-modal__footer {
+  padding: 14px 22px;
+  border-top: 1px solid #f0f0f8;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  background: #fafaff;
+  flex-shrink: 0;
+}
+.cas-review-modal__btn {
+  border-radius: 9px;
+  padding: 9px 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+  border: none;
+}
+.cas-review-modal__btn--outline {
+  background: #fff;
+  border: 1.5px solid #e0e0f0;
+  color: #555;
+}
+.cas-review-modal__btn--outline:hover { background: #f5f5ff; }
+.cas-review-modal__btn--primary {
+  background: #f59e0b;
+  color: #fff;
+}
+.cas-review-modal__btn--primary:hover:not(:disabled) { opacity: .87; }
+.cas-review-modal__btn--primary:disabled { background: #fde68a; cursor: not-allowed; }
 
 /* ─────────────────────────────────
    예약 취소 모달

@@ -1,6 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, CalendarCheck, AlertTriangle, ShieldCheck, Upload, X, Check, ChevronRight, ChevronDown } from "lucide-react";
 import "../../styles/Customer/CustomerAppliances.css";
+import ApplianceIcon from "./ApplianceIcon";
 
 
 
@@ -373,6 +375,14 @@ const avgScore = Math.round(ALL_APPLIANCES.reduce((s, a) => s + a.score, 0) / AL
 export default function CustomerAppliances() {
   const [activeTab, setActiveTab] = useState("전체");
   const [showRegister, setShowRegister] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("register") === "true") {
+      setShowRegister(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const filtered = activeTab === "전체"
     ? ALL_APPLIANCES
@@ -415,7 +425,7 @@ export default function CustomerAppliances() {
             {filtered.map((a) => (
               <div key={a.id} className="ca-card">
                 <div className="ca-card__top">
-                  <div className="ca-card__img" />
+                  <ApplianceIcon name={a.name} size={80} radius={12} />
                   <div className="ca-card__badges">
                     {a.certified && <span className="ca-cert-badge">careflow<br />인증</span>}
                     <span className={`ca-status-badge ca-status-badge--${STATUS_COLOR[a.status]}`}>
@@ -435,7 +445,7 @@ export default function CustomerAppliances() {
                 </div>
                 <div className="ca-card__actions">
                   <button className="ca-btn-detail">상세 및 이력 보기</button>
-                  <button className="ca-btn-check"><CalendarCheck size={13} /> 점검 예약</button>
+                  <button className="ca-btn-check"><CalendarCheck size={13} /> A/S 예약</button>
                 </div>
               </div>
             ))}
@@ -512,7 +522,7 @@ export default function CustomerAppliances() {
             </div>
           </div>
 
-          {/* 관리 일정 알림 */}
+          {/* 관리 일정 알림
           <div className="ca-side-card">
             <p className="ca-side-card__title">관리 일정 알림</p>
             <div className="ca-upcoming-list">
@@ -526,7 +536,7 @@ export default function CustomerAppliances() {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* CareFlow 인증 현황 */}
           <div className="ca-side-card">

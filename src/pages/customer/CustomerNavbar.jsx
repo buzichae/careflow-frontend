@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
+import { ChevronDown, ChevronUp, User, Settings, LogOut, UserRound } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../../styles/Customer/CustomerNavbar.css";
 
@@ -10,7 +10,7 @@ const PAGE_INFO = {
   "/customer/as":             { title: "A/S 신청 · 예약",     subtitle: "접수한 A/S 현황과 방문 일정을 확인하세요." },
   "/customer/payment":        { title: "정산 / 결제",         subtitle: "이번 달 수리 비용과 결제 현황을 확인하세요." },
   "/customer/notice":         { title: "알림",                subtitle: "중요한 서비스 알림과 시스템 소식을 확인하세요." },
-  "/customer/market":         { title: "중고 마켓",           subtitle: "중고 가전을 안전하게 거래하세요." },
+  // "/customer/market":         { title: "중고 마켓",           subtitle: "중고 가전을 안전하게 거래하세요." },
   "/customer/mypage":         { title: "마이페이지",          subtitle: "내 정보를 확인하고 수정하세요." },
 };
 
@@ -43,7 +43,7 @@ export default function CustomerNavbar() {
       <div className="customer-navbar__actions">
         <div className="customer-navbar__profile-wrap" ref={dropdownRef}>
           <button className="customer-navbar__profile" onClick={() => setDropdownOpen(p => !p)}>
-            <div className="customer-navbar__avatar">🏢</div>
+            <div className="customer-navbar__avatar"><UserRound /></div>
             <div>
               <p className="customer-navbar__name">{customer.name}</p>
               <p className="customer-navbar__role">{customer.role}</p>

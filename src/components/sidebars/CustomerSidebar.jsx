@@ -18,9 +18,10 @@ export default function CustomerSidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__logo">
-  <img src="/src/assets/logo.png" alt="CareFlow" className="sidebar__logo-img" />
-  CareFlow
-</div>
+        <img src="/src/assets/logo.png" alt="CareFlow" className="sidebar__logo-img" />
+        CareFlow
+      </div>
+      
       <nav className="sidebar__nav">
               {MENU.map((item) => (
                 <NavLink

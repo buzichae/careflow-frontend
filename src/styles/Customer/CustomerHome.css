@@ -285,12 +285,7 @@
   margin-bottom: 8px;
 }
 
-.ch-appliance-card__img {
-  width: 64px;
-  height: 64px;
-  background: #f3f3f7;
-  border-radius: 8px;
-}
+.ch-appliance-card__img { flex-shrink: 0; }
 
 .ch-status-badge {
   font-size: 10px;

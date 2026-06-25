@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronRight, Wrench, PlusCircle,
   MapPin, Star, FileText, Shield, ShieldCheck, X, CalendarCheck, Download,
+  WashingMachine, Bell, FileCheck
 } from "lucide-react";
 import "../../styles/Customer/CustomerHome.css";
+import ApplianceIcon from "./ApplianceIcon";
 
 /* ── 목 데이터 ── */
 const mockAppliances = [
@@ -272,10 +275,10 @@ function DiagnosticModal({ diag, onClose }) {
 
 /* stat 목록 */
 const STATS_WITH_DIAG = [
-  { icon: "📦", color: "gray",   num: "7 대", label: "보유 가전",       sub: "등록된 가전 수" },
-  { icon: "📋", color: "purple", num: "1 건", label: "진단서 발급 완료", sub: "최근 진단서"    },
-  { icon: "🔨", color: "orange", num: "1 건", label: "A/S 진행 중",     sub: "진행 중인 A/S"  },
-  { icon: "🔔", color: "red",    num: "3 건", label: "알림",             sub: "확인 필요"      },
+  { icon: <WashingMachine />, color: "gray",   num: "7 대", label: "보유 가전",       sub: "등록된 가전 수" },
+  { icon: <FileCheck />, color: "purple", num: "1 건", label: "진단서 발급 완료", sub: "최근 진단서"    },
+  { icon: <Wrench />, color: "orange", num: "1 건", label: "A/S 진행 중",     sub: "진행 중인 A/S"  },
+  { icon: <Bell />, color: "red",    num: "3 건", label: "알림",             sub: "확인 필요"      },
 ];
 const STATS_NO_DIAG = [
   { icon: "📦", color: "gray",   num: "7 대", label: "보유 가전",   sub: "등록된 가전 수" },
@@ -285,6 +288,7 @@ const STATS_NO_DIAG = [
 
 export default function CustomerHome() {
   const [modalDiag, setModalDiag] = useState(null);
+  const navigate = useNavigate();
 
   const diagnostic = mockDiagnostic;
   const stats = diagnostic ? STATS_WITH_DIAG : STATS_NO_DIAG;
@@ -350,13 +354,13 @@ export default function CustomerHome() {
           <section className="ch-section">
             <div className="ch-section__header">
               <h2>내 가전 관리</h2>
-              <button className="ch-link-btn">전체 보기 <ChevronRight size={14} /></button>
+              <button className="ch-link-btn" onClick={() => navigate("/customer/appliances")}>전체 보기 <ChevronRight size={14} /></button>
             </div>
             <div className="ch-appliances">
               {mockAppliances.map((a) => (
                 <div key={a.id} className="ch-appliance-card">
                   <div className="ch-appliance-card__top">
-                    <div className="ch-appliance-card__img" />
+                    <ApplianceIcon name={a.name} size={64} radius={10} />
                     <span className={`ch-status-badge ch-status-badge--${a.statusColor}`}>{a.status}</span>
                   </div>
                   <p className="ch-appliance-card__name">{a.name}</p>
@@ -368,10 +372,7 @@ export default function CustomerHome() {
                       <div className="ch-score-bar__fill" style={{ width: `${a.score}%`, background: a.statusColor === "orange" ? "#f59e0b" : "#734bcf" }} />
                     </div>
                   </div>
-                  {a.statusColor === "orange"
-                    ? <button className="ch-card-btn ch-card-btn--check"><Wrench size={13} /> A/S 신청</button>
-                    : <button className="ch-card-btn">상세 및 이력 보기 &gt;</button>
-                  }
+                  <button className="ch-card-btn">상세 및 이력 보기 &gt;</button>
                 </div>
               ))}
             </div>
@@ -382,12 +383,12 @@ export default function CustomerHome() {
             <div className="ch-quick">
               <h2>빠른 메뉴</h2>
               <div className="ch-quick__list">
-                <button className="ch-quick-item">
+                <button className="ch-quick-item" onClick={() => navigate("/customer/as?reserve=true")}>
                   <span className="ch-quick-item__icon ch-quick-item__icon--purple"><Wrench size={15} /></span>
                   <span className="ch-quick-item__label">A/S 신청</span>
                   <ChevronRight size={13} className="ch-quick-item__arrow" />
                 </button>
-                <button className="ch-quick-item">
+                <button className="ch-quick-item" onClick={() => navigate("/customer/appliances?register=true")}>
                   <span className="ch-quick-item__icon ch-quick-item__icon--blue"><PlusCircle size={15} /></span>
                   <span className="ch-quick-item__label">가전 등록</span>
                   <ChevronRight size={13} className="ch-quick-item__arrow" />
@@ -430,7 +431,7 @@ export default function CustomerHome() {
               <p>새로운 가전을 등록하고</p>
               <p><strong>더 스마트한 관리를 시작해보세요!</strong></p>
             </div>
-            <button className="ch-banner__btn">+ 가전 등록하기</button>
+            <button className="ch-banner__btn" onClick={() => navigate("/customer/appliances?register=true")}>+ 가전 등록하기</button>
           </div>
         </div>
 
@@ -463,7 +464,7 @@ export default function CustomerHome() {
           <div className="ch-unread-card">
             <div className="ch-section__header">
               <h2>읽지 않은 알림 <span className="ch-unread-count">3</span></h2>
-              <button className="ch-link-btn">전체 보기 <ChevronRight size={14} /></button>
+              <button className="ch-link-btn" onClick={() => navigate("/customer/notice")}>전체 보기 <ChevronRight size={14} /></button>
             </div>
             <div className="ch-unread-list">
               {mockUnreadNotices.map((n) => (
