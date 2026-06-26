@@ -25,12 +25,11 @@ import AgencyStatisticsPage from "../src/pages/Agency/AgencyStatisticsPage.jsx"
 import AgencyNoticePage from "../src/pages/Agency/Agencynoticepage.jsx"
 import AgencySettingPage from "../src/pages/Agency/Agencysettingpage.jsx"
 
-<<<<<<< Updated upstream
 import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import AdminMembersPage from "./pages/Admin/AdminMembersPage.jsx";
 import AdminServicePage from "./pages/Admin/AdminServicePage.jsx";
 import AdminLMSPage from "./pages/Admin/AdminLMSPage.jsx";
-=======
+
 import EngineerDashboard from "../src/pages/Engineer/Engineerdashboard.jsx"
 import EngineerSchedulePage from "../src/pages/Engineer/EngineerSchedulePage.jsx"
 import EngineerWorkPage from "../src/pages/Engineer/Engineerworkpage.jsx"
@@ -41,7 +40,7 @@ import EngineerSettlementPage from "../src/pages/Engineer/Engineersettlementpage
 import Engineerreviewpage from "../src/pages/Engineer/Engineerreviewpage.jsx"
 import EngineerProfilePage from "../src/pages/Engineer/EngineerProfilePage.jsx"
 import Engineernoticepage from "../src/pages/Engineer/EngineerNoticePage.jsx"
->>>>>>> Stashed changes
+
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
