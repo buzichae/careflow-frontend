@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CreditCard, CalendarCheck, Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, AlertTriangle, FileText, Package, Receipt, Timer } from "lucide-react";
+import { Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, AlertTriangle, FileText, Package, Receipt, Timer } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
 import ApplianceIcon from "./ApplianceIcon";
 
@@ -1215,10 +1215,8 @@ export default function CustomerAS() {
         ))}
       </div>
 
-      {/* 바디: 좌측 메인 + 우측 사이드바 */}
+      {/* 바디: 메인 컨텐츠 */}
       <div className="cas-body">
-
-        {/* ══ 좌측 메인 ══ */}
         <div className="cas-main">
 
           {/* 목록 헤더 */}
@@ -1306,85 +1304,6 @@ export default function CustomerAS() {
             })}
           </div>
         </div>
-
-        {/* ══ 우측 사이드바 ══ */}
-        <aside className="cas-sidebar">
-
-          {/* 결제 대기 */}
-          <div className="cas-side-card cas-side-card--alert">
-            <div className="cas-side-card__head">
-              <CreditCard size={15} />
-              <span>결제 대기</span>
-              <span className="cas-side-badge cas-side-badge--red">1건</span>
-            </div>
-            {PENDING_PAYMENTS.map((p, i) => (
-              <div key={i} className="cas-payment-item">
-                <div className="cas-payment-item__top">
-                  <p className="cas-payment-item__name">{p.appliance}</p>
-                  <p className="cas-payment-item__model">{p.model}</p>
-                </div>
-                <div className="cas-payment-item__bottom">
-                  <span className="cas-payment-item__amount">{p.amount}</span>
-                  <span className="cas-payment-item__due">~ {p.dueDate}까지</span>
-                </div>
-                <button className="cas-pay-btn">지금 결제하기</button>
-              </div>
-            ))}
-          </div>
-
-          {/* 방문 예정 일정 */}
-          <div className="cas-side-card">
-            <div className="cas-side-card__head">
-              <CalendarCheck size={15} />
-              <span>방문 예정 일정</span>
-              <span className="cas-side-badge cas-side-badge--purple">1건</span>
-            </div>
-            {UPCOMING_VISITS.map((v, i) => (
-              <div key={i} className="cas-visit-item">
-                <div className="cas-visit-dday">D-{v.dDay}</div>
-                <div className="cas-visit-info">
-                  <p className="cas-visit-appliance">{v.appliance}</p>
-                  <p className="cas-visit-date">{v.date}</p>
-                  <p className="cas-visit-time">{v.time}</p>
-                  <p className="cas-visit-engineer">{v.engineer}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 최근 담당 기사 */}
-          {/* <div className="cas-side-card">
-            <div className="cas-side-card__head">
-              <span>최근 담당 기사</span>
-            </div>
-            {[
-              { name: "김민준 기사", count: 2, rating: 4.9, tags: ["친절함", "신속"] },
-              { name: "이재훈 기사", count: 1, rating: 4.8, tags: ["정확함"] },
-            ].map((eng, i) => (
-              <div key={i} className="cas-eng-row">
-                <div className="cas-eng-avatar">{eng.name[0]}</div>
-                <div className="cas-eng-info">
-                  <div className="cas-eng-top">
-                    <p className="cas-eng-name">{eng.name}</p>
-                    <p className="cas-eng-rating"><Star size={10} fill="#f59e0b" color="#f59e0b" /> {eng.rating}</p>
-                  </div>
-                  <p className="cas-eng-count">방문 {eng.count}회</p>
-                  <div className="cas-eng-tags">
-                    {eng.tags.map((t) => <span key={t} className="cas-eng-tag">{t}</span>)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div> */}
-
-          {/* A/S 빠른 신청 */}
-          <div className="cas-side-card cas-side-card--cta">
-            <p className="cas-cta-title">새 A/S 신청</p>
-            <p className="cas-cta-desc">가전 고장이나 점검이 필요하신가요?</p>
-            <button className="cas-cta-btn" onClick={() => setShowReserve(true)}>A/S 신청하기 <ChevronRight size={13} /></button>
-          </div>
-
-        </aside>
       </div>
     </div>
   );

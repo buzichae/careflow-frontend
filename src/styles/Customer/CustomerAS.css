@@ -55,12 +55,9 @@
 .cas-stat__num span { font-size: 14px; font-weight: 500; color: var(--text-mid); }
 .cas-stat__num--red { color: #ef4444; }
 
-/* ── 바디 2열 ── */
+/* ── 바디 단일 컬럼 ── */
 .cas-body {
-  display: grid;
-  grid-template-columns: 1fr 250px;
-  gap: 20px;
-  align-items: start;
+  display: block;
 }
 
 .cas-main { display: flex; flex-direction: column; gap: 14px; }
