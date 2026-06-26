@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../../styles/Customer/CustomerNavbar.css";
 
 const PAGE_INFO = {
-  "/customer/home":           { title: "안녕하세요 플로우님!", subtitle: "오늘도 우리집 가전의 건강을 체크해보세요." },
+  // "/customer/home":           { title: "안녕하세요 플로우님!", subtitle: "오늘도 우리집 가전의 건강을 체크해보세요." },
   "/customer/appliances":     { title: "내 가전",             subtitle: "보유하고 있는 가전제품을 한눈에 확인하고 관리하세요." },
   "/customer/repair-history": { title: "가전별 수리 이력",    subtitle: "가전을 선택하면 상세 수리 이력을 확인할 수 있습니다." },
   "/customer/as":             { title: "A/S 신청 · 예약",     subtitle: "접수한 A/S 현황과 방문 일정을 확인하세요." },
