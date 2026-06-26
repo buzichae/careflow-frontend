@@ -1,0 +1,132 @@
+.erp {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 20px 24px; background: #f9f9fb; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+.erp-header__title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.erp-header__sub   { font-size: 13px; color: #aaa; }
+
+/* 필터 */
+.erp-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.erp-filter-date {
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #444; background: #fff; white-space: nowrap;
+}
+.erp-filter-select {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 10px; font-size: 12px; color: #444;
+  background: #fff; cursor: pointer; white-space: nowrap;
+}
+.erp-search {
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; flex: 1; min-width: 200px; background: #fff;
+}
+.erp-search input { border: none; outline: none; font-size: 12px; color: #444; width: 100%; font-family: inherit; }
+.erp-excel-btn {
+  display: flex; align-items: center; gap: 5px; margin-left: auto;
+  border: 0.5px solid #5B4FF5; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #5B4FF5;
+  background: #fff; cursor: pointer; font-family: inherit; font-weight: 600;
+}
+
+/* 통계 카드 */
+.erp-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.erp-stat-card {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
+  padding: 14px; display: flex; align-items: center; gap: 10px;
+}
+.erp-stat-card__icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.erp-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
+.erp-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
+.erp-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
+.erp-stat-card__icon--amber  { background: #fef9e0; color: #b45309; }
+.erp-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
+.erp-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
+
+.erp-stat-card__label { font-size: 10px; color: #aaa; margin-bottom: 2px; }
+.erp-stat-card__value { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+.erp-stat-card__value span { font-size: 12px; font-weight: 400; margin-left: 1px; }
+
+/* 목록 메타 */
+.erp-list-meta { display: flex; align-items: center; justify-content: space-between; }
+.erp-list-count { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.erp-list-controls { display: flex; gap: 8px; }
+.erp-sort-select, .erp-size-select {
+  display: flex; align-items: center; gap: 4px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; color: #444; cursor: pointer; background: #fff;
+}
+
+/* 테이블 */
+.erp-table { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; overflow: hidden; }
+.erp-table__header {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 1.4fr 1.2fr 1fr 0.8fr 1.1fr 1.1fr 0.9fr;
+  padding: 10px 16px; background: #f8f7ff;
+  font-size: 11px; color: #aaa; font-weight: 600;
+  border-bottom: 0.5px solid #e8e4ff;
+}
+.erp-table__row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 1.4fr 1.2fr 1fr 0.8fr 1.1fr 1.1fr 0.9fr;
+  padding: 12px 16px; border-bottom: 0.5px solid #f5f4ff;
+  align-items: center; font-size: 12px; color: #444;
+  transition: background 0.1s;
+}
+.erp-table__row:last-child { border-bottom: none; }
+.erp-table__row:hover { background: #fafaff; }
+
+.erp-table__request-id { font-size: 11px; color: #5B4FF5; font-weight: 600; }
+.erp-table__customer   { font-weight: 600; color: #1a1a2e; }
+.erp-table__product    { font-weight: 600; color: #1a1a2e; display: block; }
+.erp-table__model      { font-size: 10px; color: #aaa; }
+.erp-table__work-date  { display: flex; flex-direction: column; gap: 2px; }
+.erp-table__work-time  { font-size: 10px; color: #aaa; }
+.erp-table__amount     { font-weight: 700; color: #1a1a2e; }
+.erp-table__date       { font-size: 11px; color: #888; }
+.erp-table__actions    { display: flex; align-items: center; gap: 6px; }
+
+/* 상태 배지 */
+.erp-status-badge { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
+.erp-status-badge--draft     { background: #f5f5f5;  color: #888;    }
+.erp-status-badge--submitted { background: #e6f1fb;  color: #2563eb; }
+.erp-status-badge--pending   { background: #fef0e0;  color: #d97706; }
+.erp-status-badge--approved  { background: #eaf3de;  color: #16a34a; }
+
+/* 버튼 */
+.erp-detail-btn {
+  font-size: 11px; border: 0.5px solid #e0dcff; border-radius: 6px;
+  padding: 4px 10px; color: #5B4FF5; background: none;
+  cursor: pointer; font-weight: 600; font-family: inherit; white-space: nowrap;
+}
+.erp-detail-btn:hover { background: #eeeaff; border-color: #5B4FF5; }
+
+.erp-write-btn {
+  font-size: 11px; border: none; border-radius: 6px;
+  padding: 4px 10px; color: #fff; background: #5B4FF5;
+  cursor: pointer; font-weight: 600; font-family: inherit; white-space: nowrap;
+}
+.erp-more-btn { background: none; border: none; cursor: pointer; color: #aaa; display: flex; align-items: center; }
+
+/* 페이지네이션 */
+.erp-pagination { display: flex; align-items: center; justify-content: space-between; }
+.erp-pagination__left { display: flex; align-items: center; gap: 4px; }
+.erp-pagination__left button {
+  width: 30px; height: 30px; border: 0.5px solid #e0dcff; border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 13px; color: #666;
+  display: flex; align-items: center; justify-content: center; font-family: inherit;
+}
+.erp-pagination__left button:disabled { color: #ccc; cursor: default; }
+.erp-pagination__active { background: #5B4FF5 !important; color: #fff !important; border-color: #5B4FF5 !important; font-weight: 700; }
+.erp-page-size {
+  display: flex; align-items: center; gap: 4px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; color: #444; cursor: pointer; background: #fff;
+}
