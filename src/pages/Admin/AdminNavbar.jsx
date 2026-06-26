@@ -4,10 +4,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../../styles/Admin/AdminNavbar.css";
 
 const PAGE_INFO = {
-  "/admin/dashboard": { title: "운영 대시보드",      subtitle: "플랫폼 전반의 KPI와 주요 현황을 확인하세요." },
-  "/admin/members":   { title: "회원 관리",          subtitle: "전체 회원 조회 및 계정 상태를 관리하세요." },
-  "/admin/service":   { title: "서비스 운영",        subtitle: "A/S 현황, 수리 비용 가이드, 인증 뱃지 기준을 관리하세요." },
-  "/admin/lms":       { title: "LMS 콘텐츠 관리",    subtitle: "교육 콘텐츠를 등록하고 기사별 이수 현황을 확인하세요." },
+  "/admin/dashboard":  { title: "운영 대시보드",      subtitle: "플랫폼 전반의 KPI와 주요 현황을 확인하세요." },
+  "/admin/members":    { title: "회원 관리",          subtitle: "전체 회원 조회 및 계정 상태를 관리하세요." },
+  "/admin/service":    { title: "서비스 운영",        subtitle: "A/S 현황, 수리 비용 가이드, 인증 뱃지 기준을 관리하세요." },
+  "/admin/lms":        { title: "LMS 콘텐츠 관리",    subtitle: "교육 콘텐츠를 등록하고 기사별 이수 현황을 확인하세요." },
+  "/admin/settlement": { title: "정산 관리",          subtitle: "대행사 단위 정산 내역을 조회하고 지급 승인을 처리하세요." },
 };
 
 export default function AdminNavbar() {

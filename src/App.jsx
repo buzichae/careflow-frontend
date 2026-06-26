@@ -29,6 +29,7 @@ import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import AdminMembersPage from "./pages/Admin/AdminMembersPage.jsx";
 import AdminServicePage from "./pages/Admin/AdminServicePage.jsx";
 import AdminLMSPage from "./pages/Admin/AdminLMSPage.jsx";
+import AdminSettlementPage from "./pages/Admin/AdminSettlementPage.jsx";
 
 import EngineerDashboard from "../src/pages/Engineer/Engineerdashboard.jsx"
 import EngineerSchedulePage from "../src/pages/Engineer/EngineerSchedulePage.jsx"
@@ -103,7 +104,8 @@ export default function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/members"   element={<AdminMembersPage />} />
           <Route path="/admin/service"   element={<AdminServicePage />} />
-          <Route path="/admin/lms"       element={<AdminLMSPage />} />
+          <Route path="/admin/lms"        element={<AdminLMSPage />} />
+          <Route path="/admin/settlement" element={<AdminSettlementPage />} />
 
         </Route>
 
