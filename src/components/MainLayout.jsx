@@ -5,7 +5,11 @@ import AgencySidebar from "../components/sidebars/AgencySidebar.jsx";
 import AdminSidebar from "../components/sidebars/AdminSidebar.jsx";
 
 import AgencyNavbar from "../pages/Agency/AgencyNavbar.jsx"
+
 import AdminNavbar from "../pages/Admin/AdminNavbar.jsx"
+
+import EngineerNavbar  from "../pages/Engineer/Engineernavbar.jsx"
+
 import "../styles/Sidebars.css"
 import CustomerNavbar from "../pages/customer/CustomerNavbar.jsx";
 
@@ -20,8 +24,9 @@ const SIDEBARS = {
 };
 
 const NAVBARS = {
+
   CUSTOMER: <CustomerNavbar />,
-  ENGINEER: null,
+  ENGINEER: <EngineerNavbar />,   // 나중에 EngineerNavbar 만들면 교체
   AGENCY: <AgencyNavbar />,
   ADMIN: <AdminNavbar />,
 };

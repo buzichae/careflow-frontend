@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import "../../styles/Sidebars.css";
-import {House, CalendarDays, ClipboardList, UserSearch, ChartLine, HandCoins, Star ,UserRound ,Bell} from "lucide-react"
+import {House, CalendarDays, ClipboardList, UserSearch, ChartLine, HandCoins, Star ,UserRound ,Bell , BookOpen} from "lucide-react"
 
 const MENU = [
   { label: "대시보드", path: "/engineer/dashboard", icon: (active) => <House size={18} color={ active ? "#ffffff" : "#000000"} /> },
@@ -11,6 +11,7 @@ const MENU = [
   { label: "실적 / 정산", path: "/engineer/settlement", icon: (active) => <HandCoins size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "고객 평가", path: "/engineer/reviews", icon: (active) => <Star size={18} color={ active ? "#ffffff" : "#000000"} />},
   { label: "프로필 관리", path: "/engineer/profile", icon: (active) => <UserRound size={18} color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "LMS 교육", path: "/engineer/lms", icon: (active) => <BookOpen size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "알림", path: "/engineer/notice", icon: (active) => <Bell size={18} color={ active ? "#ffffff" : "#000000"} /> },
 ];
 

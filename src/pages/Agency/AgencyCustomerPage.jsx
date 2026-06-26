@@ -3,33 +3,38 @@ import {
   Users, UserCheck, UserX, UserPlus,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw, X,
-  Phone, Mail, Pencil, Ban,
+  Phone, Mail, Pencil, Lock, Ban,
 } from "lucide-react";
-import "../../styles/Agency/Agencycustomerpage.css";
+import "./AgencyCustomerPage.css";
 
 // ──────────────────────────────────────────
 // TODO: API 연동
 // GET /api/agency/customers?page=0&size=10
-// users WHERE role=CUSTOMER
+// 해당 대행사에 수리 이력이 있는 고객만 조회
+//
+// users WHERE user_id IN (
+//   SELECT DISTINCT customer_id FROM as_requests
+//   WHERE agency_id = 로그인대행사.agency_id
+// )
 // + appliances COUNT (applianceCount)
-// + as_requests COUNT (asCount)
+//
 // 응답 필드:
 //   userId, name, phone, email (users)
-//   regionId → regions.name + address_detail → 주소 합산 표시  ← 수정 2
+//   regionId → regions.name + address_detail → 주소 합산 표시
 //   status (users.status ENUM: ACTIVE/INACTIVE/SUSPENDED)
-//   lastLoginAt (users.last_login_at)                          ← 수정 1
+//   lastLoginAt (users.last_login_at)
 //   createdAt (users.created_at) → joinedAt
-//   grade: 백엔드 산정 (as_requests 건수/payments 합산)        ← 수정 4
-//   joinPath: DB 없음 → password_hash=NULL이면 소셜 로그인     ← 수정 3
+//   grade: 백엔드 산정 (as_requests 건수/payments 합산)
+//   joinPath: DB 없음 → password_hash=NULL이면 소셜 로그인
 // ──────────────────────────────────────────
- 
+
 const statCards = [
   { label: "전체 고객",           value: "12,458", sub: "전월 대비 +425명", subType: "up",      icon: Users,     color: "purple" },
   { label: "활성 고객",           value: "8,756",  sub: "70.3%",            subType: "neutral", icon: UserCheck, color: "green"  },
   { label: "비활성 고객",         value: "3,702",  sub: "29.7%",            subType: "neutral", icon: UserX,     color: "orange" },
   { label: "신규 고객 (이번 달)", value: "568",    sub: "전월 대비 +68명",  subType: "up",      icon: UserPlus,  color: "blue"   },
 ];
- 
+
 const GRADE_MAP = {
   VIP:    { label: "VIP",    stars: 5, type: "vip",    icon: "👑" },
   GOLD:   { label: "GOLD",   stars: 4, type: "gold",   icon: "⭐⭐⭐" },
@@ -37,26 +42,21 @@ const GRADE_MAP = {
   BRONZE: { label: "BRONZE", stars: 2, type: "bronze", icon: "⭐" },
   NORMAL: { label: "NORMAL", stars: 1, type: "normal", icon: "" },
 };
- 
+
 const STATUS_MAP = {
   ACTIVE:   { label: "활성", type: "active"   },
   INACTIVE: { label: "비활성", type: "inactive" },
   SUSPENDED:{ label: "휴면", type: "suspended" },
 };
- 
+
 // 고객 ID 포맷
 function formatCustomerId(id) {
   return `CUST-20240618-${String(id).padStart(4, "0")}`;
 }
- 
+
 // ──────────────────────────────────────────
-// TODO: API 연동 - 고객 목록
-// users WHERE role=CUSTOMER
-// + appliances COUNT → applianceCount
-// address = regions.name(depth=1 시 단위) + " " + address_detail  
-// lastLoginAt = users.last_login_at                               
-// grade = 백엔드 산정값 (DB 없음)                                
-// joinPath = DB 없음 (password_hash NULL이면 소셜)              
+// 더미 데이터 - 해당 대행사 수리 이력 있는 고객만
+// as_requests WHERE agency_id = 로그인대행사 → customer_id 기준 필터
 // ──────────────────────────────────────────
 const customerList = [
   { id: 1,  name: "김민수", phone: "010-1234-5678", email: "kimms@email.com", joinedAt: "2024.06.18", status: "ACTIVE",    grade: "VIP",    applianceCount: 5, lastLoginAt: "2024.06.18", address: "서울특별시 강남구 테헤란로 123", joinPath: "모바일 앱",  memo: "VIP 고객, 에어컨 정기점검 서비스 이용 중.", memoWriter: "관리자", memoAt: "2024.06.10 09:15" },
@@ -70,9 +70,9 @@ const customerList = [
   { id: 9,  name: "오현우", phone: "010-9012-3456", email: "ohhw@email.com",   joinedAt: "2024.06.13", status: "SUSPENDED", grade: "NORMAL", applianceCount: 2, lastLoginAt: "2024.05.18", address: "울산광역시 남구 삼산로 20",       joinPath: "모바일 앱",  memo: null, memoWriter: null, memoAt: null },
   { id: 10, name: "윤지은", phone: "010-0123-4567", email: "yje@email.com",    joinedAt: "2024.06.12", status: "ACTIVE",    grade: "NORMAL", applianceCount: 2, lastLoginAt: "2024.06.12", address: "경기도 수원시 영통구 광교로 15",  joinPath: "웹사이트",   memo: null, memoWriter: null, memoAt: null },
 ];
- 
+
 const DETAIL_TABS = ["기본 정보", "가전 정보", "A/S 이력", "결제 내역", "메모"];
- 
+
 function Avatar({ name, size = 40 }) {
   return (
     <div className="acp-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
@@ -80,14 +80,14 @@ function Avatar({ name, size = 40 }) {
     </div>
   );
 }
- 
+
 export default function AgencyCustomerPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState(null);
   const [detailTab, setDetailTab] = useState("기본 정보");
   const [autoRefresh, setAutoRefresh] = useState(true);
   const totalPages = 125;
- 
+
   return (
     <div className="acp">
       {/* 헤더 */}
@@ -104,7 +104,7 @@ export default function AgencyCustomerPage() {
           <div className="acp-refresh-select">30초 <ChevronDown size={13} /></div>
         </div>
       </div>
- 
+
       {/* 통계 카드 */}
       <div className="acp-stats">
         {statCards.map((s) => (
@@ -118,7 +118,7 @@ export default function AgencyCustomerPage() {
           </div>
         ))}
       </div>
- 
+
       {/* 필터 */}
       <div className="acp-filters">
         <div className="acp-search">
@@ -137,11 +137,11 @@ export default function AgencyCustomerPage() {
         <button className="acp-reset-btn"><RefreshCw size={13} /> 필터 초기화</button>
         <button className="acp-register-btn"><UserPlus size={14} /> 고객 등록</button>
       </div>
- 
+
       <div className="acp-body">
         <div className="acp-left">
           <div className="acp-table-meta">전체 12,458명</div>
- 
+
           <div className="acp-table">
             <div className="acp-table__header">
               <span><input type="checkbox" /></span>
@@ -156,7 +156,7 @@ export default function AgencyCustomerPage() {
               <span>최근 활동일</span>
               <span>관리</span>
             </div>
- 
+
             {customerList.map((item) => {
               const status = STATUS_MAP[item.status];
               const grade = GRADE_MAP[item.grade];
@@ -192,7 +192,7 @@ export default function AgencyCustomerPage() {
               );
             })}
           </div>
- 
+
           {/* 페이지네이션 */}
           <div className="acp-pagination">
             <div className="acp-pagination__left">
@@ -209,7 +209,7 @@ export default function AgencyCustomerPage() {
             <div className="acp-page-size">10개씩 보기 <ChevronDown size={13} /></div>
           </div>
         </div>
- 
+
         {/* 우측 상세 패널 */}
         {selectedItem && (
           <aside className="acp-detail">
@@ -217,7 +217,7 @@ export default function AgencyCustomerPage() {
               <span className="acp-detail__title">고객 상세 정보</span>
               <button className="acp-detail__close" onClick={() => setSelectedItem(null)}><X size={16} /></button>
             </div>
- 
+
             {/* 프로필 */}
             <div className="acp-detail__profile">
               <Avatar name={selectedItem.name} size={44} />
@@ -231,7 +231,7 @@ export default function AgencyCustomerPage() {
                 <p className="acp-detail__profile-id">{formatCustomerId(selectedItem.id)}</p>
               </div>
             </div>
- 
+
             {/* 탭 */}
             <div className="acp-detail__tabs">
               {DETAIL_TABS.map((tab) => (
@@ -244,7 +244,7 @@ export default function AgencyCustomerPage() {
                 </button>
               ))}
             </div>
- 
+
             <div className="acp-detail__body">
               {detailTab === "기본 정보" && (
                 <div>
@@ -266,7 +266,7 @@ export default function AgencyCustomerPage() {
                     </span>
                   </div>
                   <div className="acp-detail__info-row"><span className="acp-detail__label">최근 로그인</span><span className="acp-detail__value">{selectedItem.lastLoginAt} 14:30</span></div>
- 
+
                   {/* 메모 */}
                   <div className="acp-detail__memo-section">
                     <p className="acp-detail__section-label">메모</p>
@@ -281,18 +281,19 @@ export default function AgencyCustomerPage() {
                       <button className="acp-detail__memo-edit"><Pencil size={11} /></button>
                     </div>
                   </div>
- 
+
                   {/* 관리 버튼 */}
                   <div className="acp-detail__manage-section">
                     <p className="acp-detail__section-label">관리</p>
                     <div className="acp-detail__manage-btns">
                       <button className="acp-manage-btn acp-manage-btn--edit"><Pencil size={12} /> 수정</button>
+                      <button className="acp-manage-btn acp-manage-btn--reset"><Lock size={12} /> 비밀번호 초기화</button>
                       <button className="acp-manage-btn acp-manage-btn--ban"><Ban size={12} /> 고객 차단</button>
                     </div>
                   </div>
                 </div>
               )}
- 
+
               {detailTab === "가전 정보" && (
                 <div className="acp-detail__coming-soon">
                   가전 정보 탭 — API 연동 후 구현<br />
@@ -323,4 +324,3 @@ export default function AgencyCustomerPage() {
     </div>
   );
 }
- 

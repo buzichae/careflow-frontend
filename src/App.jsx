@@ -31,6 +31,20 @@ import AdminServicePage from "./pages/Admin/AdminServicePage.jsx";
 import AdminLMSPage from "./pages/Admin/AdminLMSPage.jsx";
 import AdminSettlementPage from "./pages/Admin/AdminSettlementPage.jsx";
 
+import EngineerDashboard from "../src/pages/Engineer/Engineerdashboard.jsx"
+import EngineerSchedulePage from "../src/pages/Engineer/EngineerSchedulePage.jsx"
+import EngineerWorkPage from "../src/pages/Engineer/Engineerworkpage.jsx"
+import Engineercustomerpage from "../src/pages/Engineer/Engineercustomerpage.jsx"
+import EngineerReportPage  from "../src/pages/Engineer/Engineerreportpage.jsx"
+import EngineerReportDetailPage from "../src/pages/Engineer/Engineerreportdetailpage.jsx"
+import EngineerSettlementPage from "../src/pages/Engineer/Engineersettlementpage.jsx"
+import Engineerreviewpage from "../src/pages/Engineer/Engineerreviewpage.jsx"
+import EngineerProfilePage from "../src/pages/Engineer/EngineerProfilePage.jsx"
+import Engineernoticepage from "../src/pages/Engineer/EngineerNoticePage.jsx"
+import EngineerMySchedulePage from "../src/pages/Engineer/Engineermyschedulepage.jsx"
+import Engineerlmspage  from "../src/pages/Engineer/Engineerlmspage.jsx"
+
+
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
 }
@@ -61,15 +75,18 @@ export default function App() {
           <Route path="/customer/mypage" element={<CustomerMyPage />} />
 
           {/* 기사 */}
-          <Route path="/engineer/dashboard" element={<TempPage title="기사 - 대시보드" />} />
-          <Route path="/engineer/schedule" element={<TempPage title="기사 - 작업 일정" />} />
-          <Route path="/engineer/work" element={<TempPage title="기사 - 작업 관리" />} />
-          <Route path="/engineer/customers" element={<TempPage title="기사 - 고객 정보 조회" />} />
-          <Route path="/engineer/report" element={<TempPage title="기사 - 작업 보고서" />} />
-          <Route path="/engineer/settlement" element={<TempPage title="기사 - 실적/정산" />} />
-          <Route path="/engineer/reviews" element={<TempPage title="기사 - 고객 평가" />} />
-          <Route path="/engineer/profile" element={<TempPage title="기사 - 프로필 관리" />} />
-          <Route path="/engineer/notice" element={<TempPage title="기사 - 알림" />} />
+          <Route path="/engineer/dashboard" element={<EngineerDashboard  title="기사 - 대시보드" />} />
+          <Route path="/engineer/schedule" element={<EngineerSchedulePage title="기사 - 작업 일정" />} />
+          <Route path="/engineer/work" element={<EngineerWorkPage  title="기사 - 작업 관리" />} />
+          <Route path="/engineer/customers" element={<Engineercustomerpage title="기사 - 고객 정보 조회" />} />
+          <Route path="/engineer/report" element={<EngineerReportPage   title="기사 - 작업 보고서" />} />
+          <Route path="/engineer/my-schedule" element={<EngineerMySchedulePage title="기사 - 근무표" />} />
+          <Route path="/engineer/reports/:reportId" element={<EngineerReportDetailPage />} />
+          <Route path="/engineer/settlement" element={<EngineerSettlementPage  title="기사 - 실적/정산" />} />
+          <Route path="/engineer/reviews" element={<Engineerreviewpage  title="기사 - 고객 평가" />} />
+          <Route path="/engineer/profile" element={<EngineerProfilePage  title="기사 - 프로필 관리" />} />
+          <Route path="/engineer/lms" element={<Engineerlmspage  title="기사 - LMS 교육" />} />
+          <Route path="/engineer/notice" element={<Engineernoticepage  title="기사 - 알림" />} />
 
           {/* 대행사 */}
           <Route path="/agency/dashboard" element={<AgencyDashboard  title="대행사 - 대시보드" />} />

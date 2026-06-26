@@ -1,0 +1,209 @@
+.erdp {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 20px 24px; background: #f9f9fb; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+/* 상단바 */
+.erdp-topbar { display: flex; align-items: center; justify-content: space-between; }
+.erdp-breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: #aaa;
+}
+.erdp-breadcrumb__current { color: #1a1a2e; font-weight: 600; }
+.erdp-topbar__actions { display: flex; gap: 8px; }
+
+.erdp-back-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #666;
+  background: #fff; cursor: pointer; font-family: inherit;
+}
+.erdp-edit-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: none; border-radius: 8px;
+  padding: 7px 14px; font-size: 12px; color: #fff; font-weight: 700;
+  background: #5B4FF5; cursor: pointer; font-family: inherit;
+}
+
+/* 헤더 */
+.erdp-header__title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.erdp-header__sub   { font-size: 13px; color: #aaa; }
+
+/* ID + 상태 */
+.erdp-id-row { display: flex; align-items: center; gap: 10px; }
+.erdp-request-id { font-size: 18px; font-weight: 700; color: #5B4FF5; }
+
+/* 상태 배지 */
+.erdp-status-badge { font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 10px; }
+.erdp-status-badge--pending  { background: #fef0e0; color: #d97706; }
+.erdp-status-badge--approved { background: #eaf3de; color: #16a34a; }
+.erdp-status-badge--submitted{ background: #e6f1fb; color: #2563eb; }
+
+/* 바디 */
+.erdp-body { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+.erdp-left { display: flex; flex-direction: column; gap: 14px; }
+
+/* 상단 3단 요약 */
+.erdp-summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.erdp-summary-card {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 6px;
+}
+.erdp-summary-card:first-child { flex-direction: row; gap: 12px; align-items: flex-start; }
+.erdp-summary-card__img {
+  width: 60px; height: 70px; border-radius: 8px; background: #f5f4ff;
+  display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+  overflow: hidden;
+}
+.erdp-summary-card__img img { width: 100%; height: 100%; object-fit: cover; }
+.erdp-summary-card__section-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 4px; }
+.erdp-summary-card__product  { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.erdp-summary-card__row { font-size: 11px; color: #888; display: flex; gap: 8px; }
+.erdp-summary-card__row span:first-child { color: #aaa; width: 36px; flex-shrink: 0; }
+.erdp-summary-card__customer { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+.erdp-cust-id { font-size: 11px; color: #aaa; font-weight: 400; }
+.erdp-summary-card__row-icon { font-size: 11px; color: #666; display: flex; align-items: center; gap: 5px; }
+
+/* 진행 단계 */
+.erdp-progress-steps {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 20px 16px;
+}
+.erdp-step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+.erdp-step__dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #f5f4ff; border: 2px solid #e0dcff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; z-index: 1; flex-shrink: 0; color: #fff;
+}
+.erdp-step__dot--done    { background: #c8c0f0; border-color: #c8c0f0; }
+.erdp-step__dot--current { background: #5B4FF5; border-color: #5B4FF5; box-shadow: 0 0 0 5px #eeeaff; }
+.erdp-step__line {
+  position: absolute; top: 16px; left: 50%; width: 100%;
+  height: 2px; background: #e0dcff; z-index: 0;
+}
+.erdp-step__line--done { background: #5B4FF5; }
+.erdp-step__label { font-size: 11px; color: #aaa; margin-top: 6px; text-align: center; }
+.erdp-step__label--current { color: #5B4FF5; font-weight: 700; }
+.erdp-step__time  { font-size: 10px; color: #bbb; text-align: center; }
+
+/* 섹션 */
+.erdp-section {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 18px;
+}
+.erdp-section__title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+.erdp-section__sub-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 6px; }
+
+/* 진단 결과 */
+.erdp-diag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.erdp-diag-symptom { font-size: 13px; color: #444; }
+.erdp-diag-item    { font-size: 12px; color: #444; margin-bottom: 4px; }
+
+/* 교체 부품 테이블 */
+.erdp-parts-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.erdp-parts-table th {
+  background: #f8f7ff; padding: 8px 10px; text-align: left;
+  font-size: 11px; color: #aaa; font-weight: 600;
+  border-bottom: 0.5px solid #e8e4ff;
+}
+.erdp-parts-table td {
+  padding: 10px; border-bottom: 0.5px solid #f5f4ff; color: #444;
+}
+.erdp-parts-table__code { font-size: 11px; color: #888; }
+.erdp-parts-table tfoot td { border-bottom: none; padding-top: 10px; }
+.erdp-parts-table__total-label { text-align: right; color: #888; font-weight: 600; }
+.erdp-parts-table__total { font-weight: 700; color: #5B4FF5; font-size: 14px; }
+
+/* 작업 내용 */
+.erdp-work-item { font-size: 12px; color: #444; margin-bottom: 5px; }
+
+/* 작업 시간 */
+.erdp-time-grid { display: flex; flex-direction: column; gap: 0; }
+.erdp-time-row {
+  display: flex; justify-content: space-between; padding: 8px 0;
+  border-bottom: 0.5px solid #f5f4ff; font-size: 12px;
+}
+.erdp-time-row:last-child { border-bottom: none; }
+.erdp-time-row span:first-child { color: #aaa; }
+.erdp-time-total { font-weight: 700; color: #1a1a2e; }
+
+/* 첨부 사진 */
+.erdp-images { display: flex; gap: 10px; flex-wrap: wrap; }
+.erdp-image-thumb {
+  width: 80px; height: 80px; border-radius: 8px; background: #f5f4ff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; overflow: hidden; cursor: pointer;
+}
+.erdp-image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.erdp-image-more {
+  width: 80px; height: 80px; border-radius: 8px; background: #eeeaff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #5B4FF5; font-weight: 700; cursor: pointer;
+}
+
+/* 기타 사항 */
+.erdp-memo { font-size: 12px; color: #444; line-height: 1.7; }
+
+/* 우측 패널 */
+.erdp-right { display: flex; flex-direction: column; gap: 14px; }
+.erdp-panel { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 16px; }
+.erdp-panel__title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+
+/* 결과 요약 */
+.erdp-result-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 0.5px solid #f5f4ff; font-size: 12px;
+}
+.erdp-result-row:last-child { border-bottom: none; }
+.erdp-result-row span:first-child { color: #888; }
+.erdp-result-row--total { padding-bottom: 10px; margin-bottom: 4px; }
+.erdp-result-row--total span:first-child { font-weight: 700; color: #1a1a2e; font-size: 13px; }
+.erdp-result-row--total span:last-child  { font-weight: 700; color: #1a1a2e; font-size: 15px; }
+
+/* 기사 카드 */
+.erdp-engineer-card { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.erdp-engineer-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, #c8c0f0, #5B4FF5);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; font-size: 15px; flex-shrink: 0;
+}
+.erdp-engineer-name { font-size: 13px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 6px; }
+.erdp-level-badge { font-size: 10px; font-weight: 700; background: #eeeaff; color: #5B4FF5; border-radius: 4px; padding: 2px 7px; }
+
+.erdp-panel-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-bottom: 0.5px solid #f5f4ff; font-size: 12px;
+}
+.erdp-panel-row:last-of-type { border-bottom: none; }
+.erdp-panel-row span:first-child { color: #aaa; }
+
+/* 진행 이력 */
+.erdp-timeline { display: flex; flex-direction: column; gap: 0; }
+.erdp-timeline-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  position: relative; padding-bottom: 12px;
+}
+.erdp-timeline-item:last-child { padding-bottom: 0; }
+.erdp-timeline-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #c8c0f0; flex-shrink: 0; margin-top: 3px; z-index: 1;
+}
+.erdp-timeline-dot--highlight { background: #5B4FF5; }
+.erdp-timeline-line {
+  position: absolute; left: 3.5px; top: 10px; bottom: 0;
+  width: 1px; background: #e0dcff;
+}
+.erdp-timeline-time  { font-size: 11px; color: #aaa; white-space: nowrap; }
+.erdp-timeline-label { font-size: 12px; color: #444; }
+.erdp-timeline-label--highlight { color: #5B4FF5; font-weight: 700; }
+
+/* 승인 */
+.erdp-cancel-btn {
+  width: 100%; margin-top: 12px; border: 1px solid #e0dcff;
+  border-radius: 8px; padding: 9px; font-size: 12px; font-weight: 600;
+  color: #666; background: none; cursor: pointer; font-family: inherit;
+}
+.erdp-cancel-btn:hover { background: #f5f4ff; }
