@@ -5,7 +5,7 @@ import {
   ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw, X,
   Phone, Mail, Pencil, Lock, Ban,
 } from "lucide-react";
-import "./AgencyCustomerPage.css";
+import "../../styles/Agency/AgencyCustomerPage.css";
 
 // ──────────────────────────────────────────
 // TODO: API 연동
