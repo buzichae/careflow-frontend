@@ -298,10 +298,7 @@ export default function CustomerHome() {
       {/* 진단서 상세 모달 */}
       <DiagnosticModal diag={modalDiag} onClose={() => setModalDiag(null)} />
 
-      <div className="ch-body">
-
-        {/* ══ 좌측 메인 ══ */}
-        <div className="ch-main">
+      <div className="ch-main">
 
           {/* ── 상단: 진단서 + 통계 ── */}
           {diagnostic ? (
@@ -349,6 +346,54 @@ export default function CustomerHome() {
               ))}
             </section>
           )}
+
+          {/* ── 방문 일정 + 읽지 않은 알림 ── */}
+          <div className="ch-info-row">
+            <div className="ch-visit-card">
+              <div className="ch-visit-card__top">
+                <span className="ch-visit-dday">D-{mockNextVisit.dDay}</span>
+                <span className="ch-visit-status">{mockNextVisit.status}</span>
+              </div>
+              <p className="ch-visit-title">{mockNextVisit.title}</p>
+              <div className="ch-visit-detail"><MapPin size={12} /><span>{mockNextVisit.date}</span></div>
+              <div className="ch-visit-detail"><span style={{ width: 12 }} /><span>{mockNextVisit.time}</span></div>
+              <div className="ch-visit-engineer">
+                <div className="ch-visit-engineer__avatar">김</div>
+                <div>
+                  <p className="ch-visit-engineer__name">{mockNextVisit.engineer}</p>
+                  <p className="ch-visit-engineer__rating">
+                    <Star size={11} fill="#f59e0b" color="#f59e0b" /> {mockNextVisit.rating} · 방문 확정
+                  </p>
+                </div>
+              </div>
+              <div className="ch-visit-actions">
+                <button className="ch-visit-btn ch-visit-btn--outline">일정 변경</button>
+                <button className="ch-visit-btn ch-visit-btn--primary">상세 보기</button>
+              </div>
+            </div>
+
+            <div className="ch-unread-card">
+              <div className="ch-section__header">
+                <h2>읽지 않은 알림 <span className="ch-unread-count">3</span></h2>
+                <button className="ch-link-btn" onClick={() => navigate("/customer/notice")}>전체 보기 <ChevronRight size={14} /></button>
+              </div>
+              <div className="ch-unread-list">
+                {mockUnreadNotices.map((n) => (
+                  <div key={n.id} className="ch-unread-item">
+                    <div className="ch-unread-item__icon" style={{ background: n.iconBg, color: n.iconColor }}>{n.icon}</div>
+                    <div className="ch-unread-item__info">
+                      <p className="ch-unread-item__title">{n.title}</p>
+                      <div className="ch-unread-item__meta">
+                        <span className="ch-unread-tag" style={{ background: n.tagBg, color: n.tagColor }}>{n.tag}</span>
+                        <span className="ch-unread-time">{n.time}</span>
+                      </div>
+                    </div>
+                    <div className="ch-unread-dot" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* ── 내 가전 관리 ── */}
           <section className="ch-section">
@@ -433,56 +478,6 @@ export default function CustomerHome() {
             </div>
             <button className="ch-banner__btn" onClick={() => navigate("/customer/appliances?register=true")}>+ 가전 등록하기</button>
           </div>
-        </div>
-
-        {/* ══ 우측 사이드바 ══ */}
-        <aside className="ch-sidebar">
-
-          <div className="ch-visit-card">
-            <div className="ch-visit-card__top">
-              <span className="ch-visit-dday">D-{mockNextVisit.dDay}</span>
-              <span className="ch-visit-status">{mockNextVisit.status}</span>
-            </div>
-            <p className="ch-visit-title">{mockNextVisit.title}</p>
-            <div className="ch-visit-detail"><MapPin size={12} /><span>{mockNextVisit.date}</span></div>
-            <div className="ch-visit-detail"><span style={{ width: 12 }} /><span>{mockNextVisit.time}</span></div>
-            <div className="ch-visit-engineer">
-              <div className="ch-visit-engineer__avatar">김</div>
-              <div>
-                <p className="ch-visit-engineer__name">{mockNextVisit.engineer}</p>
-                <p className="ch-visit-engineer__rating">
-                  <Star size={11} fill="#f59e0b" color="#f59e0b" /> {mockNextVisit.rating} · 방문 확정
-                </p>
-              </div>
-            </div>
-            <div className="ch-visit-actions">
-              <button className="ch-visit-btn ch-visit-btn--outline">일정 변경</button>
-              <button className="ch-visit-btn ch-visit-btn--primary">상세 보기</button>
-            </div>
-          </div>
-
-          <div className="ch-unread-card">
-            <div className="ch-section__header">
-              <h2>읽지 않은 알림 <span className="ch-unread-count">3</span></h2>
-              <button className="ch-link-btn" onClick={() => navigate("/customer/notice")}>전체 보기 <ChevronRight size={14} /></button>
-            </div>
-            <div className="ch-unread-list">
-              {mockUnreadNotices.map((n) => (
-                <div key={n.id} className="ch-unread-item">
-                  <div className="ch-unread-item__icon" style={{ background: n.iconBg, color: n.iconColor }}>{n.icon}</div>
-                  <div className="ch-unread-item__info">
-                    <p className="ch-unread-item__title">{n.title}</p>
-                    <div className="ch-unread-item__meta">
-                      <span className="ch-unread-tag" style={{ background: n.tagBg, color: n.tagColor }}>{n.tag}</span>
-                      <span className="ch-unread-time">{n.time}</span>
-                    </div>
-                  </div>
-                  <div className="ch-unread-dot" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
       </div>
     </div>
   );

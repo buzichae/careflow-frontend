@@ -74,6 +74,13 @@ export default function App() {
           <Route path="/customer/notice" element={<CustomerNotice />} />
           <Route path="/customer/mypage" element={<CustomerMyPage />} />
 
+          {/* 관리자 */}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/members"   element={<AdminMembersPage />} />
+          <Route path="/admin/service"   element={<AdminServicePage />} />
+          <Route path="/admin/lms"        element={<AdminLMSPage />} />
+          <Route path="/admin/settlement" element={<AdminSettlementPage />} />
+
           {/* 기사 */}
           <Route path="/engineer/dashboard" element={<EngineerDashboard  title="기사 - 대시보드" />} />
           <Route path="/engineer/schedule" element={<EngineerSchedulePage title="기사 - 작업 일정" />} />
@@ -99,13 +106,6 @@ export default function App() {
           <Route path="/agency/statistics" element={<AgencyStatisticsPage title="대행사 - 통계 및 리포트" />} />
           <Route path="/agency/notice" element={<AgencyNoticePage  title="대행사 - 공지사항" />} />
           <Route path="/agency/settings" element={<AgencySettingPage title="대행사 - 설정" />} />
-
-          {/* 관리자 */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/members"   element={<AdminMembersPage />} />
-          <Route path="/admin/service"   element={<AdminServicePage />} />
-          <Route path="/admin/lms"        element={<AdminLMSPage />} />
-          <Route path="/admin/settlement" element={<AdminSettlementPage />} />
 
         </Route>
 
