@@ -4,11 +4,11 @@ import "../../styles/Admin/Admin.css";
 
 /* ── 목 데이터 ── */
 const mockContents = [
-  { id: 1, title: "냉장고 압축기 점검 및 교체 실무",   category: "냉장고", grade: "ADVANCED",     version: "2024.1", active: true  },
-  { id: 2, title: "세탁기 드럼 모터 진단 기초",         category: "세탁기", grade: "BEGINNER",     version: "2024.1", active: true  },
-  { id: 3, title: "에어컨 냉매 충전 안전 수칙",          category: "에어컨", grade: "INTERMEDIATE", version: "2024.2", active: true  },
-  { id: 4, title: "TV 패널 불량 진단법",               category: "TV",    grade: "BEGINNER",     version: "2024.1", active: false },
-  { id: 5, title: "건조기 히터 교체 실무",              category: "건조기", grade: "INTERMEDIATE", version: "2024.1", active: true  },
+  { id: 1, title: "냉장고 압축기 점검 및 교체 실무",   category: "냉장고", grade: "ADVANCED",     version: "2026.1", active: true  },
+  { id: 2, title: "세탁기 드럼 모터 진단 기초",         category: "세탁기", grade: "BEGINNER",     version: "2026.1", active: true  },
+  { id: 3, title: "에어컨 냉매 충전 안전 수칙",          category: "에어컨", grade: "INTERMEDIATE", version: "2026.2", active: true  },
+  { id: 4, title: "TV 패널 불량 진단법",               category: "TV",    grade: "BEGINNER",     version: "2026.1", active: false },
+  { id: 5, title: "건조기 히터 교체 실무",              category: "건조기", grade: "INTERMEDIATE", version: "2026.1", active: true  },
 ];
 
 const mockEngineerLMS = [
@@ -26,7 +26,7 @@ function ContentModal({ item, onClose, onSave }) {
   const [form, setForm] = useState(
     item.id
       ? { ...item }
-      : { title: "", body: "", category: "냉장고", grade: "BEGINNER", version: "2024.1" }
+      : { title: "", body: "", category: "냉장고", grade: "BEGINNER", version: "2026.1" }
   );
 
   return (
@@ -61,7 +61,7 @@ function ContentModal({ item, onClose, onSave }) {
           </div>
           <div className="admin-modal__field" style={{ flex: 1 }}>
             <label className="admin-modal__label">버전</label>
-            <input className="admin-modal__input" value={form.version} onChange={(e) => setForm((p) => ({ ...p, version: e.target.value }))} placeholder="예: 2024.1" />
+            <input className="admin-modal__input" value={form.version} onChange={(e) => setForm((p) => ({ ...p, version: e.target.value }))} placeholder="예: 2026.1" />
           </div>
         </div>
         {!isNew && <p style={{ fontSize: 11, color: "#f59e0b", marginTop: 4 }}>* 수정 시 버전 업이 필수입니다.</p>}

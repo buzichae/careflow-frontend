@@ -29,6 +29,7 @@ import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import AdminMembersPage from "./pages/Admin/AdminMembersPage.jsx";
 import AdminServicePage from "./pages/Admin/AdminServicePage.jsx";
 import AdminLMSPage from "./pages/Admin/AdminLMSPage.jsx";
+import AdminSettlementPage from "./pages/Admin/AdminSettlementPage.jsx";
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -86,7 +87,8 @@ export default function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/members"   element={<AdminMembersPage />} />
           <Route path="/admin/service"   element={<AdminServicePage />} />
-          <Route path="/admin/lms"       element={<AdminLMSPage />} />
+          <Route path="/admin/lms"        element={<AdminLMSPage />} />
+          <Route path="/admin/settlement" element={<AdminSettlementPage />} />
 
         </Route>
 

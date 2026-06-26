@@ -47,9 +47,9 @@ const asTrend = [
 
 /* ── 대행사 미승인 ── */
 const mockPendingAgencies = [
-  { name: "한국서비스대행사", bizNo: "123-45-67890", region: "서울·경기", appliedAt: "2024.06.20" },
-  { name: "프리미엄AS",    bizNo: "234-56-78901", region: "대전·충청", appliedAt: "2024.06.22" },
-  { name: "케어플러스",    bizNo: "345-67-89012", region: "광주·전남", appliedAt: "2024.06.23" },
+  { name: "한국서비스대행사", bizNo: "123-45-67890", region: "서울·경기", appliedAt: "2026.06.20" },
+  { name: "프리미엄AS",    bizNo: "234-56-78901", region: "대전·충청", appliedAt: "2026.06.22" },
+  { name: "케어플러스",    bizNo: "345-67-89012", region: "광주·전남", appliedAt: "2026.06.23" },
 ];
 
 function TrendTooltip({ active, payload, label, unit }) {

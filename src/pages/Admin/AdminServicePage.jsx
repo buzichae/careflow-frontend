@@ -12,11 +12,11 @@ const mockAsStat = [
 ];
 
 const mockAsDetails = [
-  { id: "AS-2024-0891", customer: "김철수", appliance: "냉장고", symptom: "냉각 불량",   region: "서울", status: "접수",     date: "2024.06.25" },
-  { id: "AS-2024-0890", customer: "이영희", appliance: "세탁기", symptom: "소음 발생",   region: "경기", status: "배정 완료", date: "2024.06.25" },
-  { id: "AS-2024-0889", customer: "박민준", appliance: "에어컨", symptom: "냉방 효율 저하", region: "인천", status: "작업 중",  date: "2024.06.24" },
-  { id: "AS-2024-0888", customer: "최수연", appliance: "TV",    symptom: "화면 깜빡임", region: "서울", status: "완료",    date: "2024.06.24" },
-  { id: "AS-2024-0887", customer: "정다은", appliance: "건조기", symptom: "건조 미흡",   region: "부산", status: "취소",    date: "2024.06.23" },
+  { id: "AS-2026-0891", customer: "김철수", appliance: "냉장고", symptom: "냉각 불량",   region: "서울", status: "접수",     date: "2026.06.25" },
+  { id: "AS-2026-0890", customer: "이영희", appliance: "세탁기", symptom: "소음 발생",   region: "경기", status: "배정 완료", date: "2026.06.25" },
+  { id: "AS-2026-0889", customer: "박민준", appliance: "에어컨", symptom: "냉방 효율 저하", region: "인천", status: "작업 중",  date: "2026.06.24" },
+  { id: "AS-2026-0888", customer: "최수연", appliance: "TV",    symptom: "화면 깜빡임", region: "서울", status: "완료",    date: "2026.06.24" },
+  { id: "AS-2026-0887", customer: "정다은", appliance: "건조기", symptom: "건조 미흡",   region: "부산", status: "취소",    date: "2026.06.23" },
 ];
 
 const STATUS_BADGE = {
@@ -95,7 +95,7 @@ export default function AdminServicePage() {
       <div className="admin-section">
         <div className="admin-tabs">
           {[
-            { key: "as",     label: "A/S 처리 현황" },
+            { key: "as",     label: "전체 A/S 처리 내역" },
             { key: "cost",   label: "수리 비용 가이드" },
             { key: "badge",  label: "인증 뱃지 기준" },
           ].map((t) => (
