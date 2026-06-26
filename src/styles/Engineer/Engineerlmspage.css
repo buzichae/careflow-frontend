@@ -1,0 +1,120 @@
+.elp {
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 20px 24px; background: #f9f9fb; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+/* 헤더 */
+.elp-header { display: flex; align-items: flex-start; justify-content: space-between; }
+.elp-header__title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.elp-header__sub   { font-size: 13px; color: #aaa; }
+
+/* LMS 상태 배지 */
+.elp-lms-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; border-radius: 8px; padding: 8px 14px;
+}
+.elp-lms-status--done    { background: #eaf3de; color: #16a34a; }
+.elp-lms-status--pending { background: #fef0e0; color: #d97706; }
+
+/* 진행률 카드 */
+.elp-progress-card {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
+  padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.elp-progress-card__left { display: flex; align-items: center; gap: 14px; }
+.elp-progress-card__label { font-size: 12px; color: #aaa; margin-bottom: 4px; }
+.elp-progress-card__count { font-size: 16px; color: #888; }
+.elp-progress-card__done  { font-size: 28px; font-weight: 700; color: #5B4FF5; }
+.elp-progress-card__right { display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px; }
+.elp-progress-bar-wrap {
+  flex: 1; height: 10px; background: #f0f0f8; border-radius: 5px; overflow: hidden;
+}
+.elp-progress-bar { height: 100%; background: #5B4FF5; border-radius: 5px; transition: width 0.3s; }
+.elp-progress-pct { font-size: 14px; font-weight: 700; color: #5B4FF5; white-space: nowrap; }
+
+/* 바디 */
+.elp-body { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
+
+/* 콘텐츠 목록 */
+.elp-list { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 20px; }
+.elp-list__title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.elp-list__desc  { font-size: 11px; color: #aaa; margin-bottom: 14px; line-height: 1.6; }
+
+/* 콘텐츠 카드 */
+.elp-content-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px; border: 1px solid #e8e4ff; border-radius: 10px;
+  margin-bottom: 8px; cursor: pointer; transition: background 0.1s;
+}
+.elp-content-card:last-child { margin-bottom: 0; }
+.elp-content-card:hover { background: #fafaff; }
+.elp-content-card--done     { border-color: #eaf3de; background: #f8fff8; }
+.elp-content-card--selected { border-color: #5B4FF5; background: #f5f4ff; }
+
+.elp-content-card__icon {
+  width: 40px; height: 40px; border-radius: 10px; background: #eeeaff;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.elp-content-card__icon--done { background: #eaf3de; }
+
+.elp-content-card__info { flex: 1; min-width: 0; }
+.elp-content-card__title { font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 5px; }
+.elp-content-card__meta  { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.elp-content-card__confirmed { font-size: 11px; color: #16a34a; margin-top: 4px; }
+
+/* 배지 */
+.elp-level-badge { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 7px; }
+.elp-level-badge--advanced     { background: #eeeaff; color: #5B4FF5; }
+.elp-level-badge--intermediate { background: #e6f1fb; color: #2563eb; }
+.elp-level-badge--beginner     { background: #eaf3de; color: #16a34a; }
+.elp-level-badge--all          { background: #f5f5f5; color: #888;    }
+.elp-type-badge { font-size: 10px; font-weight: 600; background: #f0f0f0; color: #666; border-radius: 4px; padding: 2px 7px; }
+.elp-version    { font-size: 10px; color: #bbb; }
+
+/* 뷰어 */
+.elp-viewer {
+  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
+  display: flex; flex-direction: column;
+  position: sticky; top: 16px; max-height: 85vh; overflow: hidden;
+}
+.elp-viewer__header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 0.5px solid #f0f0f8; flex-shrink: 0;
+}
+.elp-viewer__title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+.elp-viewer__meta  { display: flex; gap: 6px; align-items: center; }
+.elp-viewer__close {
+  width: 28px; height: 28px; border: none; background: #f5f4ff;
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #666; flex-shrink: 0;
+}
+
+/* 본문 - lms_contents.body (TEXT) */
+.elp-viewer__body { flex: 1; overflow-y: auto; padding: 20px; }
+.elp-md-h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; margin: 0 0 12px; }
+.elp-md-h2 { font-size: 14px; font-weight: 700; color: #1a1a2e; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 0.5px solid #f0f0f8; }
+.elp-md-p  { font-size: 13px; color: #444; line-height: 1.7; margin-bottom: 4px; }
+.elp-md-li { font-size: 13px; color: #444; line-height: 1.7; margin-bottom: 3px; padding-left: 8px; }
+.elp-md-ol { font-size: 13px; color: #444; line-height: 1.7; margin-bottom: 3px; padding-left: 8px; }
+.elp-md-br { height: 8px; }
+
+/* 푸터 */
+.elp-viewer__footer {
+  padding: 14px 20px; border-top: 0.5px solid #f0f0f8;
+  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+}
+.elp-viewer__hint { font-size: 11px; color: #aaa; }
+.elp-viewer__done {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: #16a34a;
+  background: #eaf3de; border-radius: 8px; padding: 10px 14px;
+}
+.elp-confirm-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; background: #5B4FF5; color: #fff; border: none;
+  border-radius: 8px; padding: 11px;
+  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.elp-confirm-btn:hover { opacity: 0.9; }

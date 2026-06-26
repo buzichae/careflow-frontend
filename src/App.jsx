@@ -41,6 +41,7 @@ import Engineerreviewpage from "../src/pages/Engineer/Engineerreviewpage.jsx"
 import EngineerProfilePage from "../src/pages/Engineer/EngineerProfilePage.jsx"
 import Engineernoticepage from "../src/pages/Engineer/EngineerNoticePage.jsx"
 import EngineerMySchedulePage from "../src/pages/Engineer/Engineermyschedulepage.jsx"
+import Engineerlmspage  from "../src/pages/Engineer/Engineerlmspage.jsx"
 
 
 function TempPage({ title }) {
@@ -83,6 +84,7 @@ export default function App() {
           <Route path="/engineer/settlement" element={<EngineerSettlementPage  title="기사 - 실적/정산" />} />
           <Route path="/engineer/reviews" element={<Engineerreviewpage  title="기사 - 고객 평가" />} />
           <Route path="/engineer/profile" element={<EngineerProfilePage  title="기사 - 프로필 관리" />} />
+          <Route path="/engineer/lms" element={<Engineerlmspage  title="기사 - LMS 교육" />} />
           <Route path="/engineer/notice" element={<Engineernoticepage  title="기사 - 알림" />} />
 
           {/* 대행사 */}
