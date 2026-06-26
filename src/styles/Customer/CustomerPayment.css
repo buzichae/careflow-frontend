@@ -49,45 +49,55 @@
 .cp-hero__save-amount{ font-size: 28px; font-weight: 800; color: #a8f0c6; }
 .cp-hero__save-label { font-size: 11px; opacity: 0.7; margin-top: 6px; }
 
-/* KPI 6개 */
+/* KPI */
 .cp-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
 }
 
 .cp-kpi {
-  background: #fff;
+  background: #f9f9fb;
   border-radius: var(--radius-md);
-  padding: 16px 14px;
+  padding: 18px 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  border: 0.5px solid #ebebf0;
+}
+
+.cp-kpi--alert { border-color: #fecaca; background: #fff5f5; }
+.cp-kpi--alert .cp-kpi__value { color: #ef4444; }
+.cp-kpi--alert .cp-kpi__watermark { color: #fecaca; }
+
+.cp-kpi__text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  border-top: 3px solid transparent;
+  gap: 3px;
+  z-index: 1;
 }
 
-.cp-kpi--purple { border-top-color: #734bcf; }
-.cp-kpi--blue   { border-top-color: #3b82f6; }
-.cp-kpi--red    { border-top-color: #ef4444; }
-.cp-kpi--green  { border-top-color: #22c55e; }
-.cp-kpi--teal   { border-top-color: #14b8a6; }
-.cp-kpi--orange { border-top-color: #f59e0b; }
+.cp-kpi__value { font-size: 20px; font-weight: 700; color: #1a1a2e; line-height: 1; }
+.cp-kpi__label { font-size: 12px; font-weight: 600; color: #555; margin-top: 4px; }
+.cp-kpi__sub   { font-size: 11px; color: #aaa; }
 
-.cp-kpi__icon  { font-size: 20px; margin-bottom: 4px; }
-.cp-kpi__value { font-size: 17px; font-weight: 800; color: var(--text-dark); }
-.cp-kpi__label { font-size: 11px; font-weight: 600; color: var(--text-mid); }
-.cp-kpi__sub   { font-size: 10px; color: var(--text-muted); }
+.cp-kpi__watermark {
+  width: 52px;
+  height: 52px;
+  color: #e0dff0;
+  flex-shrink: 0;
+  z-index: 0;
+}
 
-/* 바디 2열 */
-.cp-body {
+/* 이번 달 요약 + 기사 만족도 2열 */
+.cp-info-row {
   display: grid;
-  grid-template-columns: 1fr 268px;
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   align-items: start;
 }
-
-.cp-main    { display: flex; flex-direction: column; gap: 16px; }
-.cp-sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 20px; }
 
 /* 공통 카드 */
 .cp-card {
@@ -119,12 +129,12 @@
   border-radius: var(--radius-lg);
   padding: 22px 24px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-.cp-action-card__left { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.cp-action-card__left { display: flex; flex-direction: column; gap: 12px; flex: 1; }
 
 .cp-action-card__alert {
   display: inline-flex;
@@ -156,7 +166,7 @@
 .cp-action-card__meta strong{ font-size: 14px; font-weight: 700; }
 .cp-action-card__price      { color: #ef4444 !important; font-size: 18px !important; }
 
-.cp-action-card__btns { display: flex; gap: 10px; }
+.cp-action-card__btns { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 
 .cp-btn {
   display: flex; align-items: center; gap: 6px;

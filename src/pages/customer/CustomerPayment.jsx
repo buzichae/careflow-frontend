@@ -1,14 +1,13 @@
-import { ChevronRight, FileText, CreditCard, TrendingUp, Shield, Wrench, User } from "lucide-react";
+import { ChevronRight, FileText, CreditCard, User, Wallet, CalendarDays, AlertTriangle, Shield, Truck } from "lucide-react";
 import "../../styles/Customer/CustomerPayment.css";
 
 /* ── 데이터 ── */
 const KPI = [
-  { label: "총 지출",           value: "₩1,280,000", sub: "누적 합계",        icon: "💰", color: "purple" },
-  { label: "이번 달 지출",      value: "₩128,000",   sub: "▲ 23% 지난달 대비", icon: "📅", color: "blue"   },
-  { label: "미결제 건수",       value: "1 건",        sub: "결제 대기 중",      icon: "⚠️", color: "red"    },
-  { label: "CareFlow 절약 금액",value: "₩320,000",   sub: "보증·할인 혜택",    icon: "🎁", color: "green"  },
-  { label: "보증 수리 건수",    value: "3 건",        sub: "무상 처리 완료",    icon: "🛡", color: "teal"   },
-  { label: "기사 방문 횟수",    value: "12 회",       sub: "이번 달 기준",      icon: "🚗", color: "orange" },
+  { label: "총 지출",        value: "₩1,280,000", sub: "누적 합계",         Icon: Wallet,        highlight: false },
+  { label: "이번 달 지출",   value: "₩128,000",   sub: "▲ 23% 지난달 대비", Icon: CalendarDays,  highlight: false },
+  { label: "미결제 건수",    value: "1 건",        sub: "결제 대기 중",       Icon: AlertTriangle, highlight: true  },
+  { label: "보증 수리 건수", value: "3 건",        sub: "무상 처리 완료",     Icon: Shield,        highlight: false },
+  { label: "기사 방문 횟수", value: "12 회",       sub: "이번 달 기준",       Icon: Truck,         highlight: false },
 ];
 
 const MONTHLY = [
@@ -121,32 +120,6 @@ function DonutChart() {
   );
 }
 
-/* ── 원형 진행률 ── */
-function CircleProgress({ pct = 67 }) {
-  const r = 40, cx = 50, cy = 50, sw = 10;
-  const circ = 2 * Math.PI * r;
-  const dash = (pct / 100) * circ;
-  return (
-    <div className="cp-circle-progress">
-      <svg width="100" height="100" viewBox="0 0 100 100">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f0f8" strokeWidth={sw} />
-        <circle
-          cx={cx} cy={cy} r={r}
-          fill="none"
-          stroke="#734bcf"
-          strokeWidth={sw}
-          strokeDasharray={`${dash} ${circ - dash}`}
-          strokeDashoffset={circ * 0.25}
-          strokeLinecap="round"
-        />
-        <text x={cx} y={cy - 4}  textAnchor="middle" fontSize="16" fontWeight="800" fill="#1a1a2e">{pct}%</text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fontSize="9"  fill="#888">결제 완료</text>
-      </svg>
-      <p className="cp-circle-label">결제 진행률</p>
-    </div>
-  );
-}
-
 /* ── 메인 ── */
 export default function CustomerPayment() {
   return (
@@ -169,204 +142,135 @@ export default function CustomerPayment() {
         </div>
       </div> */}
 
-      {/* KPI 6개 */}
+      {/* KPI */}
       <div className="cp-kpi-grid">
-        {KPI.map((k) => (
-          <div key={k.label} className={`cp-kpi cp-kpi--${k.color}`}>
-            <div className="cp-kpi__icon">{k.icon}</div>
-            <p className="cp-kpi__value">{k.value}</p>
-            <p className="cp-kpi__label">{k.label}</p>
-            <p className="cp-kpi__sub">{k.sub}</p>
+        {KPI.map(({ label, value, sub, Icon, highlight }) => (
+          <div key={label} className={`cp-kpi${highlight ? " cp-kpi--alert" : ""}`}>
+            <div className="cp-kpi__text">
+              <p className="cp-kpi__value">{value}</p>
+              <p className="cp-kpi__label">{label}</p>
+              <p className="cp-kpi__sub">{sub}</p>
+            </div>
+            <Icon className="cp-kpi__watermark" strokeWidth={1} />
           </div>
         ))}
       </div>
 
-      {/* 바디 2열 */}
-      <div className="cp-body">
-
-        {/* ══ 좌측 메인 ══ */}
-        <div className="cp-main">
-
-          {/* 결제 필요 Action Card */}
-          <div className="cp-action-card">
-            <div className="cp-action-card__left">
-              <div className="cp-action-card__alert">
-                <span>⚠</span> 결제가 필요한 수리가 있습니다
-              </div>
-              <p className="cp-action-card__product">LG 오브제 냉장고</p>
-              <div className="cp-action-card__meta">
-                <div><span>수리 완료</span><strong>2026.06.18</strong></div>
-                <div><span>담당 기사</span><strong>김철수 기사</strong></div>
-                <div><span>총 금액</span><strong className="cp-action-card__price">120,000원</strong></div>
-              </div>
-              <div className="cp-action-card__btns">
-                <button className="cp-btn cp-btn--outline"><FileText size={14} /> 수리 보고서 보기</button>
-                <button className="cp-btn cp-btn--primary"><CreditCard size={14} /> 결제하기</button>
-              </div>
-            </div>
-            <CircleProgress pct={67} />
+      {/* 결제 필요 Action Card */}
+      <div className="cp-action-card">
+        <div className="cp-action-card__left">
+          <div className="cp-action-card__alert">
+            <span>⚠</span> 결제가 필요한 수리가 있습니다
           </div>
-
-          {/* 월별 지출 + 비용 분석 */}
-          <div className="cp-charts-row">
-            <div className="cp-card cp-chart-card">
-              <div className="cp-card__header">
-                <h2>월별 지출</h2>
-                <span className="cp-card__sub">최근 6개월</span>
-              </div>
-              <BarChart />
-            </div>
-            <div className="cp-card cp-donut-card">
-              <div className="cp-card__header">
-                <h2>비용 분석</h2>
-                <span className="cp-card__sub">항목별 비율</span>
-              </div>
-              <DonutChart />
-            </div>
-          </div>
-
-          {/* 최근 수리 가전 */}
-          <div className="cp-card">
-            <div className="cp-card__header">
-              <h2>최근 수리 가전</h2>
-              <button className="cp-link-btn">전체 보기 <ChevronRight size={13} /></button>
-            </div>
-            <div className="cp-repair-grid">
-              {RECENT_REPAIRS.map((r, i) => (
-                <div key={i} className="cp-repair-card">
-                  <div className="cp-repair-card__img" />
-                  <div className="cp-repair-card__info">
-                    <div className="cp-repair-card__top">
-                      <p className="cp-repair-card__name">{r.name}</p>
-                      <span className={`cp-badge cp-badge--${r.status === "완료" ? "green" : r.status === "보증" ? "purple" : "orange"}`}>
-                        {r.status}
-                      </span>
-                    </div>
-                    <p className="cp-repair-card__model">{r.model}</p>
-                    <p className="cp-repair-card__date">{r.date}</p>
-                    <p className="cp-repair-card__cost">{r.cost}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 결제 내역 테이블 */}
-          <div className="cp-card">
-            <div className="cp-card__header">
-              <h2>결제 내역</h2>
-              <button className="cp-link-btn">전체 보기 <ChevronRight size={13} /></button>
-            </div>
-            <div className="cp-table">
-              <div className="cp-table__head">
-                <span>제품</span>
-                <span>기사</span>
-                <span>금액</span>
-                <span>날짜</span>
-                <span>상태</span>
-                <span>영수증</span>
-              </div>
-              {PAYMENT_HISTORY.map((p, i) => {
-                const st = STATUS_META[p.status];
-                return (
-                  <div key={i} className="cp-table__row">
-                    <span className="cp-table__product">{p.product}</span>
-                    <span className="cp-table__engineer">
-                      <User size={12} /> {p.engineer}
-                    </span>
-                    <span className="cp-table__amount">{p.amount}</span>
-                    <span className="cp-table__date">{p.date}</span>
-                    <span>
-                      <span className="cp-badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                    </span>
-                    <span>
-                      <button className="cp-receipt-btn"><FileText size={13} /></button>
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+          <p className="cp-action-card__product">LG 오브제 냉장고</p>
+          <div className="cp-action-card__meta">
+            <div><span>수리 완료</span><strong>2026.06.18</strong></div>
+            <div><span>담당 기사</span><strong>김철수 기사</strong></div>
+            <div><span>총 금액</span><strong className="cp-action-card__price">120,000원</strong></div>
           </div>
         </div>
+        <div className="cp-action-card__btns">
+          <button className="cp-btn cp-btn--outline"><FileText size={14} /> 수리 보고서 보기</button>
+          <button className="cp-btn cp-btn--primary"><CreditCard size={14} /> 결제하기</button>
+        </div>
+      </div>
 
-        {/* ══ 우측 사이드바 ══ */}
-        <aside className="cp-sidebar">
-
-          {/* 이번 달 요약 */}
-          <div className="cp-card">
-            <div className="cp-card__header"><h2>이번 달 요약</h2></div>
-            <div className="cp-summary-list">
-              {[
-                { label: "수리 건수",          value: "12 건" },
-                { label: "평균 비용",           value: "₩106,000" },
-                { label: "가장 많이 수리한 제품", value: "냉장고" },
-              ].map((s, i) => (
-                <div key={i} className="cp-summary-row">
-                  <span className="cp-summary-row__label">{s.label}</span>
-                  <span className="cp-summary-row__value">{s.value}</span>
-                </div>
-              ))}
-            </div>
+      {/* 월별 지출 + 비용 분석 */}
+      <div className="cp-charts-row">
+        <div className="cp-card cp-chart-card">
+          <div className="cp-card__header">
+            <h2>월별 지출</h2>
+            <span className="cp-card__sub">최근 6개월</span>
           </div>
-
-          {/* CareFlow 인증 혜택 */}
-          <div className="cp-card cp-cert-card">
-            <div className="cp-card__header">
-              <h2>CareFlow 인증 혜택</h2>
-            </div>
-            <div className="cp-cert-stats">
-              {[
-                { icon: "🏅", label: "인증 가전",      value: "4 대" },
-                { icon: "💎", label: "예상 중고 가치",  value: "₩1,820,000" },
-                { icon: "🛡", label: "보증 연장 혜택",  value: "2 건" },
-              ].map((c, i) => (
-                <div key={i} className="cp-cert-item">
-                  <span className="cp-cert-item__icon">{c.icon}</span>
-                  <p className="cp-cert-item__value">{c.value}</p>
-                  <p className="cp-cert-item__label">{c.label}</p>
-                </div>
-              ))}
-            </div>
+          <BarChart />
+        </div>
+        <div className="cp-card cp-donut-card">
+          <div className="cp-card__header">
+            <h2>비용 분석</h2>
+            <span className="cp-card__sub">항목별 비율</span>
           </div>
+          <DonutChart />
+        </div>
+      </div>
 
-          {/* 기사 만족도 */}
-          <div className="cp-card">
-            <div className="cp-card__header"><h2>기사 만족도</h2></div>
-            <div className="cp-engineer-card">
-              <div className="cp-engineer-card__top">
-                <div className="cp-engineer-avatar">김</div>
-                <div>
-                  <p className="cp-engineer-name">김철수 기사</p>
-                  <p className="cp-engineer-stars">★★★★★ <strong>4.9</strong></p>
+      {/* 이번 달 요약 */}
+      <div className="cp-card">
+        <div className="cp-card__header"><h2>이번 달 요약</h2></div>
+        <div className="cp-summary-list">
+          {[
+            { label: "수리 건수",            value: "12 건" },
+            { label: "평균 비용",             value: "₩106,000" },
+            { label: "가장 많이 수리한 제품", value: "냉장고" },
+          ].map((s, i) => (
+            <div key={i} className="cp-summary-row">
+              <span className="cp-summary-row__label">{s.label}</span>
+              <span className="cp-summary-row__value">{s.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 최근 수리 가전 */}
+      <div className="cp-card">
+        <div className="cp-card__header">
+          <h2>최근 수리 가전</h2>
+          <button className="cp-link-btn">전체 보기 <ChevronRight size={13} /></button>
+        </div>
+        <div className="cp-repair-grid">
+          {RECENT_REPAIRS.map((r, i) => (
+            <div key={i} className="cp-repair-card">
+              <div className="cp-repair-card__img" />
+              <div className="cp-repair-card__info">
+                <div className="cp-repair-card__top">
+                  <p className="cp-repair-card__name">{r.name}</p>
+                  <span className={`cp-badge cp-badge--${r.status === "완료" ? "green" : r.status === "보증" ? "purple" : "orange"}`}>
+                    {r.status}
+                  </span>
                 </div>
+                <p className="cp-repair-card__model">{r.model}</p>
+                <p className="cp-repair-card__date">{r.date}</p>
+                <p className="cp-repair-card__cost">{r.cost}</p>
               </div>
-              {[
-                { label: "친절함",    pct: 95 },
-                { label: "정확성",    pct: 97 },
-                { label: "재이용 의사", pct: 98 },
-              ].map((m) => (
-                <div key={m.label} className="cp-meter-row">
-                  <span className="cp-meter-label">{m.label}</span>
-                  <div className="cp-meter-bar">
-                    <div className="cp-meter-fill" style={{ width: `${m.pct}%` }} />
-                  </div>
-                  <span className="cp-meter-pct">{m.pct}%</span>
-                </div>
-              ))}
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          {/* 추천 */}
-          <div className="cp-card cp-recommend-card">
-            <div className="cp-card__header"><h2>추천</h2></div>
-            <div className="cp-recommend-item">
-              <span className="cp-recommend-icon">💡</span>
-              <p>에어컨 필터 점검 시기입니다. 지금 예약하면 <strong>10% 할인</strong>을 받을 수 있어요.</p>
-            </div>
-            <button className="cp-recommend-btn">점검 예약하기 <ChevronRight size={13} /></button>
+      {/* 결제 내역 테이블 */}
+      <div className="cp-card">
+        <div className="cp-card__header">
+          <h2>결제 내역</h2>
+          <button className="cp-link-btn">전체 보기 <ChevronRight size={13} /></button>
+        </div>
+        <div className="cp-table">
+          <div className="cp-table__head">
+            <span>제품</span>
+            <span>기사</span>
+            <span>금액</span>
+            <span>날짜</span>
+            <span>상태</span>
+            <span>영수증</span>
           </div>
-
-        </aside>
+          {PAYMENT_HISTORY.map((p, i) => {
+            const st = STATUS_META[p.status];
+            return (
+              <div key={i} className="cp-table__row">
+                <span className="cp-table__product">{p.product}</span>
+                <span className="cp-table__engineer">
+                  <User size={12} /> {p.engineer}
+                </span>
+                <span className="cp-table__amount">{p.amount}</span>
+                <span className="cp-table__date">{p.date}</span>
+                <span>
+                  <span className="cp-badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                </span>
+                <span>
+                  <button className="cp-receipt-btn"><FileText size={13} /></button>
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
