@@ -1,0 +1,155 @@
+.emsp {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 20px 24px; background: #f9f9fb; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+/* 헤더 */
+.emsp-topbar { display: flex; align-items: flex-start; justify-content: space-between; }
+.emsp-title  { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.emsp-sub    { font-size: 13px; color: #aaa; }
+.emsp-topbar__actions { display: flex; gap: 8px; }
+.emsp-settings-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #666;
+  background: #fff; cursor: pointer; font-family: inherit;
+}
+.emsp-edit-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: #5B4FF5; color: #fff; border: none;
+  border-radius: 8px; padding: 7px 14px;
+  font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+
+/* 컨트롤 바 */
+.emsp-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.emsp-month-nav { display: flex; align-items: center; gap: 8px; }
+.emsp-month-label {
+  font-size: 18px; font-weight: 700; color: #1a1a2e;
+  display: flex; align-items: center; gap: 4px; cursor: pointer;
+}
+.emsp-nav-btn {
+  width: 30px; height: 30px; border: 0.5px solid #e0dcff; border-radius: 6px;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #666;
+}
+.emsp-today-btn {
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 6px 14px; font-size: 12px; color: #444;
+  background: #fff; cursor: pointer; font-family: inherit;
+}
+
+/* 범례 */
+.emsp-legend { display: flex; gap: 16px; align-items: center; margin-left: auto; }
+.emsp-legend__item { font-size: 12px; color: #666; }
+.emsp-legend__item--morning   { color: #16a34a; }
+.emsp-legend__item--afternoon { color: #d97706; }
+.emsp-legend__item--allday    { color: #5B4FF5; }
+.emsp-legend__item--off       { color: #bbb; }
+
+/* 뷰 탭 */
+.emsp-view-tabs { display: flex; border: 1px solid #e0dcff; border-radius: 8px; overflow: hidden; }
+.emsp-view-tab {
+  padding: 6px 16px; font-size: 12px; font-weight: 600; color: #888;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+}
+.emsp-view-tab--active { background: #5B4FF5; color: #fff; }
+
+/* 바디 */
+.emsp-body { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+
+/* 달력 */
+.emsp-calendar { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; overflow: hidden; }
+.emsp-cal-header {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  background: #f8f7ff; border-bottom: 0.5px solid #e8e4ff;
+}
+.emsp-cal-weekday {
+  text-align: center; padding: 10px; font-size: 12px; font-weight: 600; color: #888;
+}
+.emsp-cal-weekday--sun { color: #ef4444; }
+.emsp-cal-weekday--sat { color: #3b82f6; }
+
+.emsp-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.emsp-cal-cell {
+  min-height: 80px; padding: 8px; border-right: 0.5px solid #f0f0f8; border-bottom: 0.5px solid #f0f0f8;
+  cursor: pointer; transition: background 0.1s;
+}
+.emsp-cal-cell:hover { background: #fafaff; }
+.emsp-cal-cell--other { background: #fafafa; }
+.emsp-cal-cell--selected { background: #f0eeff; border: 1.5px solid #5B4FF5; }
+
+.emsp-cal-date {
+  font-size: 13px; font-weight: 600; color: #1a1a2e;
+  display: flex; align-items: center; gap: 4px; margin-bottom: 4px;
+}
+.emsp-cal-date--today  { color: #5B4FF5; }
+.emsp-cal-date--sun    { color: #ef4444; }
+.emsp-cal-date--sat    { color: #3b82f6; }
+.emsp-cal-cell--other .emsp-cal-date { color: #ccc; }
+
+.emsp-today-badge {
+  font-size: 10px; font-weight: 700; background: #5B4FF5; color: #fff;
+  border-radius: 4px; padding: 1px 6px;
+}
+
+/* 근무 슬롯 - start/end_time 기반 색상 */
+.emsp-cal-slot {
+  font-size: 10px; font-weight: 600; border-radius: 4px; padding: 3px 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.emsp-cal-slot--morning   { background: #eaf3de; color: #16a34a; }
+.emsp-cal-slot--afternoon { background: #fef0e0; color: #d97706; }
+.emsp-cal-slot--allday    { background: #eeeaff; color: #5B4FF5; }
+
+.emsp-cal-off {
+  font-size: 10px; color: #bbb; background: #f5f5f5;
+  border-radius: 4px; padding: 3px 6px; display: inline-block;
+}
+
+/* 우측 패널 */
+.emsp-aside { display: flex; flex-direction: column; gap: 14px; }
+.emsp-panel { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; padding: 16px; }
+.emsp-panel__title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+
+/* 이번 달 요약 */
+.emsp-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.emsp-summary-item {
+  background: #f8f7ff; border-radius: 8px; padding: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.emsp-summary-item__icon  { font-size: 18px; }
+.emsp-summary-item__label { font-size: 10px; color: #aaa; margin-bottom: 2px; }
+.emsp-summary-item__value { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+
+/* 주간 미리보기 */
+.emsp-week-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 0.5px solid #f5f4ff; font-size: 12px;
+}
+.emsp-week-row:last-child { border-bottom: none; }
+.emsp-week-row__date { width: 36px; color: #888; flex-shrink: 0; }
+.emsp-week-row__date--sun { color: #ef4444; font-weight: 700; }
+.emsp-week-row__time { flex: 1; color: #1a1a2e; font-weight: 600; }
+.emsp-week-row__off  { flex: 1; color: #bbb; }
+
+.emsp-week-row__badge { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 7px; white-space: nowrap; }
+.emsp-week-row__badge--morning   { background: #eaf3de; color: #16a34a; }
+.emsp-week-row__badge--afternoon { background: #fef0e0; color: #d97706; }
+.emsp-week-row__badge--allday    { background: #eeeaff; color: #5B4FF5; }
+
+/* 다음 근무 */
+.emsp-next-work { background: #f8f7ff; border-radius: 10px; padding: 12px; }
+.emsp-next-work__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.emsp-next-work__date   { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.emsp-next-work__time   { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+
+.emsp-back-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #666;
+  background: #fff; cursor: pointer; font-family: inherit; width: fit-content;
+}
+.emsp-back-btn:hover { background: #f5f4ff; color: #5B4FF5; }

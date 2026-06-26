@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search, ChevronDown, ChevronRight, X,
   User, Phone,  Calendar, Clock,
@@ -200,6 +201,7 @@ function WorkSteps({ logStatus }) {
 export default function EngineerWorkPage() {
   const [activeTab, setActiveTab] = useState("ALL");
   const [selectedItem, setSelectedItem] = useState(workList[0]);
+  const navigate = useNavigate();
 
   const filteredList = activeTab === "ALL"
     ? workList
@@ -249,7 +251,9 @@ export default function EngineerWorkPage() {
         <div className="ewp-filter-select"><span>전체 지역</span><ChevronDown size={13} /></div>
         <div className="ewp-filter-select"><span>전체 날짜</span><ChevronDown size={13} /></div>
         <div className="ewp-filter-date"><span>2024.06.01 ~ 2024.06.30</span></div>
-        <button className="ewp-schedule-btn">📋 내 근무표 보기</button>
+        <button className="ewp-schedule-btn" onClick={() => navigate("/engineer/my-schedule")}>
+  📋     내 근무표 보기
+        </button>
       </div>
 
       <div className="ewp-body">
