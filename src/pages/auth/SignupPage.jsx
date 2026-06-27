@@ -4,17 +4,92 @@ import { useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import { ROLES } from "./authConstants";
 import "../../styles/Auth/Auth.css";
+import { signupAgency, signupCustomer, signupEngineer } from "../../apis/auth";
 
-/* 지역 데이터 — regions 테이블 (depth=1 → depth=2) */
+/* 지역 데이터 — regions 테이블 (depth=1 → depth=2)   지역 API로 변경  */
 const REGIONS = {
-  서울특별시: ["강남구", "강서구", "노원구", "마포구", "서초구", "송파구", "용산구", "종로구"],
-  경기도:     ["부천시", "성남시", "수원시", "시흥시", "안양시", "의정부시", "화성시"],
-  인천광역시: ["남동구", "부평구", "서구",   "연수구", "중구"],
-  부산광역시: ["동래구", "부산진구", "사상구", "수영구", "해운대구"],
-  대구광역시: ["달서구", "동구",    "북구",   "수성구", "중구"],
-  대전광역시: ["대덕구", "서구",    "유성구", "중구"],
-  광주광역시: ["광산구", "남구",    "동구",   "북구",   "서구"],
-  울산광역시: ["남구",   "동구",    "북구",   "울주군", "중구"],
+  서울특별시: [
+    "강남구", "강동구", "강북구", "강서구", "관악구",
+    "광진구", "구로구", "금천구", "노원구", "도봉구",
+    "동대문구", "동작구", "마포구", "서대문구", "서초구",
+    "성동구", "성북구", "송파구", "양천구", "영등포구",
+    "용산구", "은평구", "종로구", "중구", "중랑구"
+  ],
+
+  부산광역시: [
+    "강서구", "금정구", "기장군", "남구", "동구",
+    "동래구", "부산진구", "북구", "사상구", "사하구",
+    "서구", "수영구", "연제구", "영도구", "중구", "해운대구"
+  ],
+
+  대구광역시: [
+    "남구", "달서구", "달성군", "동구",
+    "북구", "서구", "수성구", "중구"
+  ],
+
+  인천광역시: [
+    "강화군", "계양구", "남동구", "동구",
+    "미추홀구", "부평구", "서구", "연수구", "중구"
+  ],
+
+  광주광역시: [
+    "광산구", "남구", "동구", "북구", "서구"
+  ],
+
+  대전광역시: [
+    "대덕구", "동구", "서구", "유성구", "중구"
+  ],
+
+  울산광역시: [
+    "남구", "동구", "북구", "울주군", "중구"
+  ],
+
+  세종특별자치시: [
+    "세종시"
+  ],
+
+  경기도: [
+    "고양시", "과천시", "광명시", "광주시", "구리시",
+    "군포시", "김포시", "남양주시", "동두천시", "부천시",
+    "성남시", "수원시", "시흥시", "안산시", "안성시",
+    "안양시", "양주시", "여주시", "오산시", "용인시",
+    "의왕시", "의정부시", "이천시", "파주시", "평택시",
+    "포천시", "하남시", "화성시"
+  ],
+
+  강원특별자치도: [
+    "강릉시", "동해시", "삼척시",
+    "속초시", "원주시", "춘천시"
+  ],
+
+  충청북도: [
+    "청주시", "충주시", "제천시"
+  ],
+
+  충청남도: [
+    "천안시", "공주시", "보령시",
+    "아산시", "서산시"
+  ],
+
+  전라북도: [
+    "전주시", "군산시", "익산시"
+  ],
+
+  전라남도: [
+    "목포시", "여수시", "순천시"
+  ],
+
+  경상북도: [
+    "포항시", "경주시", "구미시", "안동시"
+  ],
+
+  경상남도: [
+    "창원시", "진주시", "통영시", "거제시"
+  ],
+
+  제주특별자치도: [
+    "제주시", "서귀포시"
+  ]
 };
 
 function TopNav({ showBack, onBack }) {
@@ -148,50 +223,141 @@ function SignupForm({ roleKey, onBack }) {
   const role = ROLES.find((r) => r.key === roleKey) || ROLES[0];
   const isCustomer = roleKey === "customer";
 
-  const [step, setStep]   = useState(1);
+  const [step, setStep]     = useState(1);
   const [showPw, setShowPw]   = useState(false);
   const [showPw2, setShowPw2] = useState(false);
+  const [agree, setAgree]     = useState(false);
 
-  /* 공통 */
-  const [email,   setEmail]   = useState("");
-  const [pw,      setPw]      = useState("");
-  const [pw2,     setPw2]     = useState("");
-  const [name,    setName]    = useState("");
-  const [phone,   setPhone]   = useState("");
-  const [agree,   setAgree]   = useState(false);
+  const [formData, setFormData] = useState({
+    /* 공통 */
+    email: "",
+    password: "",
+    passwordConfirm: "",
+    name: "",
+    phone: "",
+    /* 주소 */
+    regionParent: "",
+    regionName: "",
+    addressDetail: "",
+    /* 대행사 전용 */
+    agencyName: "",
+    agencyAddress: "",
+    agencyFeeRate: 0,
+    businessNumber: "",
+    /* 기사 전용 */
+    agencyId: "",
+  });
 
-  /* 고객 전용 — 거주지 (선택) */
-  const [regionParent,   setRegionParent]   = useState("");
-  const [regionSub,      setRegionSub]      = useState("");
-  const [addressDetail,  setAddressDetail]  = useState("");
+  const handleChange = (field) => (value) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
-  /* 대행사 / 기사 전용 */
-  const [company,  setCompany]  = useState("");
-  const [bizNum,   setBizNum]   = useState("");
-  const [agencyId, setAgencyId] = useState("");
+  const handleRegionParent = (v) =>
+    setFormData((prev) => ({ ...prev, regionParent: v, regionName: "" }));
 
-  const subRegions = regionParent ? REGIONS[regionParent] : [];
+  const subRegions = formData.regionParent ? REGIONS[formData.regionParent] : [];
 
   /* 비밀번호 확인 일치 여부 */
-  const pwMatch = !pw2 || pw === pw2;
+  const pwMatch = !formData.passwordConfirm || formData.password === formData.passwordConfirm;
 
   /* 스텝별 제출 버튼 활성화 조건 */
   const step1Disabled = (() => {
     if (!agree) return true;
-    if (isCustomer) return !email || !name || !pw || !pw2 || !pwMatch;
-    return !email || !pw;
+    if (isCustomer) return !formData.email || !formData.name || !formData.password || !formData.passwordConfirm || !pwMatch;
+    if (roleKey === "agency") return !formData.email || !formData.password || !formData.name || !formData.phone || !formData.businessNumber || !formData.agencyName;
+    if (roleKey === "engineer") return !formData.email || !formData.password || !formData.name || !formData.businessNumber;
+    return !formData.email || !formData.password;
   })();
 
-  function handleNext(e) {
-    e.preventDefault();
-    if (step < 3) setStep(step + 1);
-    else navigate("/auth/login");
-  }
+  const step2Disabled = (() => {
+    if (isCustomer) return !formData.regionParent || !formData.regionName || !formData.addressDetail;
+    if (roleKey === "agency") {
+      return (
+        !formData.regionParent ||
+        !formData.regionName ||
+        !formData.addressDetail ||
+        !formData.agencyAddress ||
+        formData.agencyFeeRate === null ||
+        formData.agencyFeeRate === ""
+      );
+    }
+    return false;
+  })();
 
-  function handleRegionParent(v) {
-    setRegionParent(v);
-    setRegionSub("");
-  }
+  const buildPayload = () => {
+    switch (roleKey) {
+      case "customer":
+        return {
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          phone: formData.phone,
+          regionName: formData.regionName,
+          addressDetail: formData.addressDetail,
+        };
+      case "agency":
+        return {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phoneNumber: formData.phone,
+          regionName: formData.regionName,
+          addressDetail: formData.addressDetail,
+          businessNumber: formData.businessNumber,
+          agencyName: formData.agencyName,
+          agencyAddress: formData.agencyAddress,
+          agencyFeeRate: formData.agencyFeeRate,
+        };
+      case "engineer":
+        return {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phoneNumber: formData.phone,
+          regionName: formData.regionName,
+          addressDetail: formData.addressDetail,
+          businessNumber: formData.businessNumber,
+        };
+      default:
+        throw new Error("역할이 선택되지 않았습니다.");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+
+    if (step === 2) {
+      try {
+        const payload = buildPayload();
+        switch (roleKey) {
+          case "customer":
+            await signupCustomer(payload);
+            break;
+          case "agency":
+            await signupAgency(payload);
+            break;
+          case "engineer":
+            await signupEngineer(payload);
+            break;
+          default:
+            throw new Error("역할이 선택되지 않았습니다.");
+        }
+        setStep(3);
+      } catch (error) {
+        console.error(error);
+        alert(error.response?.data?.message || "회원가입에 실패했습니다.");
+        console.error(error);
+      }
+    }
+
+    if (step === 3) {
+      navigate("/auth/login");
+    }
+  };
 
   return (
     <div className="auth-page">
@@ -202,7 +368,7 @@ function SignupForm({ roleKey, onBack }) {
           <StepBar current={step} />
 
           <div className="auth-card auth-card--form">
-            <form onSubmit={handleNext} className="auth-form">
+            <form onSubmit={handleSubmit} className="auth-form">
 
               {/* ── Step 1: 필수 계정 정보 ── */}
               {step === 1 && (
@@ -212,8 +378,8 @@ function SignupForm({ roleKey, onBack }) {
                     <AuthInput
                       label="이름"
                       placeholder="이름을 입력해주세요"
-                      value={name}
-                      onChange={setName}
+                      value={formData.name}
+                      onChange={handleChange("name")}
                     />
                   )}
 
@@ -221,16 +387,16 @@ function SignupForm({ roleKey, onBack }) {
                     label="이메일 주소"
                     type="email"
                     placeholder="이메일 주소를 입력해주세요"
-                    value={email}
-                    onChange={setEmail}
+                    value={formData.email}
+                    onChange={handleChange("email")}
                     rightEl={<span className="auth-input-icon-svg">✉</span>}
                   />
                   <AuthInput
                     label="비밀번호"
                     type={showPw ? "text" : "password"}
                     placeholder="비밀번호를 입력해주세요"
-                    value={pw}
-                    onChange={setPw}
+                    value={formData.password}
+                    onChange={handleChange("password")}
                     rightEl={
                       <button type="button" className="auth-eye-btn" onClick={() => setShowPw(!showPw)}>
                         {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -243,15 +409,15 @@ function SignupForm({ roleKey, onBack }) {
                         label="비밀번호 확인"
                         type={showPw2 ? "text" : "password"}
                         placeholder="비밀번호를 다시 입력해주세요"
-                        value={pw2}
-                        onChange={setPw2}
+                        value={formData.passwordConfirm}
+                        onChange={handleChange("passwordConfirm")}
                         rightEl={
                           <button type="button" className="auth-eye-btn" onClick={() => setShowPw2(!showPw2)}>
                             {showPw2 ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         }
                       />
-                      {pw2 && !pwMatch && (
+                      {formData.passwordConfirm && !pwMatch && (
                         <p className="auth-field-error">비밀번호가 일치하지 않습니다.</p>
                       )}
                     </>
@@ -259,18 +425,20 @@ function SignupForm({ roleKey, onBack }) {
 
                   {roleKey === "agency" && (
                     <>
-                      <AuthInput label="회사명" placeholder="회사명을 입력해주세요" value={company} onChange={setCompany} />
-                      <AuthInput label="사업자등록번호" placeholder="- 없이 숫자만 입력해주세요" value={bizNum} onChange={setBizNum} />
+                      <AuthInput label="대표자명" placeholder="대표자 이름을 입력해주세요" value={formData.name} onChange={handleChange("name")} />
+                      <AuthInput label="연락처" placeholder="010 - 없이 숫자만 입력해주세요" value={formData.phone} onChange={handleChange("phone")} />
+                      <AuthInput label="사업자등록번호" placeholder="- 없이 숫자만 입력해주세요" value={formData.businessNumber} onChange={handleChange("businessNumber")} />
+                      <AuthInput label="대행사명" placeholder="대행사명을 입력해주세요" value={formData.agencyName} onChange={handleChange("agencyName")} />
                     </>
                   )}
                   {roleKey === "engineer" && (
                     <>
-                      <AuthInput label="이름" placeholder="이름을 입력해주세요" value={name} onChange={setName} />
-                      <AuthInput label="휴대폰 번호" placeholder="- 없이 숫자만 입력해주세요" value={phone} onChange={setPhone} />
+                      <AuthInput label="이름" placeholder="이름을 입력해주세요" value={formData.name} onChange={handleChange("name")} />
+                      <AuthInput label="사업자등록번호" placeholder="- 없이 숫자만 입력해주세요" value={formData.businessNumber} onChange={handleChange("businessNumber")} />
                       <div className="auth-input-wrap">
                         <label className="auth-label">소속 대행사 (선택)</label>
                         <div className="auth-input-box auth-input-box--select">
-                          <select className="auth-select" value={agencyId} onChange={(e) => setAgencyId(e.target.value)}>
+                          <select className="auth-select" value={formData.agencyId} onChange={(e) => handleChange("agencyId")(e.target.value)}>
                             <option value="">소속 대행사를 선택해주세요</option>
                             <option value="1">케어플로 서울점</option>
                             <option value="2">케어플로 경기점</option>
@@ -304,8 +472,8 @@ function SignupForm({ roleKey, onBack }) {
                       <AuthInput
                         label="연락처 (선택)"
                         placeholder="- 없이 숫자만 입력해주세요"
-                        value={phone}
-                        onChange={setPhone}
+                        value={formData.phone}
+                        onChange={handleChange("phone")}
                       />
 
                       {/* 거주지 안내 배너 */}
@@ -313,20 +481,19 @@ function SignupForm({ roleKey, onBack }) {
                         <MapPin size={14} className="auth-addr-banner__icon" />
                         <p>
                           거주 지역을 입력하면 <strong>A/S 신청 시 방문 지역이 자동으로 설정</strong>됩니다.
-                          입력하지 않아도 신청 시 직접 선택할 수 있어요.
                         </p>
                       </div>
 
                       {/* 거주 지역 */}
                       <div className="auth-input-wrap">
                         <label className="auth-label">
-                          거주 지역 (선택)
+                          거주 지역
                         </label>
                         <div className="auth-region-row">
                           <div className="auth-input-box auth-input-box--select">
                             <select
                               className="auth-select"
-                              value={regionParent}
+                              value={formData.regionParent}
                               onChange={(e) => handleRegionParent(e.target.value)}
                             >
                               <option value="">시·도 선택</option>
@@ -339,9 +506,9 @@ function SignupForm({ roleKey, onBack }) {
                           <div className="auth-input-box auth-input-box--select">
                             <select
                               className="auth-select"
-                              value={regionSub}
-                              onChange={(e) => setRegionSub(e.target.value)}
-                              disabled={!regionParent}
+                              value={formData.regionName}
+                              onChange={(e) => handleChange("regionName")(e.target.value)}
+                              disabled={!formData.regionParent}
                             >
                               <option value="">구·시 선택</option>
                               {subRegions.map(r => (
@@ -355,19 +522,19 @@ function SignupForm({ roleKey, onBack }) {
 
                       {/* 상세 주소 */}
                       <AuthInput
-                        label="상세 주소 (선택)"
+                        label="상세 주소"
                         placeholder="동·호수·번지 등을 입력해주세요"
-                        value={addressDetail}
-                        onChange={setAddressDetail}
+                        value={formData.addressDetail}
+                        onChange={handleChange("addressDetail")}
                       />
 
-                      {(regionParent || addressDetail) && (
+                      {(formData.regionParent || formData.addressDetail) && (
                         <div className="auth-addr-preview">
                           <Info size={13} />
                           <span>
                             입력한 주소 —{" "}
                             <strong>
-                              {[regionParent, regionSub, addressDetail].filter(Boolean).join(" ")}
+                              {[formData.regionParent, formData.regionName, formData.addressDetail].filter(Boolean).join(" ")}
                             </strong>
                           </span>
                         </div>
@@ -377,14 +544,47 @@ function SignupForm({ roleKey, onBack }) {
 
                   {roleKey === "agency" && (
                     <>
-                      <AuthInput label="대표자명" placeholder="대표자 이름을 입력해주세요" value={name} onChange={setName} />
-                      <AuthInput label="연락처" placeholder="- 없이 숫자만 입력해주세요" value={phone} onChange={setPhone} />
+                      {/* 거주 지역 */}
+                      <div className="auth-input-wrap">
+                        <label className="auth-label">거주 지역</label>
+                        <div className="auth-region-row">
+                          <div className="auth-input-box auth-input-box--select">
+                            <select
+                              className="auth-select"
+                              value={formData.regionParent}
+                              onChange={(e) => handleRegionParent(e.target.value)}
+                            >
+                              <option value="">시·도 선택</option>
+                              {Object.keys(REGIONS).map(r => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={15} className="auth-select-arrow" />
+                          </div>
+                          <div className="auth-input-box auth-input-box--select">
+                            <select
+                              className="auth-select"
+                              value={formData.regionName}
+                              onChange={(e) => handleChange("regionName")(e.target.value)}
+                              disabled={!formData.regionParent}
+                            >
+                              <option value="">구·시 선택</option>
+                              {subRegions.map(r => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={15} className="auth-select-arrow" />
+                          </div>
+                        </div>
+                      </div>
+                      <AuthInput label="상세 주소" placeholder="동·호수·번지 등을 입력해주세요" value={formData.addressDetail} onChange={handleChange("addressDetail")} />
+                      <AuthInput label="대행사 소재지" placeholder="대행사 주소를 입력해주세요" value={formData.agencyAddress} onChange={handleChange("agencyAddress")} />
+                      <AuthInput label="수수료율 (%)" type="number" placeholder="예: 10.5" value={formData.agencyFeeRate || ""} onChange={(v) => handleChange("agencyFeeRate")(parseFloat(v) || 0)} />
                     </>
                   )}
                   {roleKey === "engineer" && (
                     <>
-                      <AuthInput label="경력 (년)" placeholder="예: 5" value={company} onChange={setCompany} />
-                      <AuthInput label="전문 분야 (선택)" placeholder="예: 냉장고, 에어컨" value={bizNum} onChange={setBizNum} />
+                      <AuthInput label="휴대폰 번호" placeholder="- 없이 숫자만 입력해주세요" value={formData.phone} onChange={handleChange("phone")} />
                     </>
                   )}
                 </>
@@ -403,17 +603,17 @@ function SignupForm({ roleKey, onBack }) {
                   </p>
                   <div className="auth-complete__info">
                     <div className="auth-complete__info-row">
-                      <span>이메일</span><span>{email}</span>
+                      <span>이메일</span><span>{formData.email}</span>
                     </div>
-                    {isCustomer && name && (
+                    {formData.name && (
                       <div className="auth-complete__info-row">
-                        <span>이름</span><span>{name}</span>
+                        <span>이름</span><span>{formData.name}</span>
                       </div>
                     )}
-                    {isCustomer && (regionParent || addressDetail) && (
+                    {isCustomer && (formData.regionParent || formData.addressDetail) && (
                       <div className="auth-complete__info-row">
                         <span>거주지</span>
-                        <span>{[regionParent, regionSub, addressDetail].filter(Boolean).join(" ") || "—"}</span>
+                        <span>{[formData.regionParent, formData.regionName, formData.addressDetail].filter(Boolean).join(" ") || "—"}</span>
                       </div>
                     )}
                     <div className="auth-complete__info-row">
@@ -431,9 +631,9 @@ function SignupForm({ roleKey, onBack }) {
                 type="submit"
                 className="auth-submit-btn"
                 style={{ background: role.color }}
-                disabled={step === 1 ? step1Disabled : false}
+                disabled={step === 1 ? step1Disabled : step === 2 ? step2Disabled : false}
               >
-                {step === 2 && isCustomer ? "건너뛰기 / 다음" : step === 3 ? "로그인하러 가기" : "다음"}
+                {step === 3 ? "로그인하러 가기" : "다음"}
               </button>
             </form>
 

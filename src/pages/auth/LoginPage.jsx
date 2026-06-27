@@ -5,6 +5,7 @@ import logoImg from "../../assets/logo.png";
 import mainImg from "../../assets/main.png";
 import { ROLES } from "./authConstants";
 import "../../styles/Auth/Auth.css";
+import { loginCustomer } from "../../apis/auth";
 
 function TopNav({ showBack, onBack }) {
   return (
@@ -114,9 +115,16 @@ function LoginForm({ roleKey, onBack }) {
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
-    navigate(role.dashPath || "/customer/home");
+    try {
+      const res = await loginCustomer({ email, password: pw });
+      const { token } = res.data;
+      localStorage.setItem("token", token);
+      navigate(role.dashPath || "/customer/home");
+    } catch (error) {
+      alert(error.response?.data?.message || "로그인에 실패했습니다.");
+    }
   }
 
   return (
@@ -175,10 +183,6 @@ function LoginForm({ roleKey, onBack }) {
                 <button className="auth-social-btn">
                   <img src="https://www.google.com/favicon.ico" alt="Google" className="auth-social-btn__icon" />
                   Google 계정으로 로그인
-                </button>
-                <button className="auth-social-btn auth-social-btn--kakao">
-                  <span className="auth-social-btn__kakao-icon">💬</span>
-                  카카오 계정으로 로그인
                 </button>
               </div>
 
