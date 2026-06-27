@@ -31,29 +31,40 @@
   font-weight: 700; font-size: 14px;
 }
 
-/* 통계 카드 */
-.cas-stats {
+/* KPI */
+.cas-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
 }
 
-.cas-stat {
-  background: #fff;
+.cas-kpi {
+  background: #f9f9fb;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  padding: 18px 20px;
+  border: 0.5px solid #ebebf0;
+  padding: 18px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: flex-end;
+  justify-content: space-between;
+  overflow: hidden;
 }
 
-.cas-stat--alert { border: 2px solid #ef4444; }
+.cas-kpi--alert { border-color: #fecaca; background: #fff5f5; }
+.cas-kpi--alert .cas-kpi__value { color: #ef4444; }
+.cas-kpi--alert .cas-kpi__watermark { color: #fecaca; }
 
-.cas-stat__label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-.cas-stat__num   { font-size: 26px; font-weight: 700; }
-.cas-stat__num span { font-size: 14px; font-weight: 500; color: var(--text-mid); }
-.cas-stat__num--red { color: #ef4444; }
+.cas-kpi__text { display: flex; flex-direction: column; gap: 3px; z-index: 1; }
+
+.cas-kpi__value { font-size: 20px; font-weight: 700; color: #1a1a2e; line-height: 1; }
+.cas-kpi__value span { font-size: 13px; font-weight: 500; color: #888; margin-left: 2px; }
+.cas-kpi__label { font-size: 12px; font-weight: 600; color: #555; margin-top: 4px; }
+
+.cas-kpi__watermark {
+  width: 52px;
+  height: 52px;
+  color: #e0dff0;
+  flex-shrink: 0;
+}
 
 /* ── 바디 단일 컬럼 ── */
 .cas-body {

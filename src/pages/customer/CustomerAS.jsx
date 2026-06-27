@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, AlertTriangle, FileText, Package, Receipt, Timer } from "lucide-react";
+import { Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, AlertTriangle, FileText, Package, Receipt, Timer, ClipboardList, Loader, CreditCard, CalendarCheck } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
 import ApplianceIcon from "./ApplianceIcon";
 
@@ -1198,19 +1198,20 @@ export default function CustomerAS() {
         />
       )}
 
-      {/* 통계 카드 4개 */}
-      <div className="cas-stats">
+      {/* KPI */}
+      <div className="cas-kpi-grid">
         {[
-          { label: "전체 신청",        num: "4", unit: "건", alert: false },
-          { label: "진행 중",           num: "2", unit: "건", alert: false },
-          { label: "결제 대기 중",      num: "1", unit: "건", alert: true  },
-          { label: "이번 달 방문 예정", num: "1", unit: "건", alert: false },
-        ].map((s) => (
-          <div key={s.label} className={`cas-stat ${s.alert ? "cas-stat--alert" : ""}`}>
-            <p className="cas-stat__label">{s.label}</p>
-            <p className={`cas-stat__num ${s.alert ? "cas-stat__num--red" : ""}`}>
-              {s.num} <span>{s.unit}</span>
-            </p>
+          { label: "전체 신청",        num: "4", unit: "건", Icon: ClipboardList, alert: false },
+          { label: "진행 중",           num: "2", unit: "건", Icon: Loader,        alert: false },
+          { label: "결제 대기 중",      num: "1", unit: "건", Icon: CreditCard,    alert: true  },
+          { label: "이번 달 방문 예정", num: "1", unit: "건", Icon: CalendarCheck, alert: false },
+        ].map(({ label, num, unit, Icon, alert }) => (
+          <div key={label} className={`cas-kpi${alert ? " cas-kpi--alert" : ""}`}>
+            <div className="cas-kpi__text">
+              <p className="cas-kpi__value">{num}<span>{unit}</span></p>
+              <p className="cas-kpi__label">{label}</p>
+            </div>
+            <Icon className="cas-kpi__watermark" strokeWidth={1} />
           </div>
         ))}
       </div>

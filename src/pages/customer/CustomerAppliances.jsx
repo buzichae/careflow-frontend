@@ -885,13 +885,13 @@ export default function CustomerAppliances() {
           </div>
 
           {/* 하단 배너 */}
-          <div className="ca-banner">
+          {/* <div className="ca-banner">
             <div className="ca-banner__text">
               <p>새로운 가전을 등록하고</p>
               <p><strong>더 스마트한 관리를 시작해보세요!</strong></p>
             </div>
             <button className="ca-banner__btn" onClick={() => setShowRegister(true)}>+ 가전 등록하기</button>
-          </div>
+          </div> */}
         </div>
 
         {/* ══ 우측 사이드바 ══ */}
