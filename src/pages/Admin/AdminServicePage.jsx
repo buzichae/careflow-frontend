@@ -76,6 +76,8 @@ export default function AdminServicePage() {
   const [tab, setTab] = useState("as");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [regionFilter, setRegionFilter] = useState("ALL");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo]   = useState("");
   const [repairCosts, setRepairCosts] = useState(mockRepairCosts);
   const [editCost, setEditCost] = useState(null);
   const [badge, setBadge] = useState(mockBadgeCriteria);
@@ -85,7 +87,10 @@ export default function AdminServicePage() {
   const filteredAs = mockAsDetails.filter((a) => {
     const matchStatus = statusFilter === "ALL" || a.status === statusFilter;
     const matchRegion = regionFilter === "ALL" || a.region === regionFilter;
-    return matchStatus && matchRegion;
+    const d = a.date.replaceAll(".", "-");
+    const matchFrom = !dateFrom || d >= dateFrom;
+    const matchTo   = !dateTo   || d <= dateTo;
+    return matchStatus && matchRegion && matchFrom && matchTo;
   });
 
   return (
@@ -125,7 +130,7 @@ export default function AdminServicePage() {
             </div>
 
             {/* 필터 */}
-            <div className="admin-filter-bar">
+            <div className="admin-filter-bar" style={{ flexWrap: "wrap", gap: 8 }}>
               <select className="admin-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="ALL">상태 전체</option>
                 <option value="접수">접수</option>
@@ -141,6 +146,31 @@ export default function AdminServicePage() {
                 <option value="인천">인천</option>
                 <option value="부산">부산</option>
               </select>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+                <input
+                  type="date"
+                  className="admin-date-input"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+                <span style={{ fontSize: 12, color: "#aaa" }}>~</span>
+                <input
+                  type="date"
+                  className="admin-date-input"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+                {(dateFrom || dateTo) && (
+                  <button
+                    className="admin-btn admin-btn--outline admin-btn--sm"
+                    onClick={() => { setDateFrom(""); setDateTo(""); }}
+                  >
+                    초기화
+                  </button>
+                )}
+              </div>
             </div>
 
             <table className="admin-table">
