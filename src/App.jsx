@@ -44,6 +44,7 @@ import Engineernoticepage from "../src/pages/Engineer/EngineerNoticePage.jsx"
 import EngineerMySchedulePage from "../src/pages/Engineer/Engineermyschedulepage.jsx"
 import Engineerlmspage  from "../src/pages/Engineer/Engineerlmspage.jsx"
 
+import OAuth2Callback from "../src/pages/auth/OAuth2Callback.jsx"
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -108,6 +109,10 @@ export default function App() {
           <Route path="/agency/settings" element={<AgencySettingPage title="대행사 - 설정" />} />
 
         </Route>
+
+        <Route 
+          path="/oauth2/redirect"
+          element={<OAuth2Callback />} />
 
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>

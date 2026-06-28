@@ -5,7 +5,7 @@ import logoImg from "../../assets/logo.png";
 import mainImg from "../../assets/main.png";
 import { ROLES } from "./authConstants";
 import "../../styles/Auth/Auth.css";
-import { loginCustomer } from "../../apis/auth";
+import { login } from "../../apis/auth";
 
 function TopNav({ showBack, onBack }) {
   return (
@@ -118,14 +118,25 @@ function LoginForm({ roleKey, onBack }) {
   async function handleLogin(e) {
     e.preventDefault();
     try {
-      const res = await loginCustomer({ email, password: pw });
-      const { token } = res.data;
-      localStorage.setItem("token", token);
-      navigate(role.dashPath || "/customer/home");
+      const res = await login({ email, password: pw });
+      const { accessToken } = res.data;
+
+      // console.log(res.data);
+      localStorage.setItem("token", accessToken);
+      const role = ROLES.find((r) => r.key === roleKey);
+
+      navigate(role?.dashPath || "/customer/home");
+
     } catch (error) {
       alert(error.response?.data?.message || "로그인에 실패했습니다.");
     }
   }
+
+  const handleGoogleLogin = () => {
+    // console.log("로그인 전");
+    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+    // console.log("로그인 후");
+  };
 
   return (
     <div className="auth-page">
@@ -178,13 +189,17 @@ function LoginForm({ roleKey, onBack }) {
                 </button>
               </form>
 
-              <div className="auth-divider"><span>또는</span></div>
-              <div className="auth-social-btns">
-                <button className="auth-social-btn">
-                  <img src="https://www.google.com/favicon.ico" alt="Google" className="auth-social-btn__icon" />
-                  Google 계정으로 로그인
-                </button>
-              </div>
+              {roleKey === "customer" && (
+                <>
+                  <div className="auth-divider"><span>또는</span></div>
+                  <div className="auth-social-btns">
+                    <button className="auth-social-btn" onClick={handleGoogleLogin}>
+                      <img src="https://www.google.com/favicon.ico" alt="Google" className="auth-social-btn__icon" />
+                      Google 계정으로 로그인
+                    </button>
+                  </div>
+                </>
+              )}
 
               <p className="auth-card__foot">
                 아직 계정이 없으신가요?{" "}

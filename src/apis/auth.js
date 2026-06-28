@@ -14,5 +14,5 @@ export const signupAgency = (data) =>
 export const signupEngineer = (data) =>
   api.post("/api/engineers/signup", data);
 
-export const loginCustomer = (data) =>
+export const login = (data) =>
   api.post("/api/auth/login", data);
