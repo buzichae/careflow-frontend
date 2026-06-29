@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Star, ChevronRight, Clock, ArrowLeft, Check, Wrench, Upload, X, MapPin, Calendar, AlertTriangle, FileText, Package, Receipt, Timer, ClipboardList, Loader, CreditCard, CalendarCheck } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
 import ApplianceIcon from "./ApplianceIcon";
+import { getMyAS } from "../../apis/as";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
@@ -695,64 +696,32 @@ const IMPORTANCE_META = {
   MINOR:    { label: "MINOR",    color: "#16a34a", bg: "#dcfce7" },
 };
 
-const AS_LIST = [
-  {
-    id: 1,
-    appliance: "LG 오브제 냉장고", model: "M83FD421E",
-    desc: "냉장이 잘 안돼요. (냉실 온도가 설정보다 높게 유지됩니다)",
-    datetime: "2026.06.21 (토) 10:00", engineerStatus: "전문 기사 배정 완료",
-    engineer: "김민준 기사", rating: 4.9,
-    status: "예약 확정",
-    actions: ["상세보기", "예약 취소"],
-  },
-  {
-    id: 2,
-    appliance: "삼성 그랑데 세탁기", model: "WF21A9500KV",
-    desc: "탈수 중 소음이 심하게 납니다. 진동도 많이 느껴져요.",
-    datetime: "2026.06.16 (화) 14:00", engineerStatus: "전문 기사 배정 완료",
-    engineer: "이재훈 기사", rating: 4.8,
-    status: "수리 진행 중",
-    actions: ["상세보기"],
-  },
-  {
-    id: 3,
-    appliance: "LG 오브제 냉장고", model: "M83FD421E",
-    desc: "냉장이 잘 안돼요. (냉실 온도가 ...",
-    datetime: "2026.06.10 (수) 10:00", engineerStatus: "수리 완료",
-    engineer: "박현우 기사", rating: 4.7,
-    status: "결제 대기",
-    amount: "120,000원",
-    actions: ["수리 보고서 보기", "결제하기"],
-  },
-  {
-    id: 4,
-    appliance: "LG 오브제 냉장고", model: "M83FD421E",
-    desc: "냉장이 잘 안돼요. (냉실 온도가 ...",
-    datetime: "2026.06.03 (월) 10:00", engineerStatus: "전문 기사 배정 완료",
-    engineer: "최지훈 기사", rating: 4.9,
-    status: "A/S 완료",
-    actions: ["수리 보고서 보기", "기사님 리뷰 남기기"],
-  },
-  {
-    id: 5,
-    appliance: "LG 오브제 냉장고", model: "M83FD421E",
-    desc: "냉장이 잘 안돼요. (냉실 온도가 ...",
-    datetime: "2026.05.20 (목) 10:00", engineerStatus: "전문 기사 배정 완료",
-    engineer: "김민수 기사", rating: 4.8,
-    status: "A/S 완료",
-    actions: ["수리 보고서 보기", "작성한 리뷰 보기"],
-  },
+
+const FILTER_TABS = [
+  { key: "전체",              label: "전체"         },
+  { key: "PENDING",           label: "접수 대기"    },
+  { key: "AGENCY_RECEIVED",   label: "대행사 접수"  },
+  { key: "ASSIGNED",          label: "기사 배정"    },
+  { key: "ACCEPTED",          label: "예약 확정"    },
+  { key: "ENGINEER_DEPARTED", label: "기사 출발"    },
+  { key: "ENGINEER_ARRIVED",  label: "기사 도착"    },
+  { key: "IN_PROGRESS",       label: "수리 진행 중" },
+  { key: "COMPLETED",         label: "결제 대기"    },
+  { key: "PAID",              label: "A/S 완료"    },
+  { key: "CANCELLED",         label: "취소"         },
 ];
 
-const FILTER_TABS = ["전체", "접수 대기", "예약 확정", "수리 진행 중", "결제 대기", "A/S 완료", "취소"];
-
 const STATUS_META = {
-  "예약 확정":   { style: "purple", label: "예약 확정"   },
-  "수리 진행 중": { style: "blue",   label: "수리 진행 중" },
-  "결제 대기":   { style: "red",    label: "결제 대기"   },
-  "A/S 완료":   { style: "green",  label: "A/S 완료"   },
-  "접수 대기":   { style: "gray",   label: "접수 대기"   },
-  "취소":        { style: "gray",   label: "취소"        },
+  PENDING:            { style: "gray",   label: "접수 대기"      },
+  AGENCY_RECEIVED:    { style: "gray",   label: "대행사 접수"    },
+  ASSIGNED:           { style: "purple", label: "기사 배정 완료" },
+  ACCEPTED:           { style: "purple", label: "예약 확정"      },
+  ENGINEER_DEPARTED:  { style: "blue",   label: "기사 출발"      },
+  ENGINEER_ARRIVED:   { style: "blue",   label: "기사 도착"      },
+  IN_PROGRESS:        { style: "blue",   label: "수리 진행 중"   },
+  COMPLETED:          { style: "red",    label: "결제 대기"      },
+  PAID:               { style: "green",  label: "A/S 완료"      },
+  CANCELLED:          { style: "gray",   label: "취소"           },
 };
 
 const ACTION_STYLE = {
@@ -764,13 +733,13 @@ const ACTION_STYLE = {
   "결제하기":          "danger",
 };
 
-const UPCOMING_VISITS = [
-  { appliance: "LG 오브제 냉장고", date: "2026.06.21 (토)", time: "10:00~12:00", engineer: "김민준 기사", dDay: 3 },
-];
+// const UPCOMING_VISITS = [
+//   { appliance: "LG 오브제 냉장고", date: "2026.06.21 (토)", time: "10:00~12:00", engineer: "김민준 기사", dDay: 3 },
+// ];
 
-const PENDING_PAYMENTS = [
-  { appliance: "LG 오브제 냉장고", model: "M83FD421E", amount: "120,000원", dueDate: "2026.06.25" },
-];
+// const PENDING_PAYMENTS = [
+//   { appliance: "LG 오브제 냉장고", model: "M83FD421E", amount: "120,000원", dueDate: "2026.06.25" },
+// ];
 
 /* ── 수리 보고서 모달 ── */
 function ReportModal({ item, report, onClose }) {
@@ -1097,6 +1066,8 @@ export default function CustomerAS() {
   const [activeFilter, setActiveFilter] = useState("전체");
   const [showReserve, setShowReserve]   = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [asList, setAsList]             = useState([]);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
     if (searchParams.get("reserve") === "true") {
@@ -1104,7 +1075,13 @@ export default function CustomerAS() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
-  const [asList, setAsList]             = useState(AS_LIST);
+
+  useEffect(() => {
+    getMyAS()
+      .then((res) => setAsList(res.data))
+      .catch((err) => console.error("A/S 목록 조회 실패:", err))
+      .finally(() => setLoading(false));
+  }, []);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null); // { item, existingReview? }
@@ -1153,6 +1130,7 @@ export default function CustomerAS() {
   const filtered = activeFilter === "전체"
     ? asList
     : asList.filter((item) => item.status === activeFilter);
+
 
   if (showReserve) {
     return (
@@ -1228,54 +1206,57 @@ export default function CustomerAS() {
 
           {/* 필터 탭 */}
           <div className="cas-filters">
-            {FILTER_TABS.map((tab) => (
+            {FILTER_TABS.map(({ key, label }) => (
               <button
-                key={tab}
-                className={`cas-filter ${activeFilter === tab ? "cas-filter--active" : ""}`}
-                onClick={() => setActiveFilter(tab)}
+                key={key}
+                className={`cas-filter ${activeFilter === key ? "cas-filter--active" : ""}`}
+                onClick={() => setActiveFilter(key)}
               >
-                {tab}
+                {label}
               </button>
             ))}
           </div>
 
           {/* 신청 목록 */}
           <div className="cas-list">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="cas-empty">불러오는 중...</div>
+            ) : filtered.length === 0 ? (
               <div className="cas-empty">해당 상태의 신청 내역이 없습니다.</div>
-            ) : filtered.map((item) => {
-              const st = STATUS_META[item.status];
+            ) : filtered.map((item, idx) => {
+              const st = STATUS_META[item.status] ?? { style: "gray", label: item.status ?? "알 수 없음" };
+
               return (
-                <div key={item.id} className={`cas-item ${item.status === "결제 대기" ? "cas-item--payment" : ""}`}>
-                  <ApplianceIcon name={item.appliance} size={68} radius={10} />
+                <div key={item.requestId ?? idx} className={`cas-item ${item.status === "COMPLETED" ? "cas-item--payment" : ""}`}>
+                  <ApplianceIcon name={item.symptomCode} size={68} radius={10} />
                   <div className="cas-item__info">
                     <div className="cas-item__title-row">
-                      <span className="cas-item__name">{item.appliance}</span>
-                      <span className="cas-item__model">{item.model}</span>
+                      <span className="cas-item__name">가전 #{item.applianceId}</span>
+                      <span className="cas-item__model">{item.symptomCode}</span>
                     </div>
-                    <p className="cas-item__desc">{item.desc}</p>
+                    <p className="cas-item__desc">{item.symptomDesc ?? "—"}</p>
                     <div className="cas-item__meta">
                       <span className="cas-item__datetime">
-                        <Clock size={11} /> {item.datetime}
+                        <Clock size={11} /> {item.scheduledDate} {item.scheduledTime}
                       </span>
-                      <span className="cas-item__engineer">{item.engineerStatus}</span>
+                      <span className="cas-item__engineer">{item.visitAddressDetail}</span>
                     </div>
-                    {item.amount && (
-                      <p className="cas-item__amount">청구 금액: <strong>{item.amount}</strong></p>
+                    {item.cancelReason && (
+                      <p className="cas-item__amount">취소 사유: <strong>{item.cancelReason}</strong></p>
                     )}
                   </div>
                   <div className="cas-item__center">
                     <span className={`cas-badge cas-badge--${st.style}`}>{st.label}</span>
                     <div className="cas-item__engineer-info">
-                      <div className="cas-item__eng-avatar">{item.engineer[0]}</div>
+                      <div className="cas-item__eng-avatar">?</div>
                       <div>
-                        <p className="cas-item__eng-name">{item.engineer}</p>
-                        <p className="cas-item__eng-rating"><Star size={10} fill="#f59e0b" color="#f59e0b" /> {item.rating}</p>
+                        <p className="cas-item__eng-name">배정 대기 중</p>
+                        <p className="cas-item__eng-rating"><Star size={10} fill="#f59e0b" color="#f59e0b" /> -</p>
                       </div>
                     </div>
                   </div>
                   <div className="cas-item__actions">
-                    {item.actions.map((action) => (
+                    {(item.actions ?? []).map((action) => (
                       <button
                         key={action}
                         className={`cas-action-btn cas-action-btn--${ACTION_STYLE[action]}`}
