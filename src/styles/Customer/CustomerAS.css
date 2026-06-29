@@ -206,6 +206,7 @@
 .cas-action-btn--outline { background: #fff; border: 1px solid var(--border); color: var(--text-mid); }
 .cas-action-btn--primary { background: var(--primary); border: none; color: #fff; }
 .cas-action-btn--danger  { background: #ef4444; border: none; color: #fff; }
+.cas-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── 우측 사이드바 ── */
 .cas-sidebar {
