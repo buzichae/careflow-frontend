@@ -1,4 +1,4 @@
-import api from "./axiosInstace";
+import api from "./axiosInstance";
 
 export const getMyAS = () => {
     return api.get("/api/as-requests/me");
