@@ -23,7 +23,14 @@ import {
 } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
 import ApplianceIcon from "./ApplianceIcon";
-import { getMyAS, cancelAsRequest, getReport, approveReport } from "../../apis/as";
+import {
+  getMyAS,
+  cancelAsRequest,
+  getReport,
+  approveReport,
+  review,
+  getAsRequestDetail,
+} from "../../apis/as";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
@@ -1108,7 +1115,6 @@ function ASRequestFlow({ onClose }) {
   );
 }
 
-
 const FILTER_TABS = [
   { key: "전체", label: "전체" },
   { key: "PENDING", label: "접수 대기" },
@@ -1178,14 +1184,6 @@ function getActionsByStatus(status, hasReview) {
   }
 }
 
-// const UPCOMING_VISITS = [
-//   { appliance: "LG 오브제 냉장고", date: "2026.06.21 (토)", time: "10:00~12:00", engineer: "김민준 기사", dDay: 3 },
-// ];
-
-// const PENDING_PAYMENTS = [
-//   { appliance: "LG 오브제 냉장고", model: "M83FD421E", amount: "120,000원", dueDate: "2026.06.25" },
-// ];
-
 /* ── 수리 보고서 모달 ── */
 function ReportModal({ item, report, onApprove, onClose }) {
   if (!report) return null;
@@ -1202,7 +1200,10 @@ function ReportModal({ item, report, onApprove, onClose }) {
   }
 
   const imageList = report.imageUrls
-    ? report.imageUrls.split(",").map((u) => u.trim()).filter(Boolean)
+    ? report.imageUrls
+        .split(",")
+        .map((u) => u.trim())
+        .filter(Boolean)
     : [];
 
   return (
@@ -1214,7 +1215,9 @@ function ReportModal({ item, report, onApprove, onClose }) {
             <FileText size={17} color="#7c5cf7" />
             <div>
               <p className="cas-report-modal__sup">수리 보고서</p>
-              <h3 className="cas-report-modal__title">{item.appliance ?? `가전 #${report.requestId}`}</h3>
+              <h3 className="cas-report-modal__title">
+                {item.appliance ?? `가전 #${report.requestId}`}
+              </h3>
             </div>
           </div>
           <button className="cas-report-modal__close" onClick={onClose}>
@@ -1252,7 +1255,9 @@ function ReportModal({ item, report, onApprove, onClose }) {
               <FileText size={14} color="#7c5cf7" />
               <h4>A/S 결과</h4>
             </div>
-            <p className="cas-report-diagnosis">{report.diagnosisResult ?? "—"}</p>
+            <p className="cas-report-diagnosis">
+              {report.diagnosisResult ?? "—"}
+            </p>
           </div>
 
           {/* 청구 금액 */}
@@ -1264,7 +1269,11 @@ function ReportModal({ item, report, onApprove, onClose }) {
             <div className="cas-report-cost">
               <div className="cas-report-cost__row cas-report-cost__row--total">
                 <span>최종 청구 금액</span>
-                <span>{report.finalAmount != null ? report.finalAmount.toLocaleString() + "원" : "—"}</span>
+                <span>
+                  {report.finalAmount != null
+                    ? report.finalAmount.toLocaleString() + "원"
+                    : "—"}
+                </span>
               </div>
             </div>
           </div>
@@ -1289,7 +1298,12 @@ function ReportModal({ item, report, onApprove, onClose }) {
               </div>
               <div className="cas-report-images">
                 {imageList.map((url, i) => (
-                  <img key={i} src={url} alt={`수리 사진 ${i + 1}`} className="cas-report-image" />
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`수리 사진 ${i + 1}`}
+                    className="cas-report-image"
+                  />
                 ))}
               </div>
             </div>
@@ -1328,16 +1342,6 @@ function ReportModal({ item, report, onApprove, onClose }) {
   );
 }
 
-/* ── mock 리뷰 데이터 (id 5 = 이미 리뷰 작성된 케이스) ── */
-const MOCK_REVIEWS = {
-  5: {
-    engineerName: "김민수 기사",
-    rating: 5,
-    comment:
-      "기사님이 매우 친절하고 신속하게 수리해주셨어요. 문제를 명확하게 설명해주셔서 좋았습니다. 다음에도 이용하고 싶네요!",
-    createdAt: "2026-05-22",
-  },
-};
 
 /* ── 리뷰 모달 ── */
 function ReviewModal({ item, existingReview, onSubmit, onClose }) {
@@ -1367,7 +1371,7 @@ function ReviewModal({ item, existingReview, onSubmit, onClose }) {
               <p className="cas-review-modal__sup">
                 {readOnly ? "작성한 리뷰" : "기사님 리뷰 남기기"}
               </p>
-              <h3 className="cas-review-modal__title">{item.appliance}</h3>
+              <h3 className="cas-review-modal__title">{item.brand} {item.modelName}</h3>
             </div>
           </div>
           <button className="cas-review-modal__close" onClick={onClose}>
@@ -1377,11 +1381,15 @@ function ReviewModal({ item, existingReview, onSubmit, onClose }) {
 
         {/* 기사 정보 */}
         <div className="cas-review-modal__engineer">
-          <div className="cas-review-eng-avatar">{item.engineer[0]}</div>
+          <div className="cas-review-eng-avatar">
+            {(item.engineerName ?? existingReview?.engineerName ?? "?")[0]}
+          </div>
           <div>
-            <p className="cas-review-eng-name">{item.engineer}</p>
+            <p className="cas-review-eng-name">
+              {item.engineerName ?? existingReview?.engineerName ?? "담당 기사"}
+            </p>
             <p className="cas-review-eng-sub">
-              담당 기사 · {item.datetime.slice(0, 10)}
+              담당 기사 · {item.scheduledDate ?? ""}
             </p>
           </div>
         </div>
@@ -1569,7 +1577,7 @@ export default function CustomerAS() {
   const [cancelTarget, setCancelTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null); // { item, existingReview? }
-  const [reviews, setReviews] = useState(MOCK_REVIEWS);
+  const [reviews, setReviews] = useState({});
 
   function handlePayment(requestId) {
     setAsList((prev) =>
@@ -1579,16 +1587,23 @@ export default function CustomerAS() {
     );
   }
 
-  function handleReviewSubmit({ rating, comment }) {
+  async function handleReviewSubmit({ rating, content }) {
     const item = reviewTarget.item;
-    const newReview = {
-      engineerName: item.engineer,
-      rating,
-      comment,
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
-    setReviews((prev) => ({ ...prev, [item.requestId]: newReview }));
-    setReviewTarget(null);
+    try {
+      await review(item.requestId, rating, content);
+      // API 성공 후 로컬 상태 업데이트 → 버튼이 "작성한 리뷰 보기"로 전환됨
+      setReviews((prev) => ({
+        ...prev,
+        [item.requestId]: {
+          rating,
+          content,
+          createdAt: new Date().toISOString().slice(0, 10),
+        },
+      }));
+      setReviewTarget(null);
+    } catch (error) {
+      alert(error.response?.data?.message || "리뷰 작성에 실패했습니다.");
+    }
   }
 
   async function handleCancelConfirm(reason) {
@@ -1613,6 +1628,16 @@ export default function CustomerAS() {
       setReportTarget({ item, report: res.data });
     } catch (error) {
       alert(error.response?.data?.message || "보고서를 불러오지 못했습니다.");
+    }
+  }
+
+  async function handleReviewOpen(item) {
+    try {
+      const res = await getAsRequestDetail(item.requestId);
+      const detail = res.data;
+      setReviewTarget({ item: { ...item, engineerName: detail.engineerName } });
+    } catch (error) {
+      alert(error.response?.data?.message || "기사 정보를 불러오지 못했습니다.");
     }
   }
 
@@ -1665,7 +1690,9 @@ export default function CustomerAS() {
                     );
                     setReportTarget(null);
                   } catch (error) {
-                    alert(error.response?.data?.message || "승인에 실패했습니다.");
+                    alert(
+                      error.response?.data?.message || "승인에 실패했습니다.",
+                    );
                   }
                 }
               : undefined
@@ -1846,7 +1873,9 @@ export default function CustomerAS() {
                       ).map((action) => (
                         <button
                           key={action}
-                          disabled={action === "수리 보고서 보기" && !item.reportId}
+                          disabled={
+                            action === "수리 보고서 보기" && !item.reportId
+                          }
                           className={`cas-action-btn cas-action-btn--${ACTION_STYLE[action]}`}
                           onClick={
                             action === "예약 취소"
@@ -1856,7 +1885,7 @@ export default function CustomerAS() {
                                 : action === "결제하기"
                                   ? () => handlePayment(item.requestId)
                                   : action === "기사님 리뷰 남기기"
-                                    ? () => setReviewTarget({ item })
+                                    ? () => handleReviewOpen(item)
                                     : action === "작성한 리뷰 보기"
                                       ? () =>
                                           setReviewTarget({
