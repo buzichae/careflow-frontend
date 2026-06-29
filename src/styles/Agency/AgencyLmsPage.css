@@ -1,0 +1,291 @@
+/* ===========================
+   공통
+=========================== */
+.agency-lms {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 24px;
+    background: #fff;
+    min-height: 100vh;
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    font-size: 13px;
+    color: #1a1a2e;
+}
+
+/* ===========================
+   헤더
+=========================== */
+.agency-lms__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.agency-lms__title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+}
+
+.agency-lms__sub {
+    font-size: 13px;
+    color: #aaa;
+}
+
+/* 요약 통계 카드 */
+.agency-lms__summary {
+    display: flex;
+    gap: 10px;
+}
+
+.agency-lms__summary-card {
+    background: #fff;
+    border: 1px solid #e8e4ff;
+    border-radius: 12px;
+    padding: 12px 20px;
+    text-align: center;
+    min-width: 90px;
+}
+
+.agency-lms__summary-card--done {
+    background: #eaf3de;
+    border-color: #c6e8b0;
+}
+
+.agency-lms__summary-card--pending {
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+
+.agency-lms__summary-label {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 4px;
+}
+
+.agency-lms__summary-card--done .agency-lms__summary-label { color: #16a34a; }
+.agency-lms__summary-card--pending .agency-lms__summary-label { color: #dc2626; }
+
+.agency-lms__summary-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.agency-lms__summary-card--done .agency-lms__summary-value { color: #16a34a; }
+.agency-lms__summary-card--pending .agency-lms__summary-value { color: #dc2626; }
+
+/* ===========================
+   필터
+=========================== */
+.agency-lms__filters {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.agency-lms__search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 0.5px solid #e0dcff;
+    border-radius: 8px;
+    padding: 7px 12px;
+    min-width: 200px;
+}
+
+.agency-lms__search input {
+    border: none;
+    outline: none;
+    font-size: 12px;
+    color: #444;
+    width: 100%;
+    font-family: inherit;
+}
+
+.agency-lms__select {
+    border: 0.5px solid #e0dcff;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #444;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+}
+
+/* ===========================
+   바디 레이아웃
+=========================== */
+.agency-lms__body {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    align-items: start;
+}
+
+/* ===========================
+   기사 목록 테이블
+=========================== */
+.agency-lms__list {
+    background: #fff;
+    border: 1px solid #e8e4ff;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.agency-lms__table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.agency-lms__table thead tr {
+    background: #f8f7ff;
+    border-bottom: 0.5px solid #e8e4ff;
+}
+
+.agency-lms__table th {
+    padding: 10px 14px;
+    font-size: 11px;
+    color: #aaa;
+    font-weight: 600;
+    text-align: left;
+}
+
+.agency-lms__table td {
+    padding: 11px 14px;
+    font-size: 12px;
+    color: #444;
+    border-bottom: 0.5px solid #f5f4ff;
+}
+
+.agency-lms__table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.agency-lms__table tbody tr:hover {
+    background: #f8f7ff;
+}
+
+.agency-lms__row--selected {
+    background: #ded7ff !important;
+    border-left: 3px solid #5B4FF5;
+}
+
+/* ===========================
+   배지
+=========================== */
+.agency-lms__level-badge {
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 3px 8px;
+}
+
+.agency-lms__level-badge--beginner     { background: #eaf3de; color: #16a34a; }
+.agency-lms__level-badge--intermediate { background: #e6f1fb; color: #2563eb; }
+.agency-lms__level-badge--advanced     { background: #eeeaff; color: #5B4FF5; }
+
+.agency-lms__status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 3px 8px;
+}
+
+.agency-lms__status-badge--done    { background: #eaf3de; color: #16a34a; }
+.agency-lms__status-badge--pending { background: #fee2e2; color: #dc2626; }
+
+/* ===========================
+   우측 상세 패널
+=========================== */
+.agency-lms__detail {
+    background: #fff;
+    border: 1px solid #e8e4ff;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 16px;
+    max-height: 90vh;
+    overflow: hidden;
+}
+
+.agency-lms__detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid #f0f0f8;
+    flex-shrink: 0;
+}
+
+.agency-lms__detail-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 2px;
+}
+
+.agency-lms__detail-sub {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.agency-lms__detail-close {
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: #f5f4ff;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #666;
+    flex-shrink: 0;
+}
+
+.agency-lms__detail-close:hover {
+    background: #eeeaff;
+    color: #5B4FF5;
+}
+
+/* 이수 요약 */
+.agency-lms__detail-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 0.5px solid #f0f0f8;
+    font-size: 12px;
+    color: #666;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.agency-lms__detail-summary strong {
+    font-weight: 700;
+    color: #5B4FF5;
+}
+
+/* 상세 테이블 */
+.agency-lms__detail .agency-lms__table {
+    border: none;
+    border-radius: 0;
+}
+
+.agency-lms__detail .agency-lms__table td,
+.agency-lms__detail .agency-lms__table th {
+    padding: 9px 16px;
+}
