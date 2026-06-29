@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import "../../styles/Customer/CustomerAS.css";
 import ApplianceIcon from "./ApplianceIcon";
-import { getMyAS, cancelAsRequest } from "../../apis/as";
+import { getMyAS, cancelAsRequest, getReport, approveReport } from "../../apis/as";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
@@ -1108,99 +1108,6 @@ function ASRequestFlow({ onClose }) {
   );
 }
 
-/* 수리 보고서 mock (report가 있는 항목만 첨부) */
-const MOCK_REPORTS = {
-  3: {
-    diagnosisResult:
-      "냉장고 냉각 시스템 점검 결과, 냉매 부족 및 팬 모터 노후화로 인해 냉각 성능이 저하된 것으로 확인되었습니다. 냉매를 보충하고 팬 모터를 교체하여 정상 작동 상태로 복구하였습니다.",
-    workStartedAt: "2026-06-10 10:05",
-    workEndedAt: "2026-06-10 12:20",
-    parts: [
-      {
-        name: "팬 모터 (BLDC)",
-        partCode: "LG-FM-3921",
-        importance: "MAJOR",
-        qty: 1,
-        unitPrice: 45000,
-        totalPrice: 45000,
-      },
-      {
-        name: "냉매 R-600a",
-        partCode: "REF-R600A",
-        importance: "NORMAL",
-        qty: 2,
-        unitPrice: 12000,
-        totalPrice: 24000,
-      },
-      {
-        name: "드레인 호스",
-        partCode: "LG-DH-0041",
-        importance: "MINOR",
-        qty: 1,
-        unitPrice: 5000,
-        totalPrice: 5000,
-      },
-    ],
-    laborCost: 46000,
-    totalAmount: 120000,
-    engineerNote:
-      "냉매 보충 후 24시간 뒤 온도 재확인 권장. 팬 모터는 5년 주기 교체 필요.",
-  },
-  4: {
-    diagnosisResult:
-      "냉장실 온도 센서 오류로 인해 설정 온도보다 높게 유지되는 현상 확인. 온도 센서 교체 후 정상 작동 확인 완료.",
-    workStartedAt: "2026-06-03 10:10",
-    workEndedAt: "2026-06-03 11:45",
-    parts: [
-      {
-        name: "온도 센서",
-        partCode: "LG-TS-1102",
-        importance: "NORMAL",
-        qty: 1,
-        unitPrice: 18000,
-        totalPrice: 18000,
-      },
-    ],
-    laborCost: 42000,
-    totalAmount: 60000,
-    engineerNote:
-      "교체 완료 후 정상 냉각 확인. 추가 이상 발생 시 즉시 연락 요망.",
-  },
-  5: {
-    diagnosisResult:
-      "냉각팬 소음 원인은 이물질 유입으로 인한 팬 블레이드 마모. 팬 어셈블리 교체 및 내부 청소 완료.",
-    workStartedAt: "2026-05-20 10:00",
-    workEndedAt: "2026-05-20 11:30",
-    parts: [
-      {
-        name: "팬 어셈블리",
-        partCode: "LG-FA-2210",
-        importance: "MAJOR",
-        qty: 1,
-        unitPrice: 38000,
-        totalPrice: 38000,
-      },
-      {
-        name: "방진 패드",
-        partCode: "LG-VP-0012",
-        importance: "MINOR",
-        qty: 2,
-        unitPrice: 3000,
-        totalPrice: 6000,
-      },
-    ],
-    laborCost: 36000,
-    totalAmount: 80000,
-    engineerNote: null,
-  },
-};
-
-const IMPORTANCE_META = {
-  CRITICAL: { label: "CRITICAL", color: "#dc2626", bg: "#fee2e2" },
-  MAJOR: { label: "MAJOR", color: "#ea580c", bg: "#ffedd5" },
-  NORMAL: { label: "NORMAL", color: "#d97706", bg: "#fef9c3" },
-  MINOR: { label: "MINOR", color: "#16a34a", bg: "#dcfce7" },
-};
 
 const FILTER_TABS = [
   { key: "전체", label: "전체" },
@@ -1259,7 +1166,7 @@ function getActionsByStatus(status, hasReview) {
     case "IN_PROGRESS":
       return ["상세보기"];
     case "COMPLETED":
-      return ["수리 보고서 보기", "결제하기"];
+      return ["수리 보고서 보기"];
     case "PAID":
       return hasReview
         ? ["수리 보고서 보기", "작성한 리뷰 보기"]
@@ -1280,25 +1187,23 @@ function getActionsByStatus(status, hasReview) {
 // ];
 
 /* ── 수리 보고서 모달 ── */
-function ReportModal({ item, report, onClose }) {
+function ReportModal({ item, report, onApprove, onClose }) {
   if (!report) return null;
 
   function fmt(dt) {
     return dt ? dt.slice(0, 16).replace("T", " ") : "—";
   }
 
-  /* 실제 작업 시간 계산 */
-  function workDuration(start, end) {
-    if (!start || !end) return "—";
-    const diff = (new Date(end) - new Date(start)) / 60000; // 분
-    const h = Math.floor(diff / 60),
-      m = diff % 60;
+  function fmtDuration(min) {
+    if (!min) return "—";
+    const h = Math.floor(min / 60);
+    const m = min % 60;
     return h > 0 ? `${h}시간 ${m > 0 ? m + "분" : ""}` : `${m}분`;
   }
 
-  const partTotal = report.parts.reduce((s, p) => s + p.totalPrice, 0);
-  const laborCost = report.laborCost;
-  const totalAmnt = report.totalAmount;
+  const imageList = report.imageUrls
+    ? report.imageUrls.split(",").map((u) => u.trim()).filter(Boolean)
+    : [];
 
   return (
     <div className="cas-report-overlay" onClick={onClose}>
@@ -1309,7 +1214,7 @@ function ReportModal({ item, report, onClose }) {
             <FileText size={17} color="#7c5cf7" />
             <div>
               <p className="cas-report-modal__sup">수리 보고서</p>
-              <h3 className="cas-report-modal__title">{item.appliance}</h3>
+              <h3 className="cas-report-modal__title">{item.appliance ?? `가전 #${report.requestId}`}</h3>
             </div>
           </div>
           <button className="cas-report-modal__close" onClick={onClose}>
@@ -1322,18 +1227,20 @@ function ReportModal({ item, report, onClose }) {
           <div className="cas-report-meta-item">
             <span className="cas-report-meta-item__label">담당 기사</span>
             <span className="cas-report-meta-item__value">
-              {item.engineer} · ⭐ {item.rating}
+              {report.engineerName ?? "—"}
             </span>
           </div>
           <div className="cas-report-meta-item">
             <Timer size={13} color="#7c5cf7" />
             <span className="cas-report-meta-item__label">작업 시간</span>
             <span className="cas-report-meta-item__value">
-              {fmt(report.workStartedAt)} ~ {fmt(report.workEndedAt).slice(11)}
-              <em>
-                {" "}
-                ({workDuration(report.workStartedAt, report.workEndedAt)})
-              </em>
+              {fmtDuration(report.workDurationMin)}
+            </span>
+          </div>
+          <div className="cas-report-meta-item">
+            <span className="cas-report-meta-item__label">제출일</span>
+            <span className="cas-report-meta-item__value">
+              {fmt(report.submittedAt)}
             </span>
           </div>
         </div>
@@ -1345,59 +1252,7 @@ function ReportModal({ item, report, onClose }) {
               <FileText size={14} color="#7c5cf7" />
               <h4>A/S 결과</h4>
             </div>
-            <p className="cas-report-diagnosis">{report.diagnosisResult}</p>
-          </div>
-
-          {/* 교체 부품 */}
-          <div className="cas-report-section">
-            <div className="cas-report-section__head">
-              <Package size={14} color="#7c5cf7" />
-              <h4>교체 부품</h4>
-              <span className="cas-report-section__count">
-                {report.parts.length}개
-              </span>
-            </div>
-            {report.parts.length === 0 ? (
-              <p className="cas-report-empty">교체 부품 없음</p>
-            ) : (
-              <div className="cas-report-parts">
-                <div className="cas-report-parts__head">
-                  <span>부품명</span>
-                  <span>코드</span>
-                  <span>중요도</span>
-                  <span>수량</span>
-                  <span>단가</span>
-                  <span>금액</span>
-                </div>
-                {report.parts.map((p, i) => {
-                  const im =
-                    IMPORTANCE_META[p.importance] || IMPORTANCE_META.MINOR;
-                  return (
-                    <div key={i} className="cas-report-parts__row">
-                      <span className="cas-report-parts__name">{p.name}</span>
-                      <span className="cas-report-parts__code">
-                        {p.partCode}
-                      </span>
-                      <span>
-                        <span
-                          className="cas-report-importance"
-                          style={{ color: im.color, background: im.bg }}
-                        >
-                          {im.label}
-                        </span>
-                      </span>
-                      <span className="cas-report-parts__qty">{p.qty}</span>
-                      <span className="cas-report-parts__price">
-                        {p.unitPrice.toLocaleString()}원
-                      </span>
-                      <span className="cas-report-parts__total">
-                        {p.totalPrice.toLocaleString()}원
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <p className="cas-report-diagnosis">{report.diagnosisResult ?? "—"}</p>
           </div>
 
           {/* 청구 금액 */}
@@ -1407,30 +1262,47 @@ function ReportModal({ item, report, onClose }) {
               <h4>청구 금액</h4>
             </div>
             <div className="cas-report-cost">
-              <div className="cas-report-cost__row">
-                <span>부품 비용</span>
-                <span>{partTotal.toLocaleString()}원</span>
-              </div>
-              <div className="cas-report-cost__row">
-                <span>공임비</span>
-                <span>{laborCost.toLocaleString()}원</span>
-              </div>
-              <div className="cas-report-cost__divider" />
               <div className="cas-report-cost__row cas-report-cost__row--total">
                 <span>최종 청구 금액</span>
-                <span>{totalAmnt.toLocaleString()}원</span>
+                <span>{report.finalAmount != null ? report.finalAmount.toLocaleString() + "원" : "—"}</span>
               </div>
             </div>
           </div>
 
           {/* 기사 메모 */}
-          {report.engineerNote && (
+          {report.memo && (
             <div className="cas-report-section">
               <div className="cas-report-section__head">
                 <Wrench size={14} color="#7c5cf7" />
                 <h4>기사 메모</h4>
               </div>
-              <p className="cas-report-note">{report.engineerNote}</p>
+              <p className="cas-report-note">{report.memo}</p>
+            </div>
+          )}
+
+          {/* 사진 */}
+          {imageList.length > 0 && (
+            <div className="cas-report-section">
+              <div className="cas-report-section__head">
+                <Package size={14} color="#7c5cf7" />
+                <h4>첨부 사진</h4>
+              </div>
+              <div className="cas-report-images">
+                {imageList.map((url, i) => (
+                  <img key={i} src={url} alt={`수리 사진 ${i + 1}`} className="cas-report-image" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 승인 정보 (이미 승인된 경우) */}
+          {report.customerApproved && report.approvedAt && (
+            <div className="cas-report-section">
+              <div className="cas-report-section__head">
+                <FileText size={14} color="#10b981" />
+                <h4 style={{ color: "#10b981" }}>승인 완료</h4>
+              </div>
+              <p className="cas-report-note">{fmt(report.approvedAt)} 승인됨</p>
             </div>
           )}
         </div>
@@ -1442,6 +1314,14 @@ function ReportModal({ item, report, onClose }) {
           >
             닫기
           </button>
+          {onApprove && (
+            <button
+              className="cas-report-modal__btn cas-report-modal__btn--primary"
+              onClick={onApprove}
+            >
+              보고서 승인 및 결제
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1727,6 +1607,15 @@ export default function CustomerAS() {
     setCancelTarget(null);
   }
 
+  async function handleReportView(item) {
+    try {
+      const res = await getReport(item.reportId);
+      setReportTarget({ item, report: res.data });
+    } catch (error) {
+      alert(error.response?.data?.message || "보고서를 불러오지 못했습니다.");
+    }
+  }
+
   const filtered =
     activeFilter === "전체"
       ? asList
@@ -1762,6 +1651,25 @@ export default function CustomerAS() {
         <ReportModal
           item={reportTarget.item}
           report={reportTarget.report}
+          onApprove={
+            reportTarget.item.status === "COMPLETED"
+              ? async () => {
+                  try {
+                    await approveReport(reportTarget.report.reportId);
+                    setAsList((prev) =>
+                      prev.map((i) =>
+                        i.requestId === reportTarget.item.requestId
+                          ? { ...i, status: "PAID" }
+                          : i,
+                      ),
+                    );
+                    setReportTarget(null);
+                  } catch (error) {
+                    alert(error.response?.data?.message || "승인에 실패했습니다.");
+                  }
+                }
+              : undefined
+          }
           onClose={() => setReportTarget(null)}
         />
       )}
@@ -1898,7 +1806,7 @@ export default function CustomerAS() {
                     <div className="cas-item__info">
                       <div className="cas-item__title-row">
                         <span className="cas-item__name">
-                          가전 #{item.applianceId}
+                          {item.brand} {item.modelName}
                         </span>
                         <span className="cas-item__model">
                           {item.symptomCode}
@@ -1938,16 +1846,13 @@ export default function CustomerAS() {
                       ).map((action) => (
                         <button
                           key={action}
+                          disabled={action === "수리 보고서 보기" && !item.reportId}
                           className={`cas-action-btn cas-action-btn--${ACTION_STYLE[action]}`}
                           onClick={
                             action === "예약 취소"
                               ? () => setCancelTarget(item)
                               : action === "수리 보고서 보기"
-                                ? () =>
-                                    setReportTarget({
-                                      item,
-                                      report: MOCK_REPORTS[item.requestId],
-                                    })
+                                ? () => handleReportView(item)
                                 : action === "결제하기"
                                   ? () => handlePayment(item.requestId)
                                   : action === "기사님 리뷰 남기기"
