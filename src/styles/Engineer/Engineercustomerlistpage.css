@@ -1,0 +1,141 @@
+.eclp {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 20px 24px; background: #f9f9fb; min-height: 100vh;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px; color: #1a1a2e;
+}
+
+/* 헤더 */
+.eclp-header__title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.eclp-header__sub   { font-size: 13px; color: #aaa; }
+
+/* 검색 바 */
+.eclp-search-bar {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.eclp-search {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 1px solid #e0dcff; border-radius: 10px;
+  padding: 10px 16px; flex: 1; min-width: 180px;
+}
+.eclp-search input {
+  border: none; outline: none; font-size: 13px; color: #444;
+  width: 100%; font-family: inherit;
+}
+.eclp-filter-select {
+  border: 1px solid #e0dcff; border-radius: 10px;
+  padding: 10px 14px; font-size: 13px; color: #444;
+  background: #fff; cursor: pointer; font-family: inherit;
+  appearance: auto;
+}
+.eclp-adv-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid #e0dcff; border-radius: 10px;
+  padding: 10px 16px; font-size: 13px; color: #5B4FF5; font-weight: 600;
+  background: #fff; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.eclp-reset-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid #e0dcff; border-radius: 10px;
+  padding: 10px 14px; font-size: 13px; color: #aaa;
+  background: #fff; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+
+/* 섹션 */
+.eclp-section {
+  background: #fff; border: 1px solid #e8e4ff;
+  border-radius: 12px; padding: 20px;
+}
+
+/* 테이블 헤더 row */
+.eclp-table-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.eclp-result-count    { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.eclp-result-count__num { color: #5B4FF5; }
+.eclp-per-page-select {
+  border: 1px solid #e0dcff; border-radius: 8px;
+  padding: 6px 12px; font-size: 12px; color: #444;
+  background: #fff; cursor: pointer; font-family: inherit;
+}
+
+/* 테이블 */
+.eclp-table {
+  width: 100%; border-collapse: collapse;
+}
+.eclp-table thead tr {
+  background: #f8f7ff;
+  border-top: 0.5px solid #e8e4ff;
+  border-bottom: 0.5px solid #e8e4ff;
+}
+.eclp-table th {
+  font-size: 12px; color: #aaa; font-weight: 600;
+  padding: 10px 12px; text-align: left; white-space: nowrap;
+}
+.eclp-table td {
+  font-size: 13px; color: #444;
+  padding: 12px 12px; border-bottom: 0.5px solid #f5f4ff;
+  vertical-align: middle;
+}
+.eclp-table tbody tr:last-child td { border-bottom: none; }
+.eclp-table tbody tr:hover { background: #fdfcff; }
+
+.eclp-id-link {
+  font-size: 12px; color: #5B4FF5; font-weight: 600;
+  cursor: pointer; text-decoration: none;
+}
+.eclp-id-link:hover { text-decoration: underline; }
+
+.eclp-td-center { text-align: center; }
+
+.eclp-inprogress-badge {
+  background: #eeeaff; color: #5B4FF5;
+  font-size: 11px; font-weight: 700;
+  border-radius: 5px; padding: 3px 8px; cursor: pointer;
+}
+.eclp-zero { color: #aaa; font-size: 12px; }
+
+/* 상태 배지 */
+.eclp-status-badge {
+  font-size: 11px; font-weight: 700;
+  border-radius: 5px; padding: 3px 8px;
+}
+.eclp-status-badge--active   { background: #eaf3de; color: #16a34a; }
+.eclp-status-badge--inactive { background: #fee2e2; color: #dc2626; }
+
+/* 액션 버튼 */
+.eclp-td-actions {
+  display: flex; align-items: center; gap: 6px;
+}
+.eclp-detail-btn {
+  border: 1px solid #e0dcff; border-radius: 7px;
+  padding: 5px 12px; font-size: 12px; color: #5B4FF5; font-weight: 600;
+  background: #fff; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.eclp-detail-btn:hover { background: #f5f3ff; }
+.eclp-more-btn {
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: #aaa; cursor: pointer;
+  padding: 4px;
+}
+.eclp-more-btn:hover { color: #666; }
+
+/* 페이지네이션 */
+.eclp-pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 16px;
+}
+.eclp-page-btns { display: flex; gap: 4px; align-items: center; }
+.eclp-pg-btn {
+  border: 0.5px solid #e0dcff; border-radius: 7px;
+  padding: 6px 10px; font-size: 12px; color: #444;
+  background: #fff; cursor: pointer; font-family: inherit;
+  min-width: 30px; text-align: center;
+}
+.eclp-pg-btn--active {
+  background: #5B4FF5; color: #fff;
+  border-color: #5B4FF5; font-weight: 700;
+}
+.eclp-pg-btn:hover:not(.eclp-pg-btn--active) { background: #f5f3ff; }
+.eclp-page-info { font-size: 12px; color: #aaa; }

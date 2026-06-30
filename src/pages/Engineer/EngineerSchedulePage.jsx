@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, ChevronRight, Calendar, Download,
   ChevronDown, MapPin, Flag, Coffee, ClipboardList,
@@ -113,6 +114,7 @@ function calcTop(time)   { return ((timeToMinutes(time) - DAY_START) / DAY_TOTAL
 function calcHeight(s, e){ return ((timeToMinutes(e) - timeToMinutes(s)) / DAY_TOTAL) * 100; }
 
 export default function EngineerSchedulePage() {
+  const navigate = useNavigate();
   const [view, setView] = useState("일간");
   const [currentDate, setCurrentDate] = useState(new Date(2024, 5, 1)); // 2024.06.01
   const [calYear,  setCalYear]  = useState(2024);
@@ -130,6 +132,14 @@ export default function EngineerSchedulePage() {
 
   // 오늘 요약 통계
   const summary = { tasks: 3, distance: 42, estimatedTime: "6시간 30분", doneCount: 3 };
+
+  const handleDetail = (item) => {
+  navigate("/engineer/work", {
+    state: {
+      assignmentId: item.assignmentId,
+    },
+  });
+};
 
   return (
     <div className="esp">
@@ -215,7 +225,11 @@ export default function EngineerSchedulePage() {
                     </div>
                     <div className="esp-task-card__right">
                       <span className="esp-task-card__time">{item.startTime} - {item.endTime}</span>
-                      <button className="esp-task-detail-btn">상세보기 <ChevronRight size={12} /></button>
+                      <button 
+                      className="esp-task-detail-btn"
+                      onClick={() => handleDetail(item)}
+                      >
+                        상세보기 <ChevronRight size={12} /></button>
                     </div>
                   </div>
                 );

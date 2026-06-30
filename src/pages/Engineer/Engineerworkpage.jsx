@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search, ChevronDown, ChevronRight, X,
   User, Phone,  Calendar, Clock,
@@ -200,8 +200,18 @@ function WorkSteps({ logStatus }) {
 
 export default function EngineerWorkPage() {
   const [activeTab, setActiveTab] = useState("ALL");
-  const [selectedItem, setSelectedItem] = useState(workList[0]);
+
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [selectedItem, setSelectedItem] = useState(() => {
+  const assignmentId = location.state?.assignmentId;
+
+  return (
+    workList.find(item => item.assignmentId === assignmentId) ??
+    workList[0]
+  );
+});
 
   const filteredList = activeTab === "ALL"
     ? workList
@@ -218,6 +228,7 @@ export default function EngineerWorkPage() {
     // → as_assignments.status = REJECTED, reject_reason 필요
     alert(`${id} 거절`);
   };
+  
 
   return (
     <div className="ewp">

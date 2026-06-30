@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import "../../styles/Sidebars.css";
-import {House, UserRound, ClipboardList, HandCoins, UsersRound , Star , ChartNoAxesCombined, Bell, Settings} from "lucide-react"
+import {House, UserRound, ClipboardList, HandCoins, UsersRound , Star ,
+        ChartNoAxesCombined, Bell, Settings, BookOpen} from "lucide-react"
 
 const MENU = [
   { label: "대시보드", path: "/agency/dashboard", icon: (active) => <House size={18} color={ active ? "#ffffff" : "#000000"} /> },
@@ -11,6 +12,7 @@ const MENU = [
   { label: "평가 및 리뷰", path: "/agency/reviews", icon: (active) => <Star size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "통계 및 리포트", path: "/agency/statistics", icon: (active) =>  <ChartNoAxesCombined size={18} color={ active ? "#ffffff" : "#000000"} /> },
   { label: "알림", path: "/agency/notice", icon: (active) =>  <Bell size={18}color={ active ? "#ffffff" : "#000000"} /> },
+  { label: "LMS 교육 관리", path: "/agency/lms", icon: (active) =>  <BookOpen size={18}color={ active ? "#ffffff" : "#000000"} /> },
   { label: "설정", path: "/agency/settings", icon: (active) =>  <Settings size={18} color={ active ? "#ffffff" : "#000000"} /> },
 ];
 
