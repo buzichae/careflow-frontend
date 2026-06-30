@@ -1,4 +1,4 @@
-import api from "./axiosInstace";
+import api from "./axiosInstance";
 
 export const signupCustomer = (data) =>
   api.post("/api/auth/signup", data);
