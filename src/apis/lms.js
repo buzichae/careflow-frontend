@@ -1,4 +1,4 @@
-import api from "./axiosInstance";
+import api from "../apis/axiosInstace";
 
 // 기사용
 export const getMyLmsContents = () =>

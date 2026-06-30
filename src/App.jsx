@@ -24,6 +24,7 @@ import AgencyReviewPage from "../src/pages/Agency/Agencyreviewpage.jsx"
 import AgencyStatisticsPage from "../src/pages/Agency/AgencyStatisticsPage.jsx"
 import AgencyNoticePage from "../src/pages/Agency/Agencynoticepage.jsx"
 import AgencySettingPage from "../src/pages/Agency/Agencysettingpage.jsx"
+import AgencyLmsPage from "../src/pages/Agency/AgencyLmsPage.jsx"
 
 import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import AdminMembersPage from "./pages/Admin/AdminMembersPage.jsx";
@@ -108,6 +109,7 @@ export default function App() {
           <Route path="/agency/reviews" element={<AgencyReviewPage title="대행사 - 평가 및 리뷰" />} />
           <Route path="/agency/statistics" element={<AgencyStatisticsPage title="대행사 - 통계 및 리포트" />} />
           <Route path="/agency/notice" element={<AgencyNoticePage  title="대행사 - 공지사항" />} />
+          <Route path="/agency/lms" element={<AgencyLmsPage  title="대행사 - lms" />} />
           <Route path="/agency/settings" element={<AgencySettingPage title="대행사 - 설정" />} />
 
         </Route>

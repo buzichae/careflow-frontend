@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import "../../styles/Engineer/Engineerlmspage.css";
 import { getMyLmsContents, getMyLmsStatus, completeContent } from "../../apis/lms";
-import api from "../../apis/axiosInstance";
+import api from "../../apis/axiosInstace";
 
 const CATEGORIES = [
   { id: 11, name: "냉장고" },
