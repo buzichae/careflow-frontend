@@ -24,6 +24,7 @@ import AgencyReviewPage from "../src/pages/Agency/Agencyreviewpage.jsx"
 import AgencyStatisticsPage from "../src/pages/Agency/AgencyStatisticsPage.jsx"
 import AgencyNoticePage from "../src/pages/Agency/Agencynoticepage.jsx"
 import AgencySettingPage from "../src/pages/Agency/Agencysettingpage.jsx"
+import AgencyLmsPage from "../src/pages/Agency/AgencyLmsPage.jsx"
 
 import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import AdminMembersPage from "./pages/Admin/AdminMembersPage.jsx";
@@ -43,6 +44,7 @@ import EngineerProfilePage from "../src/pages/Engineer/EngineerProfilePage.jsx"
 import Engineernoticepage from "../src/pages/Engineer/EngineerNoticePage.jsx"
 import EngineerMySchedulePage from "../src/pages/Engineer/Engineermyschedulepage.jsx"
 import Engineerlmspage  from "../src/pages/Engineer/Engineerlmspage.jsx"
+import EngineerCustomerListPage from "../src/pages/Engineer/Engineercustomerlistpage.jsx"
 
 import OAuth2Callback from "../src/pages/auth/OAuth2Callback.jsx"
 
@@ -86,7 +88,8 @@ export default function App() {
           <Route path="/engineer/dashboard" element={<EngineerDashboard  title="기사 - 대시보드" />} />
           <Route path="/engineer/schedule" element={<EngineerSchedulePage title="기사 - 작업 일정" />} />
           <Route path="/engineer/work" element={<EngineerWorkPage  title="기사 - 작업 관리" />} />
-          <Route path="/engineer/customers" element={<Engineercustomerpage title="기사 - 고객 정보 조회" />} />
+          <Route path="/engineer/customers" element={<EngineerCustomerListPage  title="기사 - 고객 정보 조회 목록" />} />
+          <Route path="/engineer/customers/:customerId" element={<Engineercustomerpage title="기사 - 고객 정보 조회" />} />
           <Route path="/engineer/report" element={<EngineerReportPage   title="기사 - 작업 보고서" />} />
           <Route path="/engineer/my-schedule" element={<EngineerMySchedulePage title="기사 - 근무표" />} />
           <Route path="/engineer/reports/:reportId" element={<EngineerReportDetailPage />} />
@@ -106,6 +109,7 @@ export default function App() {
           <Route path="/agency/reviews" element={<AgencyReviewPage title="대행사 - 평가 및 리뷰" />} />
           <Route path="/agency/statistics" element={<AgencyStatisticsPage title="대행사 - 통계 및 리포트" />} />
           <Route path="/agency/notice" element={<AgencyNoticePage  title="대행사 - 공지사항" />} />
+          <Route path="/agency/lms" element={<AgencyLmsPage  title="대행사 - lms" />} />
           <Route path="/agency/settings" element={<AgencySettingPage title="대행사 - 설정" />} />
 
         </Route>

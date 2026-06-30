@@ -5,6 +5,17 @@
   font-size: 13px; color: #1a1a2e;
 }
 
+/* ── 뒤로가기 버튼 (신규 추가) ── */
+.ecp-back-btn {
+  display: flex; align-items: center; gap: 7px;
+  width: fit-content;
+  border: 1px solid #e0dcff; border-radius: 10px;
+  padding: 9px 16px; font-size: 13px; color: #5B4FF5; font-weight: 600;
+  background: #fff; cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.ecp-back-btn:hover { background: #f5f3ff; }
+
 .ecp-header__title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
 .ecp-header__sub   { font-size: 13px; color: #aaa; }
 
