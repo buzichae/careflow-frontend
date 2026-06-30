@@ -34,3 +34,6 @@ export const review = async(requestId, rating, content) => {
 
     return response.data;
 }
+
+export const createAsRequest = (payload) =>
+    api.post("/api/as-requests", payload);

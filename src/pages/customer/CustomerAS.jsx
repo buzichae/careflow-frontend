@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import {
   Star,
   ChevronRight,
@@ -30,8 +31,11 @@ import {
   approveReport,
   review,
   getAsRequestDetail,
+  createAsRequest,
 } from "../../apis/as";
 import { getMyAppliances } from "../../apis/appliances";
+import { getAvailableEngineers, getEngineerAvailability } from "../../apis/engineers";
+import { getRegionByName } from "../../apis/regions";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
@@ -395,90 +399,6 @@ const TIME_LABEL = Object.fromEntries(
   TIME_SLOTS.map((t) => [t.value, t.label]),
 );
 
-/* 수동 배정 — 기사 목록 (mock) */
-const MOCK_ENGINEERS = [
-  {
-    id: 1,
-    name: "김민준",
-    rating: 4.9,
-    reviewCount: 128,
-    brands: ["LG", "삼성"],
-    skills: ["냉장고", "에어컨", "세탁기"],
-    experience: "8년",
-    tags: ["친절함", "신속", "정확"],
-    available: {
-      "2026-06-28": ["09:00", "14:00"],
-      "2026-06-30": ["11:00", "16:00"],
-      "2026-07-01": ["09:00", "11:00", "14:00"],
-      "2026-07-03": ["14:00", "16:00"],
-    },
-  },
-  {
-    id: 2,
-    name: "이재훈",
-    rating: 4.8,
-    reviewCount: 97,
-    brands: ["삼성", "위니아"],
-    skills: ["세탁기", "건조기", "에어컨"],
-    experience: "6년",
-    tags: ["꼼꼼함", "친절함"],
-    available: {
-      "2026-06-27": ["11:00", "14:00"],
-      "2026-06-28": ["16:00"],
-      "2026-07-02": ["09:00", "11:00"],
-      "2026-07-04": ["14:00", "16:00"],
-    },
-  },
-  {
-    id: 3,
-    name: "박현우",
-    rating: 4.7,
-    reviewCount: 214,
-    brands: ["LG"],
-    skills: ["냉장고", "TV", "공기청정기"],
-    experience: "11년",
-    tags: ["경력 풍부", "신속"],
-    available: {
-      "2026-06-29": ["09:00", "11:00"],
-      "2026-06-30": ["14:00"],
-      "2026-07-01": ["16:00"],
-      "2026-07-05": ["09:00", "14:00"],
-    },
-  },
-  {
-    id: 4,
-    name: "최지훈",
-    rating: 4.9,
-    reviewCount: 73,
-    brands: ["LG", "삼성", "위니아"],
-    skills: ["에어컨", "냉장고", "세탁기", "건조기"],
-    experience: "5년",
-    tags: ["다기종", "정확"],
-    available: {
-      "2026-06-27": ["09:00", "16:00"],
-      "2026-06-29": ["11:00", "14:00"],
-      "2026-07-02": ["09:00"],
-      "2026-07-03": ["11:00", "14:00", "16:00"],
-    },
-  },
-  {
-    id: 5,
-    name: "정수빈",
-    rating: 4.8,
-    reviewCount: 56,
-    brands: ["삼성"],
-    skills: ["TV", "세탁기", "건조기"],
-    experience: "4년",
-    tags: ["친절함", "꼼꼼함"],
-    available: {
-      "2026-06-28": ["11:00"],
-      "2026-07-01": ["09:00", "14:00"],
-      "2026-07-04": ["09:00", "11:00"],
-      "2026-07-05": ["16:00"],
-    },
-  },
-];
-
 const ALL_BRANDS = ["LG", "삼성", "위니아", "대우"];
 const ALL_SKILLS = ["냉장고", "세탁기", "에어컨", "건조기", "TV", "공기청정기"];
 
@@ -538,6 +458,19 @@ function ASRequestFlow({ onClose }) {
   const [schedTime, setSchedTime] = useState("");
   const imgRef = useRef(null);
 
+  /* 수동 배정: 후보 기사 조회용 */
+  const [regionId, setRegionId] = useState(null);
+  const [engineers, setEngineers] = useState([]);
+  const [engLoading, setEngLoading] = useState(false);
+  const [availability, setAvailability] = useState({}); // { "yyyy-MM-dd": ["09:00", ...] }
+  const [availLoading, setAvailLoading] = useState(false);
+  /* 최종 접수 */
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const token = localStorage.getItem("token");
+  const customerId = token ? jwtDecode(token).sub : null;
+
   useEffect(() => {
     getMyAppliances()
       .then((res) => {
@@ -557,24 +490,60 @@ function ASRequestFlow({ onClose }) {
       .catch((e) => console.error("가전 목록 로드 실패", e));
   }, []);
 
+  /* 방문 지역(구·시) 선택 시 region_id 조회 — 후보 기사 조회/최종 접수 모두에 필요 */
+  useEffect(() => {
+    if (!regionSub) {
+      setRegionId(null);
+      return;
+    }
+    getRegionByName(regionSub)
+      .then((res) => setRegionId((res.data ?? res).id))
+      .catch((e) => {
+        console.error("지역 조회 실패", e);
+        setRegionId(null);
+      });
+  }, [regionSub]);
+
+  /* 수동 배정: 조건(지역/브랜드/보유기술) 필터링된 후보 기사 조회 */
+  useEffect(() => {
+    if (assignType !== "MANUAL" || !regionId || !customerId) {
+      setEngineers([]);
+      return;
+    }
+    setEngLoading(true);
+    getAvailableEngineers(customerId, regionId, engBrand || undefined, engSkill || undefined)
+      .then((res) => setEngineers(res.data ?? res))
+      .catch((e) => {
+        console.error("기사 목록 조회 실패", e);
+        setEngineers([]);
+      })
+      .finally(() => setEngLoading(false));
+  }, [assignType, regionId, engBrand, engSkill, customerId]);
+
+  /* 수동 배정: 선택한 기사의 가능 일정 조회 */
+  useEffect(() => {
+    if (!selectedEng || !customerId) {
+      setAvailability({});
+      return;
+    }
+    setAvailLoading(true);
+    getEngineerAvailability(customerId, selectedEng.engineerId)
+      .then((res) => setAvailability((res.data ?? res).availableDates ?? {}))
+      .catch((e) => {
+        console.error("기사 가능 일정 조회 실패", e);
+        setAvailability({});
+      })
+      .finally(() => setAvailLoading(false));
+  }, [selectedEng, customerId]);
+
   const symptoms = appliance ? (SYMPTOMS[appliance.categoryId] ?? []) : [];
   const subRegions = regionParent ? REGIONS[regionParent] : [];
   const selectedSym = symptoms.find((s) => s.code === symptomCode);
 
-  /* 수동: 필터 적용 기사 목록 */
-  const filteredEngs = MOCK_ENGINEERS.filter(
-    (e) =>
-      (!engBrand || e.brands.includes(engBrand)) &&
-      (!engSkill || e.skills.includes(engSkill)),
-  );
-
   /* 수동: 선택된 기사의 가능 날짜 목록 */
-  const availableDates = selectedEng
-    ? Object.keys(selectedEng.available).sort()
-    : [];
+  const availableDates = Object.keys(availability).sort();
   /* 수동: 선택된 날짜의 가능 시간 슬롯 */
-  const availableTimes =
-    selectedEng && schedDate ? (selectedEng.available[schedDate] ?? []) : [];
+  const availableTimes = schedDate ? (availability[schedDate] ?? []) : [];
 
   /* 유효성 */
   const step1Valid = appliance && symptomCode;
@@ -612,6 +581,34 @@ function ASRequestFlow({ onClose }) {
   function handleSchedDate(d) {
     setSchedDate(d);
     setSchedTime("");
+  }
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await createAsRequest({
+        applianceId: appliance.id,
+        symptomId: selectedSym.id,
+        symptomDesc,
+        assignType,
+        visitRegionId: regionId,
+        visitAddressDetail: addressDetail,
+        scheduledDate: schedDate,
+        scheduledTime: schedTime,
+        ...(assignType === "MANUAL"
+          ? { preferredEngineerId: selectedEng.engineerId }
+          : {}),
+      });
+      setStep(4);
+    } catch (e) {
+      console.error("A/S 접수 실패", e);
+      setSubmitError(
+        e?.response?.data?.message ?? "A/S 접수에 실패했습니다. 다시 시도해주세요.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   /* 확인 화면용 요약 행 */
@@ -989,22 +986,26 @@ function ASRequestFlow({ onClose }) {
                   기사 선택 <span className="cas-req-required">*</span>
                   <span className="cas-req-optional">
                     {" "}
-                    — {filteredEngs.length}명
+                    — {engineers.length}명
                   </span>
                 </h3>
-                {filteredEngs.length === 0 ? (
+                {!regionId ? (
+                  <p className="cas-eng-empty">방문 지역을 먼저 선택해주세요.</p>
+                ) : engLoading ? (
+                  <p className="cas-eng-empty">기사 목록을 불러오는 중...</p>
+                ) : engineers.length === 0 ? (
                   <p className="cas-eng-empty">
                     필터 조건에 맞는 기사가 없습니다.
                   </p>
                 ) : (
                   <div className="cas-eng-grid">
-                    {filteredEngs.map((eng) => (
+                    {engineers.map((eng) => (
                       <button
-                        key={eng.id}
-                        className={`cas-eng-card ${selectedEng?.id === eng.id ? "cas-eng-card--selected" : ""}`}
+                        key={eng.engineerId}
+                        className={`cas-eng-card ${selectedEng?.engineerId === eng.engineerId ? "cas-eng-card--selected" : ""}`}
                         onClick={() => handleSelectEng(eng)}
                       >
-                        {selectedEng?.id === eng.id && (
+                        {selectedEng?.engineerId === eng.engineerId && (
                           <span className="cas-assign-check">
                             <Check size={11} />
                           </span>
@@ -1014,28 +1015,18 @@ function ASRequestFlow({ onClose }) {
                         </div>
                         <p className="cas-eng-card__name">{eng.name} 기사</p>
                         <p className="cas-eng-card__rating">
-                          ⭐ {eng.rating} <span>({eng.reviewCount}건)</span>
-                        </p>
-                        <p className="cas-eng-card__exp">
-                          경력 {eng.experience}
+                          ⭐ {eng.rating?.toFixed?.(1) ?? eng.rating}
                         </p>
                         <div className="cas-eng-card__brands">
-                          {eng.brands.map((b) => (
+                          {(eng.brands ?? []).map((b) => (
                             <span key={b}>{b}</span>
                           ))}
                         </div>
-                        <div className="cas-eng-card__skills">
-                          {eng.skills.map((s) => (
-                            <span key={s}>{s}</span>
-                          ))}
-                        </div>
-                        <div className="cas-eng-card__tags">
-                          {eng.tags.map((t) => (
-                            <span key={t} className="cas-eng-card__tag">
-                              {t}
-                            </span>
-                          ))}
-                        </div>
+                        {eng.skills && (
+                          <div className="cas-eng-card__skills">
+                            <span>{eng.skills}</span>
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -1053,6 +1044,13 @@ function ASRequestFlow({ onClose }) {
                   <p className="cas-req-sub">
                     기사님의 스케줄 기반으로 예약 가능한 날짜입니다.
                   </p>
+                  {availLoading ? (
+                    <p className="cas-eng-empty">가능 일정을 불러오는 중...</p>
+                  ) : availableDates.length === 0 ? (
+                    <p className="cas-eng-empty">
+                      예약 가능한 일정이 없습니다. 다른 기사를 선택해주세요.
+                    </p>
+                  ) : (
                   <div className="cas-avail-dates">
                     {availableDates.map((d) => {
                       const dt = new Date(d);
@@ -1077,6 +1075,7 @@ function ASRequestFlow({ onClose }) {
                       );
                     })}
                   </div>
+                  )}
 
                   {/* 선택된 날짜의 가능 시간 */}
                   {schedDate && (
@@ -1156,15 +1155,23 @@ function ASRequestFlow({ onClose }) {
             </div>
           </div>
 
+          {submitError && <p className="cas-eng-empty">{submitError}</p>}
+
           <div className="cas-req-footer">
             <button
               className="cas-req-btn-secondary"
               onClick={() => setStep(2)}
+              disabled={submitting}
             >
               <ArrowLeft size={14} /> 이전
             </button>
-            <button className="cas-req-btn-primary" onClick={() => setStep(4)}>
-              A/S 신청 접수 <ChevronRight size={14} />
+            <button
+              className="cas-req-btn-primary"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? "접수 중..." : "A/S 신청 접수"}{" "}
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
