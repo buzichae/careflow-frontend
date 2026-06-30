@@ -30,10 +30,12 @@ const CATEGORIES = [
   { id: 43, name: "스피커" },
 ];
 
-const CAREER_LEVELS = [
-  { key: "BEGINNER",     label: "1~5년" },
-  { key: "INTERMEDIATE", label: "6~10년" },
-  { key: "ADVANCED",     label: "11년 이상" },
+// 매트릭스 컬럼: 공통(ALL) + 3개 등급
+const REQUIRED_LEVELS = [
+  { key: "ALL",           label: "공통" },
+  { key: "BEGINNER",      label: "1~5년" },
+  { key: "INTERMEDIATE",  label: "6~10년" },
+  { key: "ADVANCED",      label: "11년 이상" },
 ];
 
 /* ── 콘텐츠 등록/수정 모달 ── */
@@ -81,14 +83,14 @@ function ContentModal({ item, onClose, onSave }) {
               </select>
             </div>
             <div className="admin-modal__field" style={{ flex: 1 }}>
-              <label className="admin-modal__label">경력 구간</label>
+              <label className="admin-modal__label">대상 등급</label>
               <select
                   className="admin-select"
                   style={{ width: "100%" }}
                   value={form.requiredLevel}
                   onChange={(e) => setForm((p) => ({ ...p, requiredLevel: e.target.value }))}
               >
-                {CAREER_LEVELS.map((cl) => (
+                {REQUIRED_LEVELS.map((cl) => (
                     <option key={cl.key} value={cl.key}>{cl.label}</option>
                 ))}
               </select>
@@ -140,6 +142,32 @@ function ContentModal({ item, onClose, onSave }) {
   );
 }
 
+/* ── 매트릭스 칸 안의 콘텐츠 카드 (등록 버튼 없음, 수정/활성화만) ── */
+function CourseCard({ course, onEdit, onToggle }) {
+  return (
+      <div className={`lms-course-card${!course.isActive ? " lms-course-card--inactive" : ""}`}>
+        <div className="lms-course__title">{course.title}</div>
+        <div className="lms-course__meta">
+          <span className="lms-course__version">v{course.version}</span>
+          {course.isActive
+              ? <span className="admin-badge admin-badge--green">활성</span>
+              : <span className="admin-badge admin-badge--gray">비활성</span>}
+        </div>
+        <div className="lms-course__actions">
+          <button className="admin-btn admin-btn--outline admin-btn--sm" onClick={() => onEdit(course)}>
+            수정
+          </button>
+          <button
+              className={`admin-btn admin-btn--sm ${course.isActive ? "admin-btn--danger" : "admin-btn--approve"}`}
+              onClick={() => onToggle(course)}
+          >
+            {course.isActive ? "비활성화" : "활성화"}
+          </button>
+        </div>
+      </div>
+  );
+}
+
 /* ── 메인 ── */
 export default function AdminLMSPage() {
   const [tab, setTab]             = useState("matrix");
@@ -151,7 +179,6 @@ export default function AdminLMSPage() {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
 
-  // 콘텐츠 목록 조회
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -169,13 +196,13 @@ export default function AdminLMSPage() {
     }
   }
 
-  function getCourse(categoryId, requiredLevel) {
-    return courses.find(
+  // 칸 안 콘텐츠 전부 반환 (ALL 포함 4개 컬럼 공용)
+  function getCourses(categoryId, requiredLevel) {
+    return courses.filter(
         (c) => c.categoryId === categoryId && c.requiredLevel === requiredLevel
-    ) || null;
+    );
   }
 
-  // 콘텐츠 등록 / 수정
   async function handleSave(form) {
     try {
       if (form.contentId) {
@@ -201,7 +228,6 @@ export default function AdminLMSPage() {
     }
   }
 
-  // 활성화 / 비활성화
   async function toggleActive(course) {
     try {
       if (course.isActive) {
@@ -215,7 +241,6 @@ export default function AdminLMSPage() {
     }
   }
 
-  // 기사 이수 현황 검색
   async function handleEngineerSearch() {
     if (!engSearch) return;
     try {
@@ -237,7 +262,7 @@ export default function AdminLMSPage() {
   });
 
   const careerLabel = (key) =>
-      CAREER_LEVELS.find((cl) => cl.key === key)?.label ?? key;
+      REQUIRED_LEVELS.find((cl) => cl.key === key)?.label ?? key;
 
   const categoryName = (id) =>
       CATEGORIES.find((c) => c.id === id)?.name ?? "-";
@@ -270,7 +295,7 @@ export default function AdminLMSPage() {
                     <>
                       <div className="admin-filter-bar">
                         <p style={{ fontSize: 13, color: "#555" }}>
-                          전문 가전 카테고리 × 경력 구간별로 교육 과정이 1개씩 배정됩니다.
+                          전문 가전 카테고리 × 대상 등급별 교육 과정입니다. 공통 컬럼은 전체 등급 공통 이수 콘텐츠입니다.
                         </p>
                         <button
                             className="admin-btn admin-btn--primary"
@@ -281,10 +306,11 @@ export default function AdminLMSPage() {
                         </button>
                       </div>
 
+                      {/* 공통 + 3개 등급 통합 매트릭스 (4컬럼) */}
                       <div className="lms-matrix">
                         <div className="lms-matrix__row lms-matrix__row--header">
                           <div className="lms-matrix__cell lms-matrix__cell--label" />
-                          {CAREER_LEVELS.map((cl) => (
+                          {REQUIRED_LEVELS.map((cl) => (
                               <div key={cl.key} className="lms-matrix__cell lms-matrix__cell--head">
                                 {cl.label}
                               </div>
@@ -294,45 +320,21 @@ export default function AdminLMSPage() {
                         {CATEGORIES.map((cat) => (
                             <div key={cat.id} className="lms-matrix__row">
                               <div className="lms-matrix__cell lms-matrix__cell--label">{cat.name}</div>
-                              {CAREER_LEVELS.map((cl) => {
-                                const course = getCourse(cat.id, cl.key);
+                              {REQUIRED_LEVELS.map((cl) => {
+                                const cellCourses = getCourses(cat.id, cl.key);
                                 return (
-                                    <div
-                                        key={cl.key}
-                                        className={`lms-matrix__cell lms-matrix__cell--course${course && !course.isActive ? " lms-matrix__cell--inactive" : ""}`}
-                                    >
-                                      {course ? (
-                                          <>
-                                            <div className="lms-course__title">{course.title}</div>
-                                            <div className="lms-course__meta">
-                                              <span className="lms-course__version">v{course.version}</span>
-                                              {course.isActive
-                                                  ? <span className="admin-badge admin-badge--green">활성</span>
-                                                  : <span className="admin-badge admin-badge--gray">비활성</span>}
-                                            </div>
-                                            <div className="lms-course__actions">
-                                              <button
-                                                  className="admin-btn admin-btn--outline admin-btn--sm"
-                                                  onClick={() => setModal(course)}
-                                              >
-                                                수정
-                                              </button>
-                                              <button
-                                                  className={`admin-btn admin-btn--sm ${course.isActive ? "admin-btn--danger" : "admin-btn--approve"}`}
-                                                  onClick={() => toggleActive(course)}
-                                              >
-                                                {course.isActive ? "비활성화" : "활성화"}
-                                              </button>
-                                            </div>
-                                          </>
+                                    <div key={cl.key} className="lms-matrix__cell lms-matrix__cell--course">
+                                      {cellCourses.length === 0 ? (
+                                          <p className="lms-matrix__empty">등록된 콘텐츠 없음</p>
                                       ) : (
-                                          <button
-                                              className="lms-matrix__add-btn"
-                                              onClick={() => setModal({ categoryId: cat.id, requiredLevel: cl.key })}
-                                          >
-                                            <Plus size={16} />
-                                            <span>등록</span>
-                                          </button>
+                                          cellCourses.map((course) => (
+                                              <CourseCard
+                                                  key={course.contentId}
+                                                  course={course}
+                                                  onEdit={setModal}
+                                                  onToggle={toggleActive}
+                                              />
+                                          ))
                                       )}
                                     </div>
                                 );
@@ -389,7 +391,7 @@ export default function AdminLMSPage() {
                       <tr>
                         <th>콘텐츠 제목</th>
                         <th>카테고리</th>
-                        <th>경력 구간</th>
+                        <th>대상 등급</th>
                         <th>이수 버전</th>
                         <th>이수 일시</th>
                       </tr>
