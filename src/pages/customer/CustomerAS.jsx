@@ -1342,7 +1342,6 @@ function ReportModal({ item, report, onApprove, onClose }) {
   );
 }
 
-
 /* ── 리뷰 모달 ── */
 function ReviewModal({ item, existingReview, onSubmit, onClose }) {
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
@@ -1371,7 +1370,9 @@ function ReviewModal({ item, existingReview, onSubmit, onClose }) {
               <p className="cas-review-modal__sup">
                 {readOnly ? "작성한 리뷰" : "기사님 리뷰 남기기"}
               </p>
-              <h3 className="cas-review-modal__title">{item.brand} {item.modelName}</h3>
+              <h3 className="cas-review-modal__title">
+                {item.brand} {item.modelName}
+              </h3>
             </div>
           </div>
           <button className="cas-review-modal__close" onClick={onClose}>
@@ -1637,7 +1638,9 @@ export default function CustomerAS() {
       const detail = res.data;
       setReviewTarget({ item: { ...item, engineerName: detail.engineerName } });
     } catch (error) {
-      alert(error.response?.data?.message || "기사 정보를 불러오지 못했습니다.");
+      alert(
+        error.response?.data?.message || "기사 정보를 불러오지 못했습니다.",
+      );
     }
   }
 
@@ -1818,7 +1821,7 @@ export default function CustomerAS() {
                   style: "gray",
                   label: item.status ?? "알 수 없음",
                 };
-                console.log(item);
+                // console.log(item);
 
                 return (
                   <div
