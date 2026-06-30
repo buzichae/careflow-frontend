@@ -463,3 +463,36 @@
 .admin-date-input:focus {
   border-color: #734bcf;
 }
+
+.lms-matrix__row {
+  display: grid;
+  grid-template-columns: 90px repeat(4, 1fr);
+}
+
+/* 추가: 칸 안 콘텐츠 카드 + 빈 상태 */
+.lms-matrix__cell--course {
+  gap: 8px;
+  padding: 10px;
+}
+
+.lms-course-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #ebebf0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.lms-course-card--inactive {
+  background: #fafafa;
+  opacity: 0.7;
+}
+
+.lms-matrix__empty {
+  font-size: 11px;
+  color: #bbb;
+  text-align: center;
+  margin: auto;
+}
