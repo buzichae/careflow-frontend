@@ -487,7 +487,7 @@ export default function CustomerHome() {
         setUserName(data.name);
       })
       .catch(() => {});
-  });
+  }, []);
 
   return (
     <div className="ch-wrap">

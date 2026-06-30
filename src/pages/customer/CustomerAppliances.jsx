@@ -132,7 +132,11 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
 
   async function handleRegister() {
     try {
-      const STATUS_TO_ENUM = { 정상: "NORMAL", 주의: "SOLD", "점검 필요": "NEED_REPAIR" };
+      const STATUS_TO_ENUM = {
+        정상: "NORMAL",
+        주의: "SOLD",
+        "점검 필요": "NEED_REPAIR",
+      };
       await createAppliance({
         categoryId: Number(form.categorySub),
         brand: form.brand,
@@ -803,9 +807,12 @@ function DeleteConfirmModal({ appliance, onConfirm, onClose }) {
 /* ─── 가전 정보 수정 모달 ─── */
 function ApplianceEditModal({ appliance, onSave, onClose }) {
   const [form, setForm] = useState({
-    brand: appliance.brand,
-    model: appliance.model,
-    status: appliance.status,
+    brand: appliance.brand ?? "",
+    model: appliance.model ?? "",
+    serialNumber: appliance.serialNumber ?? "",
+    purchaseDate: appliance.purchaseDate ?? "",
+    warrantyExpiry: appliance.warrantyExpiry ?? "",
+    // status: appliance.status,
   });
 
   function handleChange(k, v) {
@@ -839,7 +846,30 @@ function ApplianceEditModal({ appliance, onSave, onClose }) {
               onChange={(e) => handleChange("model", e.target.value)}
             />
           </div>
-          <div className="car-field car-field--full">
+          <div className="car-field">
+            <label>시리얼넘버</label>
+            <input
+              value={form.serialNumber}
+              onChange={(e) => handleChange("serialNumber", e.target.value)}
+            />
+          </div>
+          <div className="car-field">
+            <label>구매일자</label>
+            <input
+              type="date"
+              value={form.purchaseDate}
+              onChange={(e) => handleChange("purchaseDate", e.target.value)}
+            />
+          </div>
+          <div className="car-field">
+            <label>보증 만료일</label>
+            <input
+              type="date"
+              value={form.warrantyExpiry}
+              onChange={(e) => handleChange("warrantyExpiry", e.target.value)}
+            />
+          </div>
+          {/* <div className="car-field car-field--full">
             <label>가전 상태</label>
             <div className="car-status-row">
               {["정상", "주의", "점검 필요"].map((s) => (
@@ -853,7 +883,7 @@ function ApplianceEditModal({ appliance, onSave, onClose }) {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
         <div className="ca-modal__footer">
           <button className="ca-btn-secondary" onClick={onClose}>
