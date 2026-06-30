@@ -31,248 +31,328 @@ import {
   review,
   getAsRequestDetail,
 } from "../../apis/as";
+import { getMyAppliances } from "../../apis/appliances";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
 ───────────────────────────────── */
-const MY_APPLIANCES = [
-  {
-    id: 1,
-    name: "LG 오브제 냉장고",
-    model: "M875GBB231",
-    purchased: "2025.01.20",
-    warranty: "2028.01.20",
-    icon: "❄️",
-  },
-  {
-    id: 2,
-    name: "삼성 그랑데 세탁기",
-    model: "WF24T6500KV",
-    purchased: "2024.03.15",
-    warranty: "2027.03.15",
-    icon: "🫧",
-  },
-  {
-    id: 3,
-    name: "LG 휘센 에어컨",
-    model: "FQ18VCWWA2",
-    purchased: "2023.06.10",
-    warranty: "2026.06.10",
-    icon: "💨",
-  },
-  {
-    id: 4,
-    name: "LG 올레드 TV",
-    model: "OLED55C4KNA",
-    purchased: "2024.11.05",
-    warranty: "2027.11.05",
-    icon: "📺",
-  },
-];
 
-/* symptom_code — expected_repair_costs 테이블 기준 (category_id + symptom_code) */
+/* symptom_code — symptoms 테이블 기준, categoryId로 키 관리 */
 const SYMPTOMS = {
-  /* 냉장고 category_id=11 */
-  "❄️": [
+  11: [
+    // 냉장고
     {
+      id: 1,
       code: "COOL-FAIL",
       label: "냉각 불량",
       desc: "냉장·냉동이 잘 안돼요",
-      avgCost: 112000,
     },
     {
+      id: 2,
       code: "TEMP-ERR",
       label: "냉장 온도 이상",
       desc: "온도가 제대로 유지되지 않아요",
-      avgCost: 112000,
     },
     {
+      id: 3,
       code: "FROST-ERR",
       label: "냉동실 성에",
       desc: "성에가 너무 많이 끼어요",
-      avgCost: 112000,
     },
     {
+      id: 4,
       code: "TEMP-HIGH",
       label: "냉장실 온도 높음",
       desc: "냉장실이 충분히 차갑지 않아요",
-      avgCost: 90000,
     },
     {
+      id: 5,
       code: "FAN-NOISE",
       label: "냉각팬 소음",
       desc: "팬에서 이상한 소리가 나요",
-      avgCost: 122000,
     },
     {
+      id: 6,
       code: "SMELL-ERR",
       label: "냄새 이상",
       desc: "냉장고에서 냄새가 나요",
-      avgCost: 88000,
     },
     {
+      id: 7,
       code: "FROZ-ERR",
       label: "냉동 기능 이상",
       desc: "냉동 기능이 작동하지 않아요",
-      avgCost: 92000,
+    },
+    {
+      id: 52,
+      code: "FRIDGE-SND",
+      label: "냉장고 소음",
+      desc: "냉장고에서 이상한 소리가 나요",
     },
   ],
-  /* 세탁기 category_id=21 */
-  "🫧": [
+  13: [
+    // 인덕션
     {
+      id: 8,
+      code: "IH-ERR",
+      label: "인덕션 화구 오류",
+      desc: "화구가 작동하지 않아요",
+    },
+    {
+      id: 9,
+      code: "IH-TOUCH",
+      label: "터치 반응 없음",
+      desc: "터치가 작동하지 않아요",
+    },
+    {
+      id: 49,
+      code: "TOUCH-ERR",
+      label: "화구 터치 반응 없음",
+      desc: "화구 터치가 반응하지 않아요",
+    },
+  ],
+  14: [
+    // 오븐
+    {
+      id: 10,
+      code: "PREHEAT",
+      label: "예열 안됨",
+      desc: "오븐이 예열되지 않아요",
+    },
+  ],
+  15: [
+    // 식기세척기
+    {
+      id: 11,
+      code: "WASH-FAIL",
+      label: "세척 불량",
+      desc: "그릇이 제대로 안 씻겨요",
+    },
+    {
+      id: 12,
+      code: "DRAIN-ERR",
+      label: "배수 불량",
+      desc: "물이 잘 빠지지 않아요",
+    },
+    {
+      id: 13,
+      code: "DW-DRY",
+      label: "건조 기능 불량",
+      desc: "건조가 제대로 안 돼요",
+    },
+  ],
+  21: [
+    // 세탁기
+    {
+      id: 14,
       code: "STOP-MID",
       label: "세탁 중 멈춤",
       desc: "세탁 도중 갑자기 멈춰요",
-      avgCost: 113000,
     },
     {
+      id: 15,
       code: "SPIN-FAIL",
       label: "탈수 미작동",
       desc: "탈수가 전혀 안 돼요",
-      avgCost: 115000,
     },
     {
+      id: 16,
       code: "SMELL-WM",
       label: "세탁물 냄새",
       desc: "세탁 후에도 냄새가 나요",
-      avgCost: 95000,
     },
     {
+      id: 17,
       code: "RINSE-FAIL",
       label: "헹굼 불량",
       desc: "헹굼이 제대로 안 돼요",
-      avgCost: 105000,
     },
+    { id: 18, code: "LEAK-WM", label: "세탁조 누수", desc: "물이 새고 있어요" },
     {
-      code: "LEAK-WM",
-      label: "세탁조 누수",
-      desc: "물이 새고 있어요",
-      avgCost: null,
-    },
-    {
+      id: 19,
       code: "VIBRATE",
       label: "진동 과다",
       desc: "진동이나 소음이 너무 심해요",
-      avgCost: null,
     },
   ],
-  /* 에어컨 category_id=23 */
-  "💨": [
+  22: [
+    // 건조기
     {
+      id: 20,
+      code: "DRY-NOISE",
+      label: "건조기 소음",
+      desc: "건조기에서 이상한 소리가 나요",
+    },
+    {
+      id: 21,
+      code: "DRY-FAIL",
+      label: "건조 완료 안됨",
+      desc: "건조가 완료되지 않아요",
+    },
+    {
+      id: 22,
+      code: "HEAT-WEAK",
+      label: "건조 열 부족",
+      desc: "열이 충분하지 않아요",
+    },
+    { id: 23, code: "DRY-NOISE2", label: "건조 소음", desc: "소음이 발생해요" },
+    {
+      id: 24,
+      code: "DRY-ERR",
+      label: "건조기 작동 오류",
+      desc: "건조기가 작동하지 않아요",
+    },
+    {
+      id: 50,
+      code: "DRY-STOP",
+      label: "건조 안됨",
+      desc: "건조가 전혀 안 돼요",
+    },
+  ],
+  23: [
+    // 에어컨
+    {
+      id: 25,
       code: "COOL-FAIL",
       label: "냉방 불량",
       desc: "냉방이 전혀 안 돼요",
-      avgCost: 80000,
     },
     {
+      id: 26,
       code: "COOL-WEAK",
       label: "냉방 성능 저하",
       desc: "예전보다 덜 시원해요",
-      avgCost: 135000,
     },
+    { id: 27, code: "NO-COOL", label: "냉방 안됨", desc: "차갑게 안 나와요" },
     {
-      code: "NO-COOL",
-      label: "냉방 안됨",
-      desc: "차갑게 안 나와요",
-      avgCost: 108000,
-    },
-    {
+      id: 28,
       code: "OUT-NOISE",
       label: "실외기 소음",
       desc: "실외기에서 이상한 소리가 나요",
-      avgCost: 145000,
     },
     {
+      id: 29,
       code: "WIND-WEAK",
       label: "바람 약함",
       desc: "바람이 너무 약해요",
-      avgCost: 68000,
     },
     {
+      id: 30,
       code: "COOL-CUT",
       label: "냉방 중단 반복",
       desc: "켜졌다 꺼졌다를 반복해요",
-      avgCost: 90000,
     },
     {
+      id: 31,
       code: "POWER-OFF",
-      label: "전원 꺼짐",
+      label: "에어컨 전원 꺼짐",
       desc: "갑자기 전원이 꺼져요",
-      avgCost: 250000,
     },
     {
+      id: 32,
       code: "RC-ERR",
       label: "리모컨 오류",
       desc: "리모컨이 작동하지 않아요",
-      avgCost: 135000,
     },
-    { code: "LEAK-AC", label: "누수", desc: "물이 새고 있어요", avgCost: null },
-  ],
-  /* TV category_id=31 */
-  "📺": [
+    { id: 33, code: "LEAK-AC", label: "에어컨 누수", desc: "물이 새고 있어요" },
+    { id: 34, code: "AC-OFF", label: "에어컨 꺼짐", desc: "에어컨이 꺼져요" },
     {
+      id: 35,
+      code: "COOL-DOWN",
+      label: "냉방 성능 저하",
+      desc: "냉방 성능이 떨어졌어요",
+    },
+  ],
+  24: [
+    // 공기청정기
+    {
+      id: 36,
+      code: "SENS-ERR",
+      label: "먼지 감지 오류",
+      desc: "먼지 감지가 안 돼요",
+    },
+    {
+      id: 37,
+      code: "FAN-NOISE",
+      label: "소음 과다",
+      desc: "소음이 너무 심해요",
+    },
+    {
+      id: 38,
+      code: "FILTER-AL",
+      label: "필터 교체 알림",
+      desc: "필터 교체 알림이 계속 떠요",
+    },
+    {
+      id: 51,
+      code: "ODOR-ERR",
+      label: "냄새 제거 불량",
+      desc: "냄새가 제거되지 않아요",
+    },
+  ],
+  31: [
+    // TV
+    {
+      id: 39,
       code: "SCREEN-BL",
       label: "화면 깜빡임",
       desc: "화면이 깜빡거려요",
-      avgCost: 178000,
     },
     {
+      id: 40,
       code: "HDMI-FAIL",
       label: "HDMI 연결 안됨",
       desc: "HDMI 기기가 인식되지 않아요",
-      avgCost: 112000,
     },
     {
+      id: 41,
       code: "RC-FAIL",
       label: "리모컨 반응 없음",
       desc: "리모컨이 작동하지 않아요",
-      avgCost: 68000,
     },
     {
+      id: 42,
       code: "VIDEO-LAG",
       label: "영상 지연",
       desc: "영상이 끊기거나 느려요",
-      avgCost: 195000,
     },
     {
+      id: 43,
       code: "SCREEN-OFF",
       label: "화면 먹통",
       desc: "화면이 전혀 안 나와요",
-      avgCost: 195000,
     },
     {
+      id: 44,
       code: "LINE-ERR",
       label: "화면 줄 생김",
       desc: "화면에 세로·가로 줄이 생겼어요",
-      avgCost: null,
     },
     {
+      id: 45,
       code: "NO-SOUND",
       label: "소리 안남",
       desc: "소리가 전혀 안 나요",
-      avgCost: null,
     },
   ],
-  /* 기타 가전 (fallback) */
-  default: [
+  41: [
+    // 사운드바
     {
-      code: "POWER-OFF",
-      label: "전원 꺼짐",
-      desc: "전원이 안 켜져요",
-      avgCost: null,
+      id: 46,
+      code: "NOISE-AMP",
+      label: "음향 잡음 발생",
+      desc: "잡음이 발생해요",
     },
     {
-      code: "FUNC-FAIL",
-      label: "기능 오작동",
-      desc: "특정 기능이 작동하지 않아요",
-      avgCost: null,
+      id: 47,
+      code: "BASS-DIST",
+      label: "저음 왜곡 발생",
+      desc: "저음이 왜곡돼요",
     },
-    {
-      code: "NOISE",
-      label: "소음 발생",
-      desc: "이상한 소리가 나요",
-      avgCost: null,
-    },
+  ],
+  43: [
+    // 스피커
+    { id: 48, code: "SPK-CUT", label: "소리 끊김", desc: "소리가 끊겨요" },
   ],
 };
 
@@ -439,6 +519,7 @@ function ASSteps({ step }) {
 /* ── A/S 신청 플로우 ── */
 function ASRequestFlow({ onClose }) {
   const [step, setStep] = useState(1);
+  const [myAppliances, setMyAppliances] = useState([]);
   const [appliance, setAppliance] = useState(null);
   const [symptomCode, setSymptomCode] = useState("");
   const [symptomDesc, setSymptomDesc] = useState("");
@@ -457,9 +538,26 @@ function ASRequestFlow({ onClose }) {
   const [schedTime, setSchedTime] = useState("");
   const imgRef = useRef(null);
 
-  const symptoms = appliance
-    ? (SYMPTOMS[appliance.icon] ?? SYMPTOMS.default)
-    : [];
+  useEffect(() => {
+    getMyAppliances()
+      .then((res) => {
+        const data = res.data ?? res;
+        setMyAppliances(
+          data.map((a) => ({
+            id: a.applianceId,
+            // name: `${a.brand} ${a.modelName}`,
+            model: a.modelName,
+            name: a.brand,
+            categoryId: a.categoryId,
+            purchased: a.purchaseDate ?? "",
+            warranty: a.warrantyEndDate ?? "",
+          })),
+        );
+      })
+      .catch((e) => console.error("가전 목록 로드 실패", e));
+  }, []);
+
+  const symptoms = appliance ? (SYMPTOMS[appliance.categoryId] ?? []) : [];
   const subRegions = regionParent ? REGIONS[regionParent] : [];
   const selectedSym = symptoms.find((s) => s.code === symptomCode);
 
@@ -570,7 +668,7 @@ function ASRequestFlow({ onClose }) {
               <span className="cas-req-required">*</span>
             </h3>
             <div className="cas-product-grid">
-              {MY_APPLIANCES.map((a) => (
+              {myAppliances.map((a) => (
                 <button
                   key={a.id}
                   className={`cas-product-card ${appliance?.id === a.id ? "cas-product-card--selected" : ""}`}
