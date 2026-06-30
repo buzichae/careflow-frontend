@@ -25,7 +25,7 @@ import "../../styles/Customer/CustomerAppliances.css";
 import "../../styles/Customer/CustomerRepairHistory.css";
 import ApplianceIcon from "./ApplianceIcon";
 
-import { getMyAppliances } from "../../apis/appliances";
+import { getMyAppliances, deleteAppliances } from "../../apis/appliances";
 
 /* ─────────────────────────────────
    카테고리 데이터
@@ -1235,10 +1235,20 @@ export default function CustomerAppliances() {
     }
   }, [searchParams, setSearchParams]);
 
-  function handleDelete(id) {
-    setAppliances((prev) => prev.filter((a) => a.id !== id));
-    setDeleteTarget(null);
-  }
+  const handleDelete = async (applianceId) => {
+    try {
+      await deleteAppliances(applianceId);
+
+      setAppliances((prev) => prev.filter((a) => a.id !== applianceId));
+
+      setDeleteTarget(null);
+
+      alert("가전제품이 삭제되었습니다.");
+    } catch (error) {
+      console.error("삭제 실패: " + error);
+      alert("삭제에 실패했습니다.");
+    }
+  };
 
   function handleUpdate(updated) {
     setAppliances((prev) =>
