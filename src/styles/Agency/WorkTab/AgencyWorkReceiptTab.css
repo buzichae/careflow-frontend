@@ -91,14 +91,14 @@
 }
 .receipt-table__header {
   display: grid;
-  grid-template-columns: 1.4fr 1.2fr 0.7fr 1fr 1.3fr 1.1fr 1.2fr 0.7fr 1.1fr 0.9fr;
+  grid-template-columns: 1.2fr 1.1fr 0.6fr 0.9fr 1.4fr 1.2fr 1.3fr 0.6fr 1.1fr 0.8fr;
   padding: 10px 16px; background: #f8f7ff;
   font-size: 11px; color: #aaa; font-weight: 600;
   border-bottom: 0.5px solid #e8e4ff;
 }
 .receipt-table__row {
   display: grid;
-  grid-template-columns: 1.4fr 1.2fr 0.7fr 1fr 1.3fr 1.1fr 1.2fr 0.7fr 1.1fr 0.9fr;
+  grid-template-columns: 1.2fr 1.1fr 0.6fr 0.9fr 1.4fr 1.2fr 1.3fr 0.6fr 1.1fr 0.8fr;
   padding: 12px 16px; border-bottom: 0.5px solid #f5f4ff;
   align-items: center; font-size: 12px; color: #444;
   transition: background 0.1s;
@@ -225,3 +225,117 @@
   white-space: nowrap;
 }
 .receipt-reassign-btn:hover { background: #ffedd5; }
+
+/* ===========================
+   접수목록 탭 메인 레이아웃
+=========================== */
+.receipt-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 16px;
+  align-items: start;
+}
+
+.receipt-layout__left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.receipt-layout__right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 배정 대기 목록 섹션 */
+.receipt-pending {
+  background: #fff;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.receipt-pending__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.receipt-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.receipt-pending__count {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.receipt-pending__filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.receipt-filter-date-input {
+  border: 0.5px solid #e0dcff;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: #444;
+  font-family: inherit;
+  outline: none;
+}
+
+.receipt-pending__table {
+  font-size: 12px;
+}
+
+.receipt-pending__header-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.7fr 1fr 0.6fr 0.9fr 0.6fr 0.7fr 0.7fr;
+  padding: 8px 4px;
+  border-bottom: 0.5px solid #f0f0f8;
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.receipt-pending__row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.7fr 1fr 0.6fr 0.9fr 0.6fr 0.7fr 0.7fr;
+  padding: 11px 4px;
+  border-bottom: 0.5px solid #f9f9ff;
+  align-items: center;
+  color: #444;
+}
+
+/* ===========================
+   접수목록 바디 레이아웃
+   (좌: 필터+테이블 / 우: 실시간배정현황)
+=========================== */
+.receipt-body-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 16px;
+  align-items: start;
+}
+
+.receipt-body-layout__left {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.receipt-body-layout__right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+}
