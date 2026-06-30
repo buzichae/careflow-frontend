@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import "../../styles/Customer/CustomerHome.css";
 import ApplianceIcon from "./ApplianceIcon";
-import { getMyAppliances } from "../../apis/appliances";
+import { getMyAppliances, getHealthCertificate } from "../../apis/appliances";
 import { getUserInfo } from "../../apis/auth";
 
 /* ── 목 데이터 ── */
@@ -118,45 +118,49 @@ const mockSchedules = [
   },
 ];
 
-const mockDiagnostic = {
-  certId: 1,
-  applianceId: 1,
-  applianceName: "냉장고",
-  applianceBrand: "LG 디오스 냉장고",
-  purchaseDate: "2022-06-15",
-  grade: "B",
-  score: 75,
-  scoreItems: [
-    { label: "수리 횟수", score: 20, max: 25, condition: "1회", icon: "🔧" },
-    {
-      label: "사용 기간",
-      score: 20,
-      max: 25,
-      condition: "1년 이상 ~ 3년 미만",
-      icon: "📅",
-    },
-    {
-      label: "교체 부품 중요도",
-      score: 20,
-      max: 25,
-      condition: "MINOR 부품만 교체",
-      icon: "⚙️",
-    },
-    {
-      label: "최근 수리 일시",
-      score: 15,
-      max: 25,
-      condition: "1년 이상 ~ 2년 미만",
-      icon: "🕐",
-    },
-  ],
-  repairCount: 1,
-  partsImportance: "MINOR",
-  lastRepairedAt: "2022-12-15 14:30:00",
-  isCertified: true,
-  issuedAt: "2023-01-10 16:00:00",
-  updatedAt: "2023-01-10 16:00:00",
-};
+function buildDiagModal(certData) {
+  const { cert, applianceName, applianceBrand } = certData;
+  return {
+    certId: cert.certId,
+    applianceName,
+    applianceBrand,
+    grade: cert.grade,
+    score: cert.score,
+    isCertified: cert.isCertified,
+    issuedAt: cert.issuedAt,
+    updatedAt: cert.updatedAt,
+    scoreItems: [
+      {
+        label: "수리 횟수",
+        score: cert.repairCountScore,
+        max: 25,
+        condition: cert.repairCountCondition,
+        icon: "🔧",
+      },
+      {
+        label: "사용 기간",
+        score: cert.usagePeriodScore,
+        max: 25,
+        condition: cert.usagePeriodCondition,
+        icon: "📅",
+      },
+      {
+        label: "교체 부품 중요도",
+        score: cert.partImportanceScore,
+        max: 25,
+        condition: cert.partImportanceCondition,
+        icon: "⚙️",
+      },
+      {
+        label: "최근 수리 일시",
+        score: cert.lastRepairedScore,
+        max: 25,
+        condition: cert.lastRepairedCondition,
+        icon: "🕐",
+      },
+    ],
+  };
+}
 
 const QUICK_MENU = [
   { label: "A/S 신청", Icon: Wrench, path: "/customer/as?reserve=true" },
@@ -389,7 +393,7 @@ function DiagnosticModal({ diag, onClose }) {
                 <td>대상 가전</td>
                 <td>{diag.applianceBrand}</td>
               </tr>
-              <tr>
+              {/* <tr>
                 <td>CareFlow 인증</td>
                 <td>
                   {diag.isCertified ? (
@@ -400,7 +404,7 @@ function DiagnosticModal({ diag, onClose }) {
                     <span style={{ color: "#aaa" }}>미인증</span>
                   )}
                 </td>
-              </tr>
+              </tr> */}
               <tr>
                 <td>최초 발급일</td>
                 <td>{fmt(diag.issuedAt)}</td>
@@ -461,21 +465,44 @@ function getCategoryName(categoryId) {
 export default function CustomerHome() {
   const [modalDiag, setModalDiag] = useState(null);
   const [appliances, setAppliances] = useState([]);
+  const [latestCert, setLatestCert] = useState(null);
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
     getMyAppliances()
-      .then((res) => {
-        const data = res.data ?? res;
+      .then(async (res) => {
+        const raw = res.data ?? res;
         setAppliances(
-          data.map((a) => ({
+          raw.map((a) => ({
             id: a.applianceId,
             name: getCategoryName(a.categoryId),
             brand: `${a.brand} ${a.modelName}`,
             status: STATUS_MAP[a.status] ?? a.status,
           })),
         );
+
+        const results = await Promise.all(
+          raw.map((a) =>
+            getHealthCertificate(a.applianceId)
+              .then((r) => ({
+                cert: r.data,
+                applianceName: getCategoryName(a.categoryId),
+                applianceBrand: `${a.brand} ${a.modelName}`,
+              }))
+              .catch(() => null),
+          ),
+        );
+
+        const valid = results.filter(Boolean);
+
+        if (valid.length > 0) {
+          setLatestCert(
+            valid.sort(
+              (a, b) => new Date(b.cert.updatedAt) - new Date(a.cert.updatedAt),
+            )[0],
+          );
+        }
       })
       .catch(() => {});
   }, []);
@@ -564,71 +591,84 @@ export default function CustomerHome() {
       </div>
 
       {/* 1. 진단서 카드 */}
-      <div className="ch-diag-card">
-        <div className="ch-diag-card__left">
-          <div className="ch-diag-card__title-row">
-            <span className="ch-diag-card__title">제품 건강 진단서</span>
-            <span className="ch-new-badge">NEW</span>
-          </div>
-          <p className="ch-diag-card__sub">
-            최근 A/S 결과를 분석하여 발급된 진단서입니다.
-          </p>
-
-          <div className="ch-diag-card__product">
-            <div className="ch-diag-card__product-icon">
-              <ApplianceIcon name="냉장고" size={72} radius={8} />
+      {latestCert && (
+        <div className="ch-diag-card">
+          <div className="ch-diag-card__left">
+            <div className="ch-diag-card__title-row">
+              <span className="ch-diag-card__title">제품 건강 진단서</span>
+              <span className="ch-new-badge">NEW</span>
             </div>
-            <div className="ch-diag-card__product-info">
-              <p className="ch-diag-card__product-name">
-                LG 디오스 냉장고 (냉장고)
-              </p>
-              <p className="ch-diag-card__product-date">
-                최근 진단일 2024.06.18
-              </p>
-              <div className="ch-diag-card__badges">
-                <span className="ch-badge ch-badge--cert">
-                  <ShieldCheck size={11} /> CareFlow 인증
-                </span>
-                <span className="ch-badge ch-badge--market">
-                  중고거래 활용 가능
-                </span>
+            <p className="ch-diag-card__sub">
+              최근 A/S 결과를 분석하여 발급된 진단서입니다.
+            </p>
+
+            <div className="ch-diag-card__product">
+              <div className="ch-diag-card__product-icon">
+                <ApplianceIcon
+                  name={latestCert.applianceName}
+                  size={72}
+                  radius={8}
+                />
+              </div>
+              <div className="ch-diag-card__product-info">
+                <p className="ch-diag-card__product-name">
+                  {latestCert.applianceBrand} ({latestCert.applianceName})
+                </p>
+                <p className="ch-diag-card__product-date">
+                  최근 진단일{" "}
+                  {latestCert.cert.updatedAt
+                    ? latestCert.cert.updatedAt.slice(0, 10).replace(/-/g, ".")
+                    : "—"}
+                </p>
+                <div className="ch-diag-card__badges">
+                  {latestCert.cert.isCertified && (
+                    <span className="ch-badge ch-badge--cert">
+                      <ShieldCheck size={11} /> CareFlow 인증
+                    </span>
+                  )}
+                  {latestCert.cert.isCertified && (
+                    <span className="ch-badge ch-badge--market">
+                      중고거래 활용 가능
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+
+            <button
+              className="ch-diag-card__btn"
+              onClick={() => setModalDiag(buildDiagModal(latestCert))}
+            >
+              진단서 보기 &gt;
+            </button>
           </div>
 
-          <button
-            className="ch-diag-card__btn"
-            onClick={() => setModalDiag(mockDiagnostic)}
-          >
-            진단서 보기 &gt;
-          </button>
-        </div>
-
-        <div className="ch-diag-card__right">
-          <ScoreGauge
-            score={75}
-            size={160}
-            strokeWidth={14}
-            color="#7c5cf7"
-            grade="B"
-          />
-          <div className="ch-grade-legend">
-            {[
-              { g: "A", r: "90~100" },
-              { g: "B", r: "70~89" },
-              { g: "C", r: "50~69" },
-              { g: "D", r: "0~49" },
-            ].map(({ g, r }) => (
-              <span
-                key={g}
-                className={`ch-grade-pill${g === "B" ? " ch-grade-pill--active" : ""}`}
-              >
-                {g} ({r})
-              </span>
-            ))}
+          <div className="ch-diag-card__right">
+            <ScoreGauge
+              score={latestCert.cert.score}
+              size={160}
+              strokeWidth={14}
+              color="#7c5cf7"
+              grade={latestCert.cert.grade}
+            />
+            <div className="ch-grade-legend">
+              {[
+                { g: "A", r: "90~100" },
+                { g: "B", r: "70~89" },
+                { g: "C", r: "50~69" },
+                { g: "D", r: "0~49" },
+              ].map(({ g, r }) => (
+                <span
+                  key={g}
+                  className={`ch-grade-pill${g === latestCert.cert.grade ? " ch-grade-pill--active" : ""}`}
+                >
+                  {g} ({r})
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 3. 중요 알림 */}
       <section className="ch-alerts-section">

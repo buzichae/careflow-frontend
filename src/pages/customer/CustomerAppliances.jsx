@@ -30,6 +30,7 @@ import {
   deleteAppliances,
   createAppliance,
   getMyDetailAppliance,
+  getHealthCertificate,
 } from "../../apis/appliances";
 
 /* ─────────────────────────────────
@@ -74,7 +75,6 @@ const EMPTY_FORM = {
   serialNumber: "",
   purchaseDate: "",
   warrantyExpiry: "",
-  status: "정상",
 };
 
 function isFormValid(form) {
@@ -85,8 +85,7 @@ function isFormValid(form) {
     form.modelName.trim() &&
     form.serialNumber.trim() &&
     form.purchaseDate &&
-    form.warrantyExpiry &&
-    form.status
+    form.warrantyExpiry
   );
 }
 
@@ -132,11 +131,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
 
   async function handleRegister() {
     try {
-      const STATUS_TO_ENUM = {
-        정상: "NORMAL",
-        주의: "SOLD",
-        "점검 필요": "NEED_REPAIR",
-      };
       await createAppliance({
         categoryId: Number(form.categorySub),
         brand: form.brand,
@@ -144,7 +138,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
         serialNumber: form.serialNumber,
         purchaseDate: form.purchaseDate,
         warrantyEndDate: form.warrantyExpiry,
-        status: STATUS_TO_ENUM[form.status] ?? "NORMAL",
       });
       setStep(3);
       onCreated?.();
@@ -188,7 +181,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
     { label: "시리얼 번호", value: form.serialNumber },
     { label: "구매 일자", value: form.purchaseDate },
     { label: "보증 만료일", value: form.warrantyExpiry },
-    { label: "가전 상태", value: form.status },
   ];
 
   return (
@@ -371,22 +363,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* 가전 상태 */}
-              <p className="car-input-section-label" style={{ marginTop: 16 }}>
-                가전 상태 <span className="car-required">*</span>
-              </p>
-              <div className="car-status-row">
-                {["정상", "주의", "점검 필요"].map((s) => (
-                  <button
-                    key={s}
-                    className={`car-status-chip ${form.status === s ? `car-status-chip--${s === "정상" ? "green" : s === "주의" ? "orange" : "red"} car-status-chip--active` : ""}`}
-                    onClick={() => handleChange("status", s)}
-                    type="button"
-                  >
-                    {s === "정상" ? "😊" : s === "주의" ? "⚠️" : "🔴"} {s}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -427,11 +403,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
               )}
               <p className="car-confirm-preview-name">{form.modelName}</p>
               <p className="car-confirm-preview-model">{form.serialNumber}</p>
-              <span
-                className={`car-confirm-status car-confirm-status--${form.status === "정상" ? "green" : form.status === "주의" ? "orange" : "red"}`}
-              >
-                {form.status}
-              </span>
             </div>
 
             <div className="car-result-info">
@@ -512,111 +483,21 @@ const SCORE_COLOR = {
 
 // const avgScore = Math.round(ALL_APPLIANCES.reduce((s, a) => s + a.score, 0) / ALL_APPLIANCES.length);
 
-/* ─────────────────────────────────
-   수리 이력 데이터
-───────────────────────────────── */
-const DIAGNOSTICS = {
-  1: {
-    certId: 1,
-    grade: "B",
-    score: 75,
-    isCertified: true,
-    issuedAt: "2024.06.17",
+function mapCertToView(cert) {
+  return {
+    certId: cert.certId,
+    grade: cert.grade,
+    score: cert.score,
+    isCertified: cert.isCertified,
+    issuedAt: cert.issuedAt ? cert.issuedAt.slice(0, 10).replace(/-/g, ".") : "—",
     scoreItems: [
-      { label: "수리 횟수", score: 20, max: 25, condition: "1회", icon: "🔧" },
-      {
-        label: "사용 기간",
-        score: 20,
-        max: 25,
-        condition: "1년 이상 ~ 3년 미만",
-        icon: "📅",
-      },
-      {
-        label: "교체 부품 중요도",
-        score: 20,
-        max: 25,
-        condition: "MINOR 부품만 교체",
-        icon: "⚙️",
-      },
-      {
-        label: "최근 수리 일시",
-        score: 15,
-        max: 25,
-        condition: "1년 이상 ~ 2년 미만",
-        icon: "🕐",
-      },
+      { label: "수리 횟수", score: cert.repairCountScore, max: 25, condition: cert.repairCountCondition, icon: "🔧" },
+      { label: "사용 기간", score: cert.usagePeriodScore, max: 25, condition: cert.usagePeriodCondition, icon: "📅" },
+      { label: "교체 부품 중요도", score: cert.partImportanceScore, max: 25, condition: cert.partImportanceCondition, icon: "⚙️" },
+      { label: "최근 수리 일시", score: cert.lastRepairedScore, max: 25, condition: cert.lastRepairedCondition, icon: "🕐" },
     ],
-  },
-  2: {
-    certId: 2,
-    grade: "C",
-    score: 62,
-    isCertified: false,
-    issuedAt: "2024.03.05",
-    scoreItems: [
-      { label: "수리 횟수", score: 15, max: 25, condition: "2회", icon: "🔧" },
-      {
-        label: "사용 기간",
-        score: 18,
-        max: 25,
-        condition: "1년 이상 ~ 3년 미만",
-        icon: "📅",
-      },
-      {
-        label: "교체 부품 중요도",
-        score: 14,
-        max: 25,
-        condition: "MAJOR 부품 교체",
-        icon: "⚙️",
-      },
-      {
-        label: "최근 수리 일시",
-        score: 15,
-        max: 25,
-        condition: "1년 이상 ~ 2년 미만",
-        icon: "🕐",
-      },
-    ],
-  },
-  3: null,
-  6: {
-    certId: 6,
-    grade: "D",
-    score: 48,
-    isCertified: false,
-    issuedAt: "2024.05.20",
-    scoreItems: [
-      {
-        label: "수리 횟수",
-        score: 10,
-        max: 25,
-        condition: "3회 이상",
-        icon: "🔧",
-      },
-      {
-        label: "사용 기간",
-        score: 15,
-        max: 25,
-        condition: "3년 이상",
-        icon: "📅",
-      },
-      {
-        label: "교체 부품 중요도",
-        score: 13,
-        max: 25,
-        condition: "CRITICAL 부품 교체",
-        icon: "⚙️",
-      },
-      {
-        label: "최근 수리 일시",
-        score: 10,
-        max: 25,
-        condition: "6개월 이내",
-        icon: "🕐",
-      },
-    ],
-  },
-};
+  };
+}
 
 const GRADE_META = {
   A: { color: "#16a34a", bg: "#dcfce7" },
@@ -906,13 +787,19 @@ function DetailView({ appliance, onBack, onUpdate }) {
   const [page, setPage] = useState(1);
   const [showEdit, setShowEdit] = useState(false);
   const [repairs, setRepairs] = useState([]);
-  const diag = DIAGNOSTICS[appliance.id] ?? null;
+  const [diag, setDiag] = useState(null);
   const PER_PAGE = 5;
 
   useEffect(() => {
     getMyDetailAppliance(appliance.id)
       .then((res) => setRepairs(res.data))
       .catch((err) => console.error("수리 이력 조회 실패:", err));
+  }, [appliance.id]);
+
+  useEffect(() => {
+    getHealthCertificate(appliance.id)
+      .then((res) => setDiag(mapCertToView(res.data)))
+      .catch(() => setDiag(null));
   }, [appliance.id]);
 
   const totalPages = Math.ceil(repairs.length / PER_PAGE);
