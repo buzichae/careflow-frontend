@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../../styles/Customer/CustomerNavbar.css";
+import { getUserInfo } from "../../apis/auth";
 
 const PAGE_INFO = {
   // "/customer/home":           { title: "안녕하세요 플로우님!", subtitle: "오늘도 우리집 가전의 건강을 체크해보세요." },
@@ -43,9 +44,10 @@ export default function CustomerNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
+  const [userName, setUserName] = useState("");
 
   const navigate = useNavigate();
-  const customer = { name: "플로우", role: "고객" };
+  // const customer = { name: "플로우", role: "고객" };
   const pageInfo = PAGE_INFO[location.pathname] || { title: "", subtitle: "" };
 
   useEffect(() => {
@@ -57,6 +59,15 @@ export default function CustomerNavbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    getUserInfo()
+      .then((res) => {
+        const data = res.data ?? res;
+        setUserName(data.name);
+      })
+      .catch(() => {});
+  });
 
   const handleLogout = () => {
     const confirmed = window.confirm("로그아웃 하시겠습니까?");
@@ -88,8 +99,8 @@ export default function CustomerNavbar() {
               <UserRound />
             </div>
             <div>
-              <p className="customer-navbar__name">{customer.name}</p>
-              <p className="customer-navbar__role">{customer.role}</p>
+              <p className="customer-navbar__name">{userName}</p>
+              <p className="customer-navbar__role">고객</p>
             </div>
             {dropdownOpen ? (
               <ChevronUp size={14} color="#aaa" />
