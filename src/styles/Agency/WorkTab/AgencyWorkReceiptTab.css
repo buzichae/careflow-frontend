@@ -7,7 +7,6 @@
   gap: 12px;
   margin-bottom: 16px;
 }
-
 .receipt-stat-card {
   background: #fff;
   border: 1px solid #e8e4ff;
@@ -17,277 +16,147 @@
   align-items: flex-start;
   gap: 10px;
 }
-
 .receipt-stat-card__icon {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-
 .receipt-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
 .receipt-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
 .receipt-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
 .receipt-stat-card__icon--amber  { background: #fef9e0; color: #b45309; }
 .receipt-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
-
-.receipt-stat-card__label {
-  font-size: 11px;
-  color: #aaa;
-  margin-bottom: 2px;
-}
-
-.receipt-stat-card__value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1a1a2e;
-}
-
-.receipt-stat-card__value span {
-  font-size: 13px;
-  font-weight: 400;
-  margin-left: 1px;
-}
-
-.receipt-stat-card__today {
-  font-size: 11px;
-  color: #5B4FF5;
-  margin-top: 2px;
-}
+.receipt-stat-card__label { font-size: 11px; color: #aaa; margin-bottom: 2px; }
+.receipt-stat-card__value { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+.receipt-stat-card__value span { font-size: 13px; font-weight: 400; margin-left: 1px; }
+.receipt-stat-card__today { font-size: 11px; color: #5B4FF5; margin-top: 2px; }
 
 /* ===========================
    필터 바
 =========================== */
 .receipt-filters {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 14px; flex-wrap: wrap;
 }
-
 .receipt-filter-date {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0.5px solid #e0dcff;
-  border-radius: 8px;
-  padding: 7px 12px;
-  font-size: 12px;
-  color: #444;
-  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #444; cursor: pointer;
 }
-
 .receipt-filter-select {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0.5px solid #e0dcff;
-  border-radius: 8px;
-  padding: 7px 12px;
-  font-size: 12px;
-  color: #444;
-  cursor: pointer;
-  white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; font-size: 12px; color: #444;
+  cursor: pointer; white-space: nowrap;
 }
-
 .receipt-search {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0.5px solid #e0dcff;
-  border-radius: 8px;
-  padding: 7px 12px;
-  flex: 1;
-  min-width: 180px;
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 12px; flex: 1; min-width: 180px;
 }
-
 .receipt-search input {
-  border: none;
-  outline: none;
-  font-size: 12px;
-  color: #444;
-  width: 100%;
-  font-family: inherit;
+  border: none; outline: none; font-size: 12px;
+  color: #444; width: 100%; font-family: inherit;
 }
-
 .receipt-excel-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0.5px solid #e0dcff;
-  border-radius: 8px;
-  padding: 7px 14px;
-  font-size: 12px;
-  color: #5B4FF5;
-  font-weight: 600;
-  cursor: pointer;
-  background: none;
-  white-space: nowrap;
-  font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 7px 14px; font-size: 12px; color: #5B4FF5;
+  font-weight: 600; cursor: pointer; background: none;
+  white-space: nowrap; font-family: inherit;
 }
 
 /* ===========================
    테이블 메타
 =========================== */
 .receipt-table-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 10px;
 }
-
-.receipt-total {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1a1a2e;
-}
-
-.receipt-table-meta__right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+.receipt-total { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.receipt-table-meta__right { display: flex; align-items: center; gap: 8px; }
 .receipt-sort-select {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border: 0.5px solid #e0dcff;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: #444;
-  cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; color: #444; cursor: pointer;
 }
 
 /* ===========================
    테이블
 =========================== */
 .receipt-table {
-  background: #fff;
-  border: 1px solid #e8e4ff;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 14px;
+  background: #fff; border: 1px solid #e8e4ff;
+  border-radius: 12px; overflow: hidden; margin-bottom: 14px;
 }
-
 .receipt-table__header {
   display: grid;
-  grid-template-columns: 1.4fr 1.2fr 0.7fr 1fr 1.3fr 1.1fr 1.2fr 0.7fr 0.9fr 1fr;
-  padding: 10px 16px;
-  background: #f8f7ff;
-  font-size: 11px;
-  color: #aaa;
-  font-weight: 600;
+  grid-template-columns: 1.2fr 1.1fr 0.6fr 0.9fr 1.4fr 1.2fr 1.3fr 0.6fr 1.1fr 0.8fr;
+  padding: 10px 16px; background: #f8f7ff;
+  font-size: 11px; color: #aaa; font-weight: 600;
   border-bottom: 0.5px solid #e8e4ff;
 }
-
 .receipt-table__row {
   display: grid;
-  grid-template-columns: 1.4fr 1.2fr 0.7fr 1fr 1.3fr 1.1fr 1.2fr 0.7fr 0.9fr 1fr;
-  padding: 12px 16px;
-  border-bottom: 0.5px solid #f5f4ff;
-  align-items: center;
-  font-size: 12px;
-  color: #444;
+  grid-template-columns: 1.2fr 1.1fr 0.6fr 0.9fr 1.4fr 1.2fr 1.3fr 0.6fr 1.1fr 0.8fr;
+  padding: 12px 16px; border-bottom: 0.5px solid #f5f4ff;
+  align-items: center; font-size: 12px; color: #444;
   transition: background 0.1s;
 }
+.receipt-table__row:last-child { border-bottom: none; }
+.receipt-table__row:hover { background: #fafaff; }
 
-.receipt-table__row:last-child {
-  border-bottom: none;
+/* 재배차 필요 행 강조 */
+.receipt-table__row--alert {
+  background: #fff8f0;
+  border-left: 3px solid #d97706;
+}
+.receipt-table__row--alert:hover { background: #fff3e0; }
+
+.receipt-table__id { font-size: 11px; color: #5B4FF5; font-weight: 600; }
+.receipt-table__datetime { display: flex; flex-direction: column; gap: 2px; }
+.receipt-table__time { color: #aaa; font-size: 11px; }
+.receipt-table__customer { font-weight: 600; color: #1a1a2e; }
+.receipt-table__phone { font-size: 11px; color: #666; }
+.receipt-table__product { display: flex; flex-direction: column; gap: 2px; }
+.receipt-table__product-name { font-weight: 600; color: #1a1a2e; font-size: 12px; }
+.receipt-table__model { font-size: 10px; color: #aaa; }
+.receipt-table__symptom { font-size: 11px; color: #666; }
+.receipt-table__visit { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #444; }
+.receipt-table__visit-time { color: #aaa; }
+.receipt-table__type { font-size: 11px; color: #666; }
+.receipt-table__actions { display: flex; align-items: center; gap: 4px; }
+
+/* 상태 칸 */
+.receipt-table__status-col {
+  display: flex; flex-direction: column; gap: 3px;
 }
 
-.receipt-table__row:hover {
-  background: #fafaff;
+/* 담당 기사명 (기사수락대기) */
+.receipt-engineer-label {
+  font-size: 10px; color: #5B4FF5; font-weight: 600;
 }
 
-.receipt-table__id {
-  font-size: 11px;
-  color: #5B4FF5;
-  font-weight: 600;
+/* 서브라벨 (재배차 사유 or 수락 대기 시간) */
+.receipt-sub-label {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600;
 }
+.receipt-sub-label--rejected { color: #dc2626; }
+.receipt-sub-label--overtime { color: #d97706; }
+.receipt-sub-label--waiting  { color: #2563eb; }
 
-.receipt-table__datetime {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.receipt-table__time {
-  color: #aaa;
-  font-size: 11px;
-}
-
-.receipt-table__customer {
-  font-weight: 600;
-  color: #1a1a2e;
-}
-
-.receipt-table__phone {
-  font-size: 11px;
-  color: #666;
-}
-
-.receipt-table__product {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.receipt-table__product-name {
-  font-weight: 600;
-  color: #1a1a2e;
-  font-size: 12px;
-}
-
-.receipt-table__model {
-  font-size: 10px;
-  color: #aaa;
-}
-
-.receipt-table__symptom {
-  font-size: 11px;
-  color: #666;
-}
-
-.receipt-table__visit {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 11px;
-  color: #444;
-}
-
-.receipt-table__visit-time {
-  color: #aaa;
-}
-
-.receipt-table__type {
-  font-size: 11px;
-  color: #666;
-}
-
-.receipt-table__actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+/* 버튼 없음 표시 */
+.receipt-no-action { font-size: 11px; color: #ccc; }
 
 /* ===========================
    상태 배지
 =========================== */
 .receipt-badge {
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 6px;
-  padding: 3px 8px;
-  white-space: nowrap;
+  font-size: 10px; font-weight: 600;
+  border-radius: 6px; padding: 3px 8px; white-space: nowrap;
+  display: inline-block;
 }
-
 .receipt-badge--pending   { background: #eeeaff; color: #5B4FF5; }
 .receipt-badge--waiting   { background: #fef0e0; color: #d97706; }
 .receipt-badge--assigned  { background: #e6f1fb; color: #2563eb; }
@@ -297,82 +166,176 @@
 .receipt-badge--paid      { background: #eaf3de; color: #16a34a; }
 .receipt-badge--cancelled { background: #fee2e2; color: #dc2626; }
 
+/* 재배차 필요 배지 */
+.receipt-badge--reassign  { background: #fff0e0; color: #c2410c; border: 1px solid #fed7aa; }
+
 /* ===========================
    버튼
 =========================== */
 .receipt-detail-btn {
-  font-size: 11px;
-  border: 0.5px solid #e0dcff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  color: #5B4FF5;
-  background: none;
-  cursor: pointer;
-  font-weight: 600;
-  font-family: inherit;
-  white-space: nowrap;
+  font-size: 11px; border: 0.5px solid #e0dcff;
+  border-radius: 6px; padding: 4px 10px;
+  color: #5B4FF5; background: none; cursor: pointer;
+  font-weight: 600; font-family: inherit; white-space: nowrap;
 }
+.receipt-detail-btn:hover { background: #f5f3ff; }
 
 .receipt-more-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #aaa;
-  display: flex;
-  align-items: center;
+  background: none; border: none; cursor: pointer;
+  color: #aaa; display: flex; align-items: center;
 }
 
 /* ===========================
    페이지네이션
 =========================== */
 .receipt-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
+  display: flex; align-items: center;
+  justify-content: space-between; padding: 8px 0;
 }
-
-.receipt-pagination__left {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
+.receipt-pagination__left { display: flex; align-items: center; gap: 4px; }
 .receipt-pagination__left button {
-  width: 30px;
-  height: 30px;
-  border: 0.5px solid #e0dcff;
-  border-radius: 6px;
-  background: none;
-  cursor: pointer;
-  font-size: 13px;
-  color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 30px; height: 30px;
+  border: 0.5px solid #e0dcff; border-radius: 6px;
+  background: none; cursor: pointer; font-size: 13px; color: #666;
+  display: flex; align-items: center; justify-content: center;
   font-family: inherit;
 }
-
-.receipt-pagination__left button:disabled {
-  color: #ccc;
-  cursor: default;
-}
-
+.receipt-pagination__left button:disabled { color: #ccc; cursor: default; }
 .receipt-pagination__page--active {
-  background: #5B4FF5 !important;
-  color: #fff !important;
-  border-color: #5B4FF5 !important;
-  font-weight: 700;
+  background: #5B4FF5 !important; color: #fff !important;
+  border-color: #5B4FF5 !important; font-weight: 700;
+}
+.receipt-page-size {
+  display: flex; align-items: center; gap: 4px;
+  border: 0.5px solid #e0dcff; border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; color: #444; cursor: pointer;
 }
 
-.receipt-page-size {
+/* 재배정 버튼 */
+.receipt-reassign-btn {
+  font-size: 11px;
+  border: 0.5px solid #fed7aa;
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: #c2410c;
+  background: #fff7ed;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.receipt-reassign-btn:hover { background: #ffedd5; }
+
+/* ===========================
+   접수목록 탭 메인 레이아웃
+=========================== */
+.receipt-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 16px;
+  align-items: start;
+}
+
+.receipt-layout__left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.receipt-layout__right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 배정 대기 목록 섹션 */
+.receipt-pending {
+  background: #fff;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.receipt-pending__header {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.receipt-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.receipt-pending__count {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.receipt-pending__filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.receipt-filter-date-input {
   border: 0.5px solid #e0dcff;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 7px 12px;
   font-size: 12px;
   color: #444;
-  cursor: pointer;
+  font-family: inherit;
+  outline: none;
+}
+
+.receipt-pending__table {
+  font-size: 12px;
+}
+
+.receipt-pending__header-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.7fr 1fr 0.6fr 0.9fr 0.6fr 0.7fr 0.7fr;
+  padding: 8px 4px;
+  border-bottom: 0.5px solid #f0f0f8;
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.receipt-pending__row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.7fr 1fr 0.6fr 0.9fr 0.6fr 0.7fr 0.7fr;
+  padding: 11px 4px;
+  border-bottom: 0.5px solid #f9f9ff;
+  align-items: center;
+  color: #444;
+}
+
+/* ===========================
+   접수목록 바디 레이아웃
+   (좌: 필터+테이블 / 우: 실시간배정현황)
+=========================== */
+.receipt-body-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 16px;
+  align-items: start;
+}
+
+.receipt-body-layout__left {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.receipt-body-layout__right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
 }
