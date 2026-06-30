@@ -71,7 +71,7 @@ const customerList = [
   { id: 10, name: "윤지은", phone: "010-0123-4567", email: "yje@email.com",    joinedAt: "2024.06.12", status: "ACTIVE",    grade: "NORMAL", applianceCount: 2, lastLoginAt: "2024.06.12", address: "경기도 수원시 영통구 광교로 15",  joinPath: "웹사이트",   memo: null, memoWriter: null, memoAt: null },
 ];
 
-const DETAIL_TABS = ["기본 정보", "가전 정보", "A/S 이력", "결제 내역", "메모"];
+const DETAIL_TABS = ["기본 정보", "가전 정보", "A/S 이력", "결제 내역"];
 
 function Avatar({ name, size = 40 }) {
   return (
@@ -312,11 +312,7 @@ export default function AgencyCustomerPage() {
                   <span>GET /api/agency/customers/{"{userId}"}/payments</span>
                 </div>
               )}
-              {detailTab === "메모" && (
-                <div className="acp-detail__coming-soon">
-                  메모 탭 — API 연동 후 구현
-                </div>
-              )}
+            
             </div>
           </aside>
         )}

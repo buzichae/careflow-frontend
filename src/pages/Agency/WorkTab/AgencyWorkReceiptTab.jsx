@@ -2,28 +2,43 @@ import { useState } from "react";
 import {
   ClipboardList, Clock, Users, Hourglass, XCircle,
   Search, ChevronDown, ChevronLeft, ChevronRight,
-  ChevronsLeft, ChevronsRight, Download, MoreVertical,
+  ChevronsLeft, ChevronsRight, Download, MoreVertical, RefreshCw,
 } from "lucide-react";
 import "../../../styles/Agency/WorkTab/AgencyWorkReceiptTab.css";
 import WorkDetailModal from "../../Agency/Modal/WorkDetailModal";
-
-// ──────────────────────────────────────────
-// TODO: API 연동 포인트
-// GET /api/agency/work-requests?page=0&size=10&sort=created_at,desc
-// 필터: brand, region_id, type, status, keyword, dateFrom, dateTo
-// as_requests + appliances + users(고객) + appliance_categories JOIN
-// ──────────────────────────────────────────
+import { AssignDetailModal, ReassignModal } from "../../../pages/Agency/Modal/AssignModals";
 
 const STATUS_MAP = {
-  PENDING:         { label: "접수",      type: "pending"   },
-  AGENCY_RECEIVED: { label: "배정 대기", type: "waiting"   },
-  ASSIGNED:        { label: "배정 진행", type: "assigned"  },
-  ACCEPTED:        { label: "기사 수락 대기", type: "accepted" },
-  IN_PROGRESS:     { label: "진행 중",   type: "visiting"  },
-  COMPLETED:       { label: "완료 대기", type: "completed" },
-  PAID:            { label: "정산 완료", type: "paid"      },
-  CANCELLED:       { label: "취소 / 반려", type: "cancelled" },
+  PENDING:         { label: "접수",          type: "pending"   },
+  AGENCY_RECEIVED: { label: "배정 대기",      type: "waiting"   },
+  ASSIGNED:        { label: "기사 수락 대기",  type: "accepted"  }, // 배정진행 → 기사수락대기로 표시
+  ACCEPTED:        { label: "배정 완료",      type: "assigned"  },
+  IN_PROGRESS:     { label: "진행 중",        type: "visiting"  },
+  COMPLETED:       { label: "완료 대기",      type: "completed" },
+  PAID:            { label: "정산 완료",      type: "paid"      },
+  CANCELLED:       { label: "취소 / 반려",    type: "cancelled" },
 };
+
+// 재배차 사유 판단
+// - 기사 거절(REJECTED) or 수락대기 30분 초과
+function getReassignReason(item) {
+  if (item.assignStatus === "REJECTED") return "rejected";
+  if (item.assignStatus === "WAITING" && item.overtimeMin >= 30) return "overtime";
+  return null;
+}
+
+// 액션 타입 결정
+// - 재배차 사유 → 상태만 표시 (버튼 없음)
+// - ACCEPTED(배정완료) → AssignDetailModal (버튼 활성)
+// - ASSIGNED(기사수락대기) → AssignDetailModal (버튼 비활성)
+// - AGENCY_RECEIVED(배정대기) → WorkDetailModal
+function getActionType(item) {
+  const reassignReason = getReassignReason(item);
+  if (reassignReason) return { type: "reassign", reason: reassignReason };
+  if (item.status === "ACCEPTED")        return { type: "assignDetail" };
+  if (item.status === "ASSIGNED")        return { type: "assignDetail" };
+  return { type: "workDetail" };
+}
 
 function formatRequestId(requestId, createdAt) {
   const date = new Date(createdAt);
@@ -56,30 +71,43 @@ function formatVisitDate(dateStr, startTime, endTime) {
 }
 
 const receiptList = [
-  { requestId: 1,  createdAt: "2024-06-18 09:20", customer: "김민지", phone: "010-1234-5678", productName: "LG 디오스 냉장고",   modelNo: "M874GBB231",    symptomDesc: "냉장이 잘 되지 않아요",  visitDate: "2024-06-20", startTime: "10:00", endTime: "12:00", type: "출장 A/S", status: "AGENCY_RECEIVED" },
-  { requestId: 2,  createdAt: "2024-06-18 09:45", customer: "이영희", phone: "010-2345-6789", productName: "삼성 그랑데 세탁기", modelNo: "WF21T6500KP",   symptomDesc: "세탁기 배수가 안 돼요", visitDate: "2024-06-19", startTime: "14:00", endTime: "16:00", type: "출장 A/S", status: "ASSIGNED"        },
-  { requestId: 3,  createdAt: "2024-06-18 10:10", customer: "박준호", phone: "010-3456-7890", productName: "LG 휘센 에어컨",     modelNo: "FQ18HDWHRN",   symptomDesc: "에어컨에서 냄새가 나요", visitDate: "2024-06-19", startTime: "16:00", endTime: "18:00", type: "출장 A/S", status: "ACCEPTED"        },
-  { requestId: 4,  createdAt: "2024-06-18 10:30", customer: "최서연", phone: "010-4567-8901", productName: "삼성 QLED TV",       modelNo: "KQ55QC674FXKR", symptomDesc: "화면이 나오지 않아요",  visitDate: "2024-06-20", startTime: "11:00", endTime: "13:00", type: "설치/점검", status: "AGENCY_RECEIVED" },
-  { requestId: 5,  createdAt: "2024-06-18 11:05", customer: "정유진", phone: "010-5678-9012", productName: "LG 식기세척기",      modelNo: "DFB22S",        symptomDesc: "물이 새요",            visitDate: "2024-06-21", startTime: "09:00", endTime: "11:00", type: "출장 A/S", status: "ASSIGNED"        },
-  { requestId: 6,  createdAt: "2024-06-18 11:30", customer: "이태훈", phone: "010-6789-0123", productName: "위니아 김치냉장고",  modelNo: "WQ57DGK",      symptomDesc: "김치가 너무 시원해요",  visitDate: "2024-06-21", startTime: "13:00", endTime: "15:00", type: "출장 A/S", status: "CANCELLED"       },
-  { requestId: 7,  createdAt: "2024-06-18 12:15", customer: "홍길동", phone: "010-7890-1234", productName: "LG 오브제 냉장고",   modelNo: "M872MEE312",   symptomDesc: "소음이 심해요",         visitDate: "2024-06-22", startTime: "10:00", endTime: "12:00", type: "출장 A/S", status: "AGENCY_RECEIVED" },
-  { requestId: 8,  createdAt: "2024-06-18 13:20", customer: "김수현", phone: "010-8901-2345", productName: "삼성 에어드레서",    modelNo: "DF60A8500KG",  symptomDesc: "전원이 안 켜져요",      visitDate: "2024-06-22", startTime: "15:00", endTime: "17:00", type: "출장 A/S", status: "ASSIGNED"        },
+  { requestId: 1, createdAt: "2024-06-18 09:20", customer: "김민지", phone: "010-1234-5678", productName: "LG 디오스 냉장고",   modelNo: "M874GBB231",    symptomDesc: "냉장이 잘 되지 않아요",  visitDate: "2024-06-20", startTime: "10:00", endTime: "12:00", type: "출장 A/S",  status: "AGENCY_RECEIVED", assignStatus: null,       overtimeMin: 0,  engineerName: null,          assignedAt: null },
+  { requestId: 2, createdAt: "2024-06-18 09:45", customer: "이영희", phone: "010-2345-6789", productName: "삼성 그랑데 세탁기", modelNo: "WF21T6500KP",   symptomDesc: "세탁기 배수가 안 돼요", visitDate: "2024-06-19", startTime: "14:00", endTime: "16:00", type: "출장 A/S",  status: "ASSIGNED",        assignStatus: "WAITING",  overtimeMin: 18, engineerName: "김철수 기사", assignedAt: "2024-06-18 09:35" },
+  { requestId: 3, createdAt: "2024-06-18 10:10", customer: "박준호", phone: "010-3456-7890", productName: "LG 휘센 에어컨",     modelNo: "FQ18HDWHRN",   symptomDesc: "에어컨에서 냄새가 나요", visitDate: "2024-06-19", startTime: "16:00", endTime: "18:00", type: "출장 A/S",  status: "ACCEPTED",        assignStatus: "ACCEPTED", overtimeMin: 0,  engineerName: "박민수 기사", assignedAt: "2024-06-18 10:00" },
+  { requestId: 4, createdAt: "2024-06-18 10:30", customer: "최서연", phone: "010-4567-8901", productName: "삼성 QLED TV",       modelNo: "KQ55QC674FXKR", symptomDesc: "화면이 나오지 않아요",  visitDate: "2024-06-20", startTime: "11:00", endTime: "13:00", type: "설치/점검", status: "AGENCY_RECEIVED", assignStatus: null,       overtimeMin: 0,  engineerName: null,          assignedAt: null },
+  { requestId: 5, createdAt: "2024-06-18 11:05", customer: "정유진", phone: "010-5678-9012", productName: "LG 식기세척기",      modelNo: "DFB22S",        symptomDesc: "물이 새요",            visitDate: "2024-06-21", startTime: "09:00", endTime: "11:00", type: "출장 A/S",  status: "ASSIGNED",        assignStatus: "WAITING",  overtimeMin: 32, engineerName: "이영호 기사", assignedAt: "2024-06-18 11:00" },
+  { requestId: 6, createdAt: "2024-06-18 11:30", customer: "이태훈", phone: "010-6789-0123", productName: "위니아 김치냉장고",  modelNo: "WQ57DGK",       symptomDesc: "김치가 너무 시원해요",  visitDate: "2024-06-21", startTime: "13:00", endTime: "15:00", type: "출장 A/S",  status: "CANCELLED",       assignStatus: "REJECTED", overtimeMin: 0,  engineerName: "홍길동 기사", assignedAt: "2024-06-18 11:20" },
+  { requestId: 7, createdAt: "2024-06-18 12:15", customer: "홍길동", phone: "010-7890-1234", productName: "LG 오브제 냉장고",   modelNo: "M872MEE312",   symptomDesc: "소음이 심해요",         visitDate: "2024-06-22", startTime: "10:00", endTime: "12:00", type: "출장 A/S",  status: "AGENCY_RECEIVED", assignStatus: null,       overtimeMin: 0,  engineerName: null,          assignedAt: null },
+  { requestId: 8, createdAt: "2024-06-18 13:20", customer: "김수현", phone: "010-8901-2345", productName: "삼성 에어드레서",    modelNo: "DF60A8500KG",  symptomDesc: "전원이 안 켜져요",      visitDate: "2024-06-22", startTime: "15:00", endTime: "17:00", type: "출장 A/S",  status: "ASSIGNED",        assignStatus: "WAITING",  overtimeMin: 5,  engineerName: "최지현 기사", assignedAt: "2024-06-18 13:10" },
 ];
 
 const statCards = [
-  { label: "전체 접수",    value: 42, today: "+8", icon: ClipboardList, color: "purple" },
-  { label: "배정 대기",    value: 12, today: "+3", icon: Clock,         color: "orange" },
-  { label: "배정 진행",    value: 18, today: "+4", icon: Users,         color: "blue"   },
-  { label: "기사 수락 대기",value: 7, today: "+1", icon: Hourglass,     color: "amber"  },
-  { label: "취소 / 반려",  value: 5,  today: "+0", icon: XCircle,       color: "red"    },
+  { label: "전체 접수",      value: 42, today: "+8", icon: ClipboardList, color: "purple" },
+  { label: "배정 대기",      value: 12, today: "+3", icon: Clock,         color: "orange" },
+  { label: "기사 수락 대기", value: 18, today: "+4", icon: Users,         color: "blue"   },
+  { label: "배정 완료",      value: 7,  today: "+1", icon: Hourglass,     color: "amber"  },
+  { label: "취소 / 반려",    value: 5,  today: "+0", icon: XCircle,       color: "red"    },
 ];
 
 export default function AgencyWorkReceiptTab() {
   const [currentPage, setCurrentPage] = useState(1);
- // const [pageSize] = useState(10);
   const totalPages = 5;
-  const [selectedItem, setSelectedItem] = useState(null);
 
+  const [workDetailModal,   setWorkDetailModal]   = useState(null);
+  const [assignDetailModal, setAssignDetailModal] = useState(null);
+  const [reassignModal,     setReassignModal]     = useState(null);
+
+  const handleAction = (item) => {
+    const action = getActionType(item);
+    if (action.type === "reassign") {
+      setReassignModal({ ...item, reassignReason: action.reason });
+    } else if (action.type === "assignDetail") {
+      setAssignDetailModal(item);
+    } else if (action.type === "workDetail") {
+      setWorkDetailModal(item);
+    }
+    // type === "none" → 재배차 필요, 버튼 없음
+  };
 
   return (
     <div className="receipt-tab">
@@ -118,13 +146,11 @@ export default function AgencyWorkReceiptTab() {
         </button>
       </div>
 
-      {/* 테이블 헤더 */}
+      {/* 테이블 메타 */}
       <div className="receipt-table-meta">
         <span className="receipt-total">총 42건</span>
         <div className="receipt-table-meta__right">
-          <div className="receipt-sort-select">
-            최신순 <ChevronDown size={13} />
-          </div>
+          <div className="receipt-sort-select">최신순 <ChevronDown size={13} /></div>
         </div>
       </div>
 
@@ -144,13 +170,38 @@ export default function AgencyWorkReceiptTab() {
         </div>
 
         {receiptList.map((item) => {
-          const s = STATUS_MAP[item.status] || { label: item.status, type: "pending" };
+          const reassignReason = getReassignReason(item);
+          const action = getActionType(item);
+          const s = STATUS_MAP[item.status] ?? { label: item.status, type: "pending" };
           const displayId = formatRequestId(item.requestId, item.createdAt);
           const dt = formatDateTime(item.createdAt);
           const visit = formatVisitDate(item.visitDate, item.startTime, item.endTime);
 
+          // 배지 & 서브라벨
+          let badgeLabel = s.label;
+          let badgeType  = s.type;
+          let subLabel   = null;
+          let subType    = null;
+
+          if (reassignReason === "rejected") {
+            badgeLabel = "재배차 필요"; badgeType = "reassign";
+            subLabel = "기사 취소"; subType = "rejected";
+          } else if (reassignReason === "overtime") {
+            badgeLabel = "재배차 필요"; badgeType = "reassign";
+            subLabel = `${item.overtimeMin}분 초과`; subType = "overtime";
+          } else if (item.status === "ASSIGNED" && item.overtimeMin > 0) {
+            // 수락 대기 중 - 경과 시간 표시
+            subLabel = `수락 대기 ${item.overtimeMin}분`; subType = "waiting";
+          }
+
+          // 배정 진행 상태면 담당 기사명 서브라벨로 표시
+          const showEngineer = item.status === "ASSIGNED" && item.engineerName && !reassignReason;
+
           return (
-            <div key={item.requestId} className="receipt-table__row">
+            <div
+              key={item.requestId}
+              className={`receipt-table__row ${reassignReason ? "receipt-table__row--alert" : ""}`}
+            >
               <span className="receipt-table__id">{displayId}</span>
               <span className="receipt-table__datetime">
                 <span>{dt.date}</span>
@@ -169,11 +220,37 @@ export default function AgencyWorkReceiptTab() {
                 ))}
               </span>
               <span className="receipt-table__type">{item.type}</span>
-              <span>
-                <span className={`receipt-badge receipt-badge--${s.type}`}>{s.label}</span>
+
+              {/* 상태 칸 */}
+              <span className="receipt-table__status-col">
+                <span className={`receipt-badge receipt-badge--${badgeType}`}>{badgeLabel}</span>
+                {/* 담당 기사명 표시 (기사수락대기) */}
+                {showEngineer && (
+                  <span className="receipt-engineer-label">{item.engineerName}</span>
+                )}
+                {/* 서브라벨 (재배차 사유 or 수락 대기 시간) */}
+                {subLabel && (
+                  <span className={`receipt-sub-label receipt-sub-label--${subType}`}>
+                    {subType === "rejected" && <RefreshCw size={10} />}
+                    {subType === "overtime" && <Clock size={10} />}
+                    {subLabel}
+                  </span>
+                )}
               </span>
+
+              {/* 액션 버튼 */}
               <span className="receipt-table__actions">
-                <button className="receipt-detail-btn" onClick={() => setSelectedItem(item)}>상세보기</button>
+                {action.type === "reassign" ? (
+                  // 재배차 필요 → 재배정 버튼 → ReassignModal → 완료 시 기사수락대기로 전환
+                  <button className="receipt-reassign-btn" onClick={() => handleAction(item)}>
+                    재배정
+                  </button>
+                ) : (
+                  // workDetail(배정대기) or assignDetail(수락대기/배정완료) → 상세보기
+                  <button className="receipt-detail-btn" onClick={() => handleAction(item)}>
+                    상세보기
+                  </button>
+                )}
                 <button className="receipt-more-btn"><MoreVertical size={14} /></button>
               </span>
             </div>
@@ -187,11 +264,7 @@ export default function AgencyWorkReceiptTab() {
           <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
           <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
           {[1,2,3,4,5].map(p => (
-            <button
-              key={p}
-              className={currentPage === p ? "receipt-pagination__page--active" : ""}
-              onClick={() => setCurrentPage(p)}
-            >{p}</button>
+            <button key={p} className={currentPage === p ? "receipt-pagination__page--active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
           ))}
           <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
           <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
@@ -200,8 +273,15 @@ export default function AgencyWorkReceiptTab() {
           <span>10개씩 보기</span><ChevronDown size={13} />
         </div>
       </div>
-      {selectedItem && (
-        <WorkDetailModal onClose={() => setSelectedItem(null)} detail={selectedItem} />
+
+      {workDetailModal && (
+        <WorkDetailModal onClose={() => setWorkDetailModal(null)} detail={workDetailModal} />
+      )}
+      {assignDetailModal && (
+        <AssignDetailModal onClose={() => setAssignDetailModal(null)} item={assignDetailModal} />
+      )}
+      {reassignModal && (
+        <ReassignModal onClose={() => setReassignModal(null)} item={reassignModal} />
       )}
     </div>
   );
