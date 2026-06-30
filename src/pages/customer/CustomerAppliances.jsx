@@ -29,6 +29,7 @@ import {
   getMyAppliances,
   deleteAppliances,
   createAppliance,
+  getMyDetailAppliance,
 } from "../../apis/appliances";
 
 /* ─────────────────────────────────
@@ -492,20 +493,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
     </div>
   );
 }
-
-/* ─────────────────────────────────
-   가전 목록 데이터
-───────────────────────────────── */
-// const ALL_APPLIANCES = [
-//   { id: 1, name: "냉장고",     brand: "LG 디오스 냉장고",    model: "M870SN75",      usagePeriod: "2년 3개월", score: 95, status: "정상",    certified: true,  repairCount: 5 },
-//   { id: 2, name: "세탁기",     brand: "삼성 그랑데 세탁기",  model: "WF21A9500KV",   usagePeriod: "1년 8개월", score: 72, status: "주의",    certified: false, repairCount: 2 },
-//   { id: 3, name: "에어컨",     brand: "LG 휘센 에어컨",      model: "FQ17H9DWA1",    usagePeriod: "3년 1개월", score: 88, status: "정상",    certified: true,  repairCount: 1 },
-//   { id: 4, name: "TV",         brand: "삼성 QLED TV",         model: "KQ65QC67AFXKR", usagePeriod: "2년 6개월", score: 90, status: "정상",    certified: true,  repairCount: 0 },
-//   { id: 5, name: "공기청정기", brand: "삼성 블루스카이",      model: "AX60R5580WBD",  usagePeriod: "1년 2개월", score: 85, status: "정상",    certified: true,  repairCount: 1 },
-//   { id: 6, name: "로봇청소기", brand: "LG 코드제로 R9",      model: "R958GA",         usagePeriod: "2년 9개월", score: 45, status: "점검 필요", certified: false, repairCount: 3 },
-//   { id: 7, name: "건조기",     brand: "삼성 그랑데 건조기",  model: "DV17T9720SV",   usagePeriod: "1년 4개월", score: 78, status: "정상",    certified: true,  repairCount: 1 },
-//   { id: 8, name: "가습기",     brand: "사오미 스마트 가습기", model: "MJJSQ05DY",     usagePeriod: "6개월",     score: 92, status: "정상",    certified: true,  repairCount: 0 },
-// ];
 
 /* TABS 카운트는 메인 컴포넌트에서 appliances 기반으로 동적 계산 */
 const TAB_KEYS = ["전체", "정상", "주의", "점검 필요"];
@@ -971,13 +958,18 @@ function ApplianceEditModal({ appliance, onSave, onClose }) {
 function DetailView({ appliance, onBack, onUpdate }) {
   const [page, setPage] = useState(1);
   const [showEdit, setShowEdit] = useState(false);
+  const [repairs, setRepairs] = useState([]);
   const diag = DIAGNOSTICS[appliance.id] ?? null;
   const PER_PAGE = 5;
-  const totalPages = Math.ceil(DETAIL.repairs.length / PER_PAGE);
-  const pageRepairs = DETAIL.repairs.slice(
-    (page - 1) * PER_PAGE,
-    page * PER_PAGE,
-  );
+
+  useEffect(() => {
+    getMyDetailAppliance(appliance.id)
+      .then((res) => setRepairs(res.data))
+      .catch((err) => console.error("수리 이력 조회 실패:", err));
+  }, [appliance.id]);
+
+  const totalPages = Math.ceil(repairs.length / PER_PAGE);
+  const pageRepairs = repairs.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   return (
     <div className="crh-wrap">
@@ -1016,11 +1008,10 @@ function DetailView({ appliance, onBack, onUpdate }) {
             </div>
             <div className="crh-info-rows">
               {[
-                { label: "시리얼 번호", value: DETAIL.serial },
-                { label: "구매일", value: DETAIL.purchased },
-                { label: "보증 기간", value: DETAIL.warranty, highlight: true },
-                { label: "사용 기간", value: DETAIL.period },
-                { label: "등록일", value: DETAIL.registered },
+                { label: "시리얼 번호", value: appliance.serialNumber ?? "—" },
+                { label: "구매일", value: appliance.purchaseDate ?? "—" },
+                { label: "보증 만료일", value: appliance.warrantyExpiry ?? "—", highlight: true },
+                { label: "사용 기간", value: appliance.usagePeriod ?? "—" },
               ].map((r) => (
                 <div key={r.label} className="crh-info-row">
                   <span className="crh-info-label">{r.label}</span>
@@ -1048,17 +1039,19 @@ function DetailView({ appliance, onBack, onUpdate }) {
               <span>수리 요약</span>
             </div>
             <div className="crh-meta-bar__stats">
-              {[
-                { label: "총 수리", value: `${DETAIL.summary.total}건` },
-                { label: "무상", value: `${DETAIL.summary.free}건` },
-                { label: "유상", value: `${DETAIL.summary.paid}건` },
-                {
-                  label: "총 비용",
-                  value: DETAIL.summary.totalCost,
-                  accent: true,
-                },
-                { label: "최초 수리일", value: DETAIL.summary.firstDate },
-              ].map((s) => (
+              {(() => {
+                const freeCount = repairs.filter((r) => !r.finalAmount || r.finalAmount === 0).length;
+                const paidCount = repairs.length - freeCount;
+                const totalCost = repairs.reduce((s, r) => s + (r.finalAmount ?? 0), 0);
+                const firstDate = repairs.length > 0 ? repairs[repairs.length - 1].submittedAt?.slice(0, 10) : "—";
+                return [
+                  { label: "총 수리", value: `${repairs.length}건` },
+                  { label: "무상", value: `${freeCount}건` },
+                  { label: "유상", value: `${paidCount}건` },
+                  { label: "총 비용", value: totalCost.toLocaleString() + "원", accent: true },
+                  { label: "최초 수리일", value: firstDate },
+                ];
+              })().map((s) => (
                 <div key={s.label} className="crh-meta-stat">
                   <span className="crh-meta-stat__label">{s.label}</span>
                   <span
@@ -1071,8 +1064,8 @@ function DetailView({ appliance, onBack, onUpdate }) {
             </div>
           </div>
 
+          {/* 주요 부품 교체 이력 — 백엔드 미제공, 추후 연결
           <div className="crh-meta-bar__divider" />
-
           <div className="crh-meta-bar__section">
             <div className="crh-meta-bar__head">
               <Package size={13} color="#734bcf" />
@@ -1082,64 +1075,61 @@ function DetailView({ appliance, onBack, onUpdate }) {
               {DETAIL.parts.map((p) => (
                 <div key={p.name} className="crh-meta-part">
                   <span className="crh-meta-part__name">{p.name}</span>
-                  <span
-                    className={`crh-meta-part__count ${p.count > 0 ? "crh-meta-part__count--active" : ""}`}
-                  >
+                  <span className={`crh-meta-part__count ${p.count > 0 ? "crh-meta-part__count--active" : ""}`}>
                     {p.count}회
                   </span>
                 </div>
               ))}
             </div>
           </div>
+          */}
         </div>
 
         {/* 수리 이력 */}
         <div className="crh-section-head">
           <span className="crh-section-title">수리 이력</span>
-          <span className="crh-section-count">
-            총 {DETAIL.repairs.length}건
-          </span>
+          <span className="crh-section-count">총 {repairs.length}건</span>
         </div>
 
         <div className="crh-repair-list">
-          {pageRepairs.map((r) => (
-            <div key={r.id} className="crh-repair-card">
-              <div className="crh-repair-card__meta">
-                <span className="crh-repair-card__id">{r.id}</span>
-                <span className="crh-repair-card__date">{r.date}</span>
-                <span
-                  className={`crh-symptom-tag crh-symptom-tag--${r.symptomTag === "기타" ? "gray" : "purple"}`}
-                >
-                  {r.symptomTag}
-                </span>
-                <span
-                  className={`crh-type-badge crh-type-badge--${r.type === "무상" ? "blue" : "orange"}`}
-                >
-                  {r.type}
-                </span>
-                <span className="crh-repair-card__engineer">
-                  {r.engineer} <em>★ {r.rating}</em>
-                </span>
-                <span className="crh-repair-card__cost">{r.cost}</span>
-              </div>
-
-              <div className="crh-repair-card__symptom-row">
-                <span className="crh-repair-card__symptom-label">증상</span>
-                <span className="crh-repair-card__symptom">{r.symptom}</span>
-              </div>
-
-              <div className="crh-repair-card__content">
-                <div className="crh-repair-card__box">
-                  <p className="crh-repair-card__box-label">진단 내용</p>
-                  <p className="crh-repair-card__box-text">{r.diagnosis}</p>
+          {repairs.length === 0 ? (
+            <p style={{ color: "#aaa", fontSize: 13, padding: "16px 0" }}>수리 이력이 없습니다.</p>
+          ) : pageRepairs.map((r) => {
+            const isFree = !r.finalAmount || r.finalAmount === 0;
+            const type = isFree ? "무상" : "유상";
+            return (
+              <div key={r.reportId} className="crh-repair-card">
+                <div className="crh-repair-card__meta">
+                  <span className="crh-repair-card__date">
+                    {r.submittedAt ? r.submittedAt.slice(0, 10) : "—"}
+                  </span>
+                  <span
+                    className={`crh-type-badge crh-type-badge--${isFree ? "blue" : "orange"}`}
+                  >
+                    {type}
+                  </span>
+                  <span className="crh-repair-card__engineer">
+                    {r.engineerName ?? "—"}
+                  </span>
+                  <span className="crh-repair-card__cost">
+                    {r.finalAmount != null ? r.finalAmount.toLocaleString() + "원" : "—"}
+                  </span>
                 </div>
-                <div className="crh-repair-card__box">
-                  <p className="crh-repair-card__box-label">처리 내용</p>
-                  <p className="crh-repair-card__box-text">{r.treatment}</p>
+
+                <div className="crh-repair-card__symptom-row">
+                  <span className="crh-repair-card__symptom-label">증상</span>
+                  <span className="crh-repair-card__symptom">{r.symptomName ?? "—"}</span>
+                </div>
+
+                <div className="crh-repair-card__content">
+                  <div className="crh-repair-card__box">
+                    <p className="crh-repair-card__box-label">진단 내용</p>
+                    <p className="crh-repair-card__box-text">{r.diagnosisResult ?? "—"}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {totalPages > 1 && (
@@ -1320,7 +1310,9 @@ export default function CustomerAppliances() {
         <ApplianceRegisterFlow
           onClose={() => setShowRegister(false)}
           onCreated={() =>
-            getMyAppliances().then((res) => setAppliances(res.data.map(mapAppliance)))
+            getMyAppliances().then((res) =>
+              setAppliances(res.data.map(mapAppliance)),
+            )
           }
         />
       )}
