@@ -53,7 +53,7 @@ export default function EngineerLmsPage() {
 
       // 기사 프로필 + 콘텐츠 목록 + 이수 현황 동시 조회
       const [profileRes, contentsRes, statusRes] = await Promise.all([
-        api.get("/api/engineers/me/profile"),
+        api.get("/api/engineer/profile"),
         getMyLmsContents(),
         getMyLmsStatus(),
       ]);
