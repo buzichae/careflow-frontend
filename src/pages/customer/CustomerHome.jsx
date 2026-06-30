@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronRight, Wrench, PlusCircle, FileText,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import "../../styles/Customer/CustomerHome.css";
 import ApplianceIcon from "./ApplianceIcon";
+import { getMyAppliances } from "../../apis/appliances";
 
 /* ── 목 데이터 ── */
 const mockAppliances = [
@@ -216,7 +217,14 @@ function DiagnosticModal({ diag, onClose }) {
 /* ── 메인 ── */
 export default function CustomerHome() {
   const [modalDiag, setModalDiag] = useState(null);
+  const [applianceCount, setApplianceCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getMyAppliances()
+      .then((res) => setApplianceCount((res.data ?? res).length))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="ch-wrap">
@@ -231,7 +239,7 @@ export default function CustomerHome() {
           </div>
           <div className="ch-hero__stats">
             {[
-              { Icon: WashingMachine, color: "purple", num: "7", unit: "대", label: "등록된 가전",    sub: "전체 가전 수",   path: "/customer/appliances" },
+              { Icon: WashingMachine, color: "purple", num: String(applianceCount), unit: "대", label: "등록된 가전", sub: "전체 가전 수", path: "/customer/appliances" },
               { Icon: Wrench,         color: "green",  num: "1", unit: "건", label: "진행 중 A/S",   sub: "접수된 A/S 건", path: "/customer/as"         },
               { Icon: Bell,           color: "orange", num: "3", unit: "건", label: "확인 필요 알림", sub: "새로운 알림",   path: "/customer/notice"     },
             ].map(({ Icon, color, num, unit, label, sub, path }) => (
