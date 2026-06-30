@@ -7,3 +7,6 @@ export const getMyAppliances = () => {
 export const deleteAppliances = (applianceId) => {
     return api.delete(`/api/appliances/${applianceId}`);
 }
+
+export const createAppliance = (data) =>
+    api.post("/api/appliances", { ...data, registerMethod: "MANUAL" });

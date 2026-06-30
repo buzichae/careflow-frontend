@@ -25,7 +25,11 @@ import "../../styles/Customer/CustomerAppliances.css";
 import "../../styles/Customer/CustomerRepairHistory.css";
 import ApplianceIcon from "./ApplianceIcon";
 
-import { getMyAppliances, deleteAppliances } from "../../apis/appliances";
+import {
+  getMyAppliances,
+  deleteAppliances,
+  createAppliance,
+} from "../../apis/appliances";
 
 /* ─────────────────────────────────
    카테고리 데이터
@@ -118,12 +122,29 @@ function Stepper({ step }) {
 }
 
 /* ─── 등록 플로우 ─── */
-function ApplianceRegisterFlow({ onClose }) {
+function ApplianceRegisterFlow({ onClose, onCreated }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const fileRef = useRef(null);
+
+  async function handleRegister() {
+    try {
+      await createAppliance({
+        categoryId: Number(form.categorySub),
+        brand: form.brand,
+        modelName: form.modelName,
+        serialNumber: form.serialNumber,
+        purchaseDate: form.purchaseDate,
+        warrantyEndDate: form.warrantyExpiry,
+      });
+      setStep(3);
+      onCreated?.();
+    } catch (error) {
+      alert(error.response?.data?.message || "가전 등록에 실패했습니다.");
+    }
+  }
 
   const subCategories = form.categoryParent
     ? CATEGORIES[form.categoryParent].sub
@@ -420,7 +441,7 @@ function ApplianceRegisterFlow({ onClose }) {
             <button className="car-btn-secondary" onClick={() => setStep(1)}>
               이전으로
             </button>
-            <button className="car-btn-primary" onClick={() => setStep(3)}>
+            <button className="car-btn-primary" onClick={handleRegister}>
               등록하기 <ChevronRight size={14} />
             </button>
           </div>
@@ -1235,6 +1256,9 @@ export default function CustomerAppliances() {
     }
   }, [searchParams, setSearchParams]);
 
+  {
+    /** 가전 삭제 */
+  }
   const handleDelete = async (applianceId) => {
     try {
       await deleteAppliances(applianceId);
@@ -1293,7 +1317,12 @@ export default function CustomerAppliances() {
       )}
 
       {showRegister && (
-        <ApplianceRegisterFlow onClose={() => setShowRegister(false)} />
+        <ApplianceRegisterFlow
+          onClose={() => setShowRegister(false)}
+          onCreated={() =>
+            getMyAppliances().then((res) => setAppliances(res.data.map(mapAppliance)))
+          }
+        />
       )}
 
       {!showRegister && (
