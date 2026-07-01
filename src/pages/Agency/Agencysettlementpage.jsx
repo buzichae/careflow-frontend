@@ -20,10 +20,6 @@ async function apiFetch(path) {
   return res.json();
 }
 
-// ──────────────────────────────────────────
-// 18번: CSV 다운로드
-// GET /api/agency/settlements/monthly-report/download?year=&month=
-// ──────────────────────────────────────────
 async function downloadCSV(year, month) {
   const token = localStorage.getItem("accessToken");
   const res = await fetch(
@@ -42,7 +38,6 @@ async function downloadCSV(year, month) {
 
 const SETTLEMENT_TABS = ["전체", "지급 대기", "지급 완료", "보류", "취소"];
 
-// 16번 API 응답 필드 기준 status 매핑 (payments.status)
 const STATUS_MAP = {
   SUCCESS:   { label: "지급 완료", type: "success" },
   READY:     { label: "지급 대기", type: "ready"   },
@@ -73,25 +68,18 @@ export default function AgencySettlementPage() {
   const [autoRefresh,  setAutoRefresh]  = useState(true);
   const totalPages = 25;
 
-  // ── 17번: 정산 합산 내역 → 통계 카드 ────────────
-  // 응답: { year, month, totalCount, totalGrossAmount, totalPlatformFee, totalAgencyFee, totalEngineerPayout }
   const [summary,        setSummary]        = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
-
-  // ── 16번: 기사별 월별 실적 → 정산 목록 ──────────
-  // 응답: { year, month, engineers: [{ engineerId, engineerName, completedCount, avgRating, totalEarning }] }
   const [perfList,    setPerfList]    = useState([]);
   const [perfLoading, setPerfLoading] = useState(true);
 
   useEffect(() => {
-    // 17번: 정산 합산
     setSummaryLoading(true);
     apiFetch(`/api/agency/settlements/summary?year=${year}&month=${month}`)
       .then(setSummary)
       .catch(console.error)
       .finally(() => setSummaryLoading(false));
 
-    // 16번: 기사별 실적
     setPerfLoading(true);
     apiFetch(`/api/agency/settlements/engineers/performance?year=${year}&month=${month}`)
       .then(data => setPerfList(data?.engineers ?? []))
@@ -99,40 +87,31 @@ export default function AgencySettlementPage() {
       .finally(() => setPerfLoading(false));
   }, [year, month]);
 
-  // 탭 필터 (16번 API에 status 필드 없으므로 클라이언트 필터 불가 → 전체만 표시)
-  // TODO: 백엔드에서 status 필드 추가되면 필터링 가능
-
-  // 17번 API → 통계 카드
   const statCards = [
     {
       label: "총 매출액 (이번 달)",
       value: summaryLoading ? "..." : `₩${(summary?.totalGrossAmount ?? 0).toLocaleString()}`,
-      sub: `정산 ${summary?.totalCount ?? 0}건`,
-      subType: "neutral", icon: Wallet, color: "purple",
+      icon: Wallet, color: "purple",
     },
     {
       label: "기사 지급액 합계",
       value: summaryLoading ? "..." : `₩${(summary?.totalEngineerPayout ?? 0).toLocaleString()}`,
-      sub: summary ? `${Math.round((summary.totalEngineerPayout / summary.totalGrossAmount) * 100) || 0}%` : "-",
-      subType: "neutral", icon: CheckCircle, color: "green",
+      icon: CheckCircle, color: "green",
     },
     {
       label: "플랫폼 수수료",
       value: summaryLoading ? "..." : `₩${(summary?.totalPlatformFee ?? 0).toLocaleString()}`,
-      sub: summary ? `${Math.round((summary.totalPlatformFee / summary.totalGrossAmount) * 100) || 0}%` : "-",
-      subType: "neutral", icon: Clock, color: "orange",
+      icon: Clock, color: "orange",
     },
     {
       label: "대행사 수수료",
       value: summaryLoading ? "..." : `₩${(summary?.totalAgencyFee ?? 0).toLocaleString()}`,
-      sub: summary ? `${Math.round((summary.totalAgencyFee / summary.totalGrossAmount) * 100) || 0}%` : "-",
-      subType: "neutral", icon: Lock, color: "red",
+      icon: Lock, color: "red",
     },
     {
       label: "정산 건수 (이번 달)",
       value: summaryLoading ? "..." : `${summary?.totalCount ?? 0}건`,
-      sub: `${year}년 ${month}월 기준`,
-      subType: "neutral", icon: FileText, color: "blue",
+      icon: FileText, color: "blue",
     },
   ];
 
@@ -162,15 +141,16 @@ export default function AgencySettlementPage() {
         </div>
       </div>
 
-      {/* 통계 카드 - 17번 API */}
+      {/* 통계 카드 */}
       <div className="asp-stats">
         {statCards.map((s) => (
           <div key={s.label} className="asp-stat-card">
-            <div className={`asp-stat-card__icon asp-stat-card__icon--${s.color}`}><s.icon size={20} /></div>
-            <div>
-              <p className="asp-stat-card__label">{s.label}</p>
+            <div className="asp-stat-card__text">
               <p className="asp-stat-card__value">{s.value}</p>
-              <p className={`asp-stat-card__sub asp-stat-card__sub--${s.subType}`}>{s.sub}</p>
+              <p className="asp-stat-card__label">{s.label}</p>
+            </div>
+            <div className={`asp-stat-card__icon asp-stat-card__icon--${s.color}`}>
+              <s.icon size={40} strokeWidth={1} />
             </div>
           </div>
         ))}
@@ -178,7 +158,6 @@ export default function AgencySettlementPage() {
 
       {/* 필터 */}
       <div className="asp-filters">
-        {/* 연/월 선택 */}
         <div className="asp-filter-date">
           <select
             value={year}
@@ -201,7 +180,6 @@ export default function AgencySettlementPage() {
           <input type="text" placeholder="기사명 검색" />
         </div>
         <button className="asp-reset-btn"><RefreshCw size={13} /> 필터 초기화</button>
-        {/* 18번: CSV 다운로드 */}
         <button className="asp-excel-btn" onClick={handleDownload}>
           <Download size={13} /> CSV 다운로드
         </button>
@@ -222,8 +200,7 @@ export default function AgencySettlementPage() {
             ))}
           </div>
 
-          {/* 테이블 - 16번 API */}
-          {/* 응답 필드: engineerId, engineerName, completedCount, avgRating, totalEarning */}
+          {/* 테이블 */}
           <div className="asp-table">
             <div className="asp-table__header">
               <span>정산 ID</span>
@@ -288,7 +265,7 @@ export default function AgencySettlementPage() {
           <p className="asp-footnote">* 16번 API 응답 기준: engineerId, engineerName, completedCount, avgRating, totalEarning</p>
         </div>
 
-        {/* 우측 상세 패널 - 16번 API 응답 기반 */}
+        {/* 우측 상세 패널 */}
         {selectedItem && (
           <aside className="asp-detail">
             <div className="asp-detail__header">
@@ -301,7 +278,6 @@ export default function AgencySettlementPage() {
             <div className="asp-detail__body">
               <p className="asp-detail__id">{formatSettlementId(selectedItem.engineerId, year, month)}</p>
 
-              {/* 기사 정보 */}
               <div className="asp-detail__profile">
                 <Avatar name={selectedItem.engineerName} size={40} />
                 <div>
@@ -310,7 +286,6 @@ export default function AgencySettlementPage() {
                 </div>
               </div>
 
-              {/* 기본 정보 */}
               <div className="asp-detail__section">
                 <div className="asp-detail__row">
                   <span className="asp-detail__label">기준 연월</span>
@@ -328,7 +303,6 @@ export default function AgencySettlementPage() {
                 </div>
               </div>
 
-              {/* 금액 상세 */}
               <div className="asp-detail__section">
                 <p className="asp-detail__section-label">금액 상세</p>
                 <div className="asp-detail__amount-box">
@@ -342,7 +316,6 @@ export default function AgencySettlementPage() {
               </div>
             </div>
 
-            {/* 하단 버튼 */}
             <div className="asp-detail__footer">
               <button className="asp-detail__footer-btn asp-detail__footer-btn--outline" onClick={handleDownload}>
                 <Download size={13} /> CSV 다운로드
