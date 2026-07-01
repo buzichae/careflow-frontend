@@ -30,27 +30,43 @@
   padding: 5px 10px; font-size: 12px; color: #444; cursor: pointer;
 }
 
-/* 통계 카드 */
-.arp-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+/* ===========================
+   통계 카드 - cas-kpi 스타일
+=========================== */
+.arp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
 .arp-stat-card {
-  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
-  padding: 16px; display: flex; align-items: flex-start; gap: 12px;
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 12px;
+  padding: 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  min-height: 76px;
 }
+
+.arp-stat-card__text { display: flex; flex-direction: column; gap: 3px; z-index: 1; }
+
 .arp-stat-card__icon {
-  width: 44px; height: 44px; border-radius: 10px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.arp-stat-card__icon--amber  { background: #fef9e0; color: #b45309; }
-.arp-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
-.arp-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
-.arp-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
-.arp-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
 
-.arp-stat-card__label { font-size: 11px; color: #aaa; margin-bottom: 4px; }
-.arp-stat-card__value { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
-.arp-stat-card__sub   { font-size: 11px; color: #aaa; }
-.arp-stat-card__sub--up   { color: #5B4FF5; font-weight: 600; }
-.arp-stat-card__sub--down { color: #dc2626; font-weight: 600; }
+.arp-stat-card__icon--amber,
+.arp-stat-card__icon--green,
+.arp-stat-card__icon--orange,
+.arp-stat-card__icon--blue,
+.arp-stat-card__icon--red {
+  background: none; color: #e3e1f5;
+}
+
+.arp-stat-card__icon svg { width: 100%; height: 100%; color: #e3e1f5; }
+
+.arp-stat-card__label { font-size: 12px; color: #777; margin-top: 6px; order: 2; }
+.arp-stat-card__value { font-size: 20px; font-weight: 800; color: #1a1a2e; line-height: 1; order: 1; }
+.arp-stat-card__sub   { display: none; }
 
 /* 필터 */
 .arp-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -110,13 +126,11 @@
 .arp-table__row:last-child { border-bottom: none; }
 .arp-table__row--selected { background: #ddd8ff; border-left: 3px solid #5B4FF5; }
 
-/* 리뷰 정보 컬럼 */
 .arp-table__review-col { display: flex; flex-direction: column; gap: 6px; }
 .arp-table__customer { display: flex; align-items: center; gap: 8px; }
 .arp-table__customer-name { font-size: 12px; font-weight: 700; color: #1a1a2e; }
 .arp-table__content { font-size: 11px; color: #666; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* 주문 정보 컬럼 */
 .arp-table__order-col { display: flex; flex-direction: column; gap: 3px; }
 .arp-table__request-id { font-size: 11px; color: #5B4FF5; font-weight: 600; }
 .arp-table__product    { font-size: 11px; color: #444; }
@@ -124,15 +138,12 @@
 .arp-table__scores span { font-size: 10px; color: #aaa; }
 .arp-table__scores strong { color: #1a1a2e; }
 
-/* 평가 컬럼 */
 .arp-table__rating-col { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 .arp-table__rating-val { font-size: 12px; font-weight: 700; color: #1a1a2e; }
 
-/* 날짜 컬럼 */
 .arp-table__date-col { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #888; }
 .arp-table__date-time { font-size: 10px; color: #bbb; }
 
-/* 관리 컬럼 */
 .arp-table__action-col { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 
 /* 별점 */
@@ -148,7 +159,6 @@
 .arp-grade-badge--silver { background: #f5f5f5; color: #666;    }
 .arp-grade-badge--bronze { background: #faeeda; color: #92400e; }
 
-/* 관리 배지 */
 .arp-action-badge { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
 .arp-action-badge--public { background: #eaf3de; color: #16a34a; }
 .arp-action-badge--need   { background: #fee2e2; color: #dc2626; }
@@ -239,7 +249,6 @@
 .arp-detail__value { color: #1a1a2e; font-weight: 500; text-align: right; }
 .arp-detail__value--id { color: #5B4FF5; font-weight: 700; }
 
-/* 평가 점수 */
 .arp-detail__score-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 5px 0; font-size: 12px;
@@ -249,19 +258,16 @@
 .arp-detail__score-val { font-size: 13px; font-weight: 700; color: #1a1a2e; }
 .arp-score-stars { display: flex; gap: 1px; }
 
-/* 리뷰 내용 */
 .arp-detail__content-box {
   background: #f8f7ff; border-radius: 8px; padding: 12px;
 }
 .arp-detail__content-text { font-size: 12px; color: #444; line-height: 1.7; margin-bottom: 6px; }
 .arp-detail__content-date { font-size: 10px; color: #bbb; text-align: right; }
 
-/* 준비 중 */
 .arp-detail__coming-soon {
   text-align: center; padding: 40px 16px; color: #aaa; font-size: 12px;
 }
 
-/* 하단 버튼 */
 .arp-detail__footer {
   display: flex; gap: 8px; padding: 12px 16px;
   border-top: 0.5px solid #f0f0f8; flex-shrink: 0;
