@@ -333,7 +333,7 @@
 .aw-today__card--purple { background: #eeeaff; }
 .aw-today__card--blue   { background: #e6f1fb; }
 .aw-today__card--green  { background: #eaf3de; }
-.aw-today__card--red    { background: #fee2e2; }
+.aw-today__card--orange    { background: #fef0e2; }
 
 .aw-today__icon {
   display: flex;
@@ -344,7 +344,8 @@
 
 .aw-today__card--blue   .aw-today__icon { color: #2563eb; }
 .aw-today__card--green  .aw-today__icon { color: #16a34a; }
-.aw-today__card--red    .aw-today__icon { color: #dc2626; }
+.aw-today__card--red    .aw-today__icon { color: #8a2323; }
+.aw-today__card--orange    .aw-today__icon { color: #fda41d; }
 
 .aw-today__label {
   font-size: 11px;

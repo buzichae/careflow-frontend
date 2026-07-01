@@ -33,11 +33,11 @@ const STATUS_LOG_MAP = {
 
 // 통계 카드 - as_status_logs 기반 집계
 const statCards = [
-  { label: "전체 진행 중",   value: 25, icon: ClipboardList, color: "purple", barColor: "#5B4FF5" },
-  { label: "기사 이동 중",  value: 8,  icon: Clock,         color: "blue",   barColor: "#2563eb" },
-  { label: "작업 진행 중",  value: 14, icon: Wrench,        color: "green",  barColor: "#16a34a" },
-  { label: "고객 확인 대기",value: 3,  icon: UserCheck,   color: "orange", barColor: "#d97706" },
-  { label: "완료",          value: 18, icon: CheckCircle,        color: "gray",   barColor: "#aaa"    },
+  { label: "전체 진행 중",   value: 25, icon: ClipboardList, color: "purple" },
+  { label: "기사 이동 중",  value: 8,  icon: Clock,         color: "blue"   },
+  { label: "작업 진행 중",  value: 14, icon: Wrench,        color: "green"  },
+  { label: "고객 확인 대기",value: 3,  icon: UserCheck,   color: "orange" },
+  { label: "완료",          value: 18, icon: CheckCircle,        color: "gray"   },
 ];
 
 // ──────────────────────────────────────────
@@ -319,15 +319,12 @@ export default function AgencyWorkMonitorTab() {
       <div className="wmt-stats">
         {statCards.map((s) => (
           <div key={s.label} className="wmt-stat-card">
-            <div className={`wmt-stat-card__icon wmt-stat-card__icon--${s.color}`}>
-              <s.icon size={18} />
-            </div>
-            <div className="wmt-stat-card__body">
-              <p className="wmt-stat-card__label">{s.label}</p>
+            <div className="wmt-stat-card__text">
               <p className="wmt-stat-card__value">{s.value}<span>건</span></p>
+              <p className="wmt-stat-card__label">{s.label}</p>
             </div>
-            <div className="wmt-stat-card__bar" style={{ background: `${s.barColor}30` }}>
-              <div className="wmt-stat-card__bar-fill" style={{ width: `${(s.value / 24) * 100}%`, background: s.barColor }} />
+            <div className={`wmt-stat-card__icon wmt-stat-card__icon--${s.color}`}>
+              <s.icon size={40} strokeWidth={1} />
             </div>
           </div>
         ))}

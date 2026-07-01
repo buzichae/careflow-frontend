@@ -15,15 +15,15 @@ import { getRoleFromToken } from "../utils/auth.js";
 const SIDEBARS = {
   CUSTOMER: <CustomerSidebar />,
   ENGINEER: <EngineerSidebar />,
-  AGENCY:   <AgencySidebar />,
-  ADMIN:    <AdminSidebar />,
+  AGENCY: <AgencySidebar />,
+  ADMIN: <AdminSidebar />,
 };
 
 const NAVBARS = {
   CUSTOMER: <CustomerNavbar />,
   ENGINEER: <EngineerNavbar />,
-  AGENCY:   <AgencyNavbar />,
-  ADMIN:    <AdminNavbar />,
+  AGENCY: <AgencyNavbar />,
+  ADMIN: <AdminNavbar />,
 };
 
 export default function MainLayout() {
