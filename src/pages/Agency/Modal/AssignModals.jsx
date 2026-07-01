@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Clock, MapPin, Star, RefreshCw, XCircle, Phone, History, ZoomIn } from "lucide-react";
 import "../../../styles/Agency/Modal/AssignModals.css";
 import api from "../../../apis/axiosInstance";
+import { getRecommendedEngineers } from "../../../apis/agencyEngineer";
 
 // ──────────────────────────────────────────
 // 공통 아바타
@@ -442,6 +443,19 @@ export function ReassignModal({ onClose, item, onSuccess }) {
   const [selected,   setSelected]   = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // 추천 기사 목록: GET /api/agency/engineers/recommended?requestId={id}
+  const [recommendedEngineers, setRecommendedEngineers] = useState([]);
+  const [loadingEngineers, setLoadingEngineers] = useState(false);
+
+  useEffect(() => {
+    if (!item?.requestId) return;
+    setLoadingEngineers(true);
+    getRecommendedEngineers(item.requestId)
+      .then((res) => setRecommendedEngineers(res.data ?? []))
+      .catch(() => setRecommendedEngineers([]))
+      .finally(() => setLoadingEngineers(false));
+  }, [item?.requestId]);
+
   const reason     = item?.reassignReason ?? (item?.assignStatus === "REJECTED" ? "rejected" : "overtime");
   const isRejected = reason === "rejected";
   const reasonLabel    = isRejected ? "기사 취소 (거절)" : "30분 초과 미수락";
@@ -496,8 +510,7 @@ export function ReassignModal({ onClose, item, onSuccess }) {
     }
   };
 
-  // 추천 기사 목록 (백엔드 /api/agency/engineers/recommended 미구현 → 임시 빈 배열)
-  const recommendedEngineers = [];
+  // recommendedEngineers 는 위 useEffect에서 API로 조회 (제거됨)
 
   return (
     <div className="am-overlay" onClick={onClose}>
@@ -537,9 +550,13 @@ export function ReassignModal({ onClose, item, onSuccess }) {
               <div className="am__reassign-table-header">
                 <span></span><span>기사</span><span>거리</span><span>평점</span><span>가용 시간</span>
               </div>
-              {recommendedEngineers.length === 0 ? (
+              {loadingEngineers ? (
                 <div style={{ padding: "16px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
-                  추천 기사 목록을 불러오는 중입니다.
+                  추천 기사 목록을 불러오는 중입니다...
+                </div>
+              ) : recommendedEngineers.length === 0 ? (
+                <div style={{ padding: "16px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                  추천 가능한 기사가 없습니다.
                 </div>
               ) : recommendedEngineers.map((e) => (
                 <div

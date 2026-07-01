@@ -1,40 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle, CalendarDays, ClipboardList, Clock,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, RefreshCw, X, Phone,
 } from "lucide-react";
 import "../../../styles/Agency/WorkTab/AgencyWorkCompleteTab.css";
+import api from "../../../apis/axiosInstance";
 
-// ──────────────────────────────────────────
-// TODO: API 연동
-// GET /api/agency/as-assignments/completed?page=0&size=10&sort=submitted_at,desc
-// as_assignments WHERE status=COMPLETED
-// + as_requests + appliances + users(고객) + engineer_profiles
-// + work_reports (submitted_at, work_duration_min, diagnosis_result, final_amount, memo)
-// + reviews (rating, content, created_at)
-// ──────────────────────────────────────────
+// 완료 배정 목록 조회: GET /api/agency/as-assignments/completed?page=0&size=10
+// as_assignments WHERE status=COMPLETED + work_reports + reviews JOIN
 
-const statCards = [
-  { label: "오늘 완료",     value: 18,   unit: "건", icon: CheckCircle,   color: "green"  },
-  { label: "이번 주 완료",  value: 86,   unit: "건", icon: CalendarDays,  color: "blue"   },
-  { label: "이번 달 완료",  value: 325,  unit: "건", icon: CalendarDays,  color: "purple" },
-  { label: "전체 완료",     value: 2148, unit: "건", icon: ClipboardList, color: "orange" },
-  { label: "평균 작업 시간",value: 95,   unit: "분", icon: Clock,         color: "gray"   },
-];
-
-// ──────────────────────────────────────────
-// work_reports.diagnosis_result ENUM 기준으로 변경
-// DB ENUM: NORMAL / REPAIRED / PART_REPLACED / UNREPAIRABLE
-// ──────────────────────────────────────────
 const RESULT_MAP = {
-  NORMAL:        { label: "정상 확인",   type: "normal"       },
-  REPAIRED:      { label: "수리 완료",   type: "repaired"     },
-  PART_REPLACED: { label: "부품 교체",   type: "part-replaced"},
-  UNREPAIRABLE:  { label: "수리 불가",   type: "unrepairable" },
+  NORMAL:        { label: "정상 확인",   type: "normal"        },
+  REPAIRED:      { label: "수리 완료",   type: "repaired"      },
+  PART_REPLACED: { label: "부품 교체",   type: "part-replaced" },
+  UNREPAIRABLE:  { label: "수리 불가",   type: "unrepairable"  },
 };
 
 function StarRating({ rating }) {
+  if (rating == null) return <span style={{ color: "#aaa", fontSize: "12px" }}>-</span>;
   return (
     <div className="wct-stars">
       {[1,2,3,4,5].map((s) => (
@@ -53,41 +37,105 @@ function Avatar({ name, profileImageUrl, size = 28 }) {
   );
 }
 
-// ──────────────────────────────────────────
-// TODO: API 연동 - 완료 목록
-// 응답 필드:
-//   requestId, customerId, customerName, customerPhone
-//   productName, modelNo
-//   engineerName, engineerPhone, engineerRating (engineer_profiles.avg_rating), engineerImg
-//   submittedAt    ← work_reports.submitted_at  (수정 2: completedAt → submittedAt)
-//   workDurationMin← work_reports.work_duration_min (수정 3)
-//   diagnosisResult← work_reports.diagnosis_result (수정 1)
-//   finalAmount    ← work_reports.final_amount (수정 7)
-//   memo           ← work_reports.memo (수정 6: workSummary → memo)
-//   rating         ← reviews.rating (1~5 TINYINT)
-//   reviewContent  ← reviews.content (수정 4: reviewText → reviewContent)
-//   reviewAt       ← reviews.created_at
-// ──────────────────────────────────────────
-const completeList = [
-  // 수정 5: diagnosisResult 다양화
-  { id: 1,  requestId: "AS-20240618-0105", customer: "김민지", phone: "010-1234-5678", productName: "LG 디오스 냉장고",   modelNo: "M874GBB231",    engineerName: "김철수 기사", engineerImg: null, submittedAt: "2024.06.18 15:30", workDurationMin: 82,  diagnosisResult: "PART_REPLACED", finalAmount: 120000, rating: 4.8, reviewContent: "친절하고 빠르게 처리해주셨어요!", reviewAt: "2024.06.18 15:45", engineerRating: 4.9, engineerPhone: "010-1111-2222", visitDate: "2024.06.18 (화) 10:00 ~ 12:00", address: "서울특별시 강남구 역삼동 123-45", memo: "냉각 불량 점검 및 냉각팬 교체 완료" },
-  { id: 2,  requestId: "AS-20240618-0104", customer: "이영희", phone: "010-2345-6789", productName: "삼성 세탁기",        modelNo: "WF21T6500KP",   engineerName: "박민수 기사", engineerImg: null, submittedAt: "2024.06.18 14:20", workDurationMin: 68,  diagnosisResult: "REPAIRED",       finalAmount: 85000,  rating: 5.0, reviewContent: "정말 친절하셨어요!", reviewAt: "2024.06.18 14:35", engineerRating: 4.8, engineerPhone: "010-2222-3333", visitDate: "2024.06.18 (화) 12:00 ~ 14:00", address: "서울특별시 송파구 올림픽로 100", memo: "배수 필터 청소 및 배수 호스 교체" },
-  { id: 3,  requestId: "AS-20240618-0103", customer: "박준호", phone: "010-3456-7890", productName: "LG 에어컨",          modelNo: "FQ18HDWHRN",   engineerName: "이영호 기사", engineerImg: null, submittedAt: "2024.06.18 13:50", workDurationMin: 75,  diagnosisResult: "PART_REPLACED", finalAmount: 95000,  rating: 4.6, reviewContent: "꼼꼼하게 점검해주셨어요.", reviewAt: "2024.06.18 14:00", engineerRating: 4.7, engineerPhone: "010-3333-4444", visitDate: "2024.06.18 (화) 11:00 ~ 13:00", address: "서울특별시 강동구 천호대로 200", memo: "냄새 원인 점검 및 필터 교체 완료" },
-  { id: 4,  requestId: "AS-20240618-0102", customer: "최서연", phone: "010-4567-8901", productName: "삼성 QLED TV",       modelNo: "KQ55QC67AFXKR", engineerName: "최지현 기사", engineerImg: null, submittedAt: "2024.06.18 12:40", workDurationMin: 52,  diagnosisResult: "REPAIRED",       finalAmount: 150000, rating: 4.9, reviewContent: "빠르게 고쳐주셨어요!", reviewAt: "2024.06.18 13:00", engineerRating: 4.6, engineerPhone: "010-4444-5555", visitDate: "2024.06.18 (화) 10:00 ~ 12:00", address: "서울특별시 서초구 강남대로 300", memo: "메인보드 점검 및 교체 완료" },
-  { id: 5,  requestId: "AS-20240618-0101", customer: "정유진", phone: "010-5678-9012", productName: "LG 식기세척기",      modelNo: "DFB22S",        engineerName: "정유진 기사", engineerImg: null, submittedAt: "2024.06.18 11:30", workDurationMin: 41,  diagnosisResult: "NORMAL",         finalAmount: 30000,  rating: 5.0, reviewContent: "완벽해요!", reviewAt: "2024.06.18 11:50", engineerRating: 4.5, engineerPhone: "010-5555-6666", visitDate: "2024.06.18 (화) 09:00 ~ 11:00", address: "서울특별시 강남구 테헤란로 50", memo: "누수 부위 점검 및 도어 패킹 교체 완료" },
-  { id: 6,  requestId: "AS-20240618-0100", customer: "이태훈", phone: "010-6789-0123", productName: "위니아 김치냉장고",  modelNo: "WQ57DGK",       engineerName: "홍길동 기사", engineerImg: null, submittedAt: "2024.06.18 10:25", workDurationMin: 93,  diagnosisResult: "PART_REPLACED", finalAmount: 200000, rating: 4.7, reviewContent: "꼼꼼하고 좋았어요.", reviewAt: "2024.06.18 10:40", engineerRating: 4.4, engineerPhone: "010-6666-7777", visitDate: "2024.06.18 (화) 08:00 ~ 10:00", address: "서울특별시 강북구 미아로 10", memo: "냉각 시스템 점검 및 냉매 보충 완료" },
-  { id: 7,  requestId: "AS-20240617-0099", customer: "김수현", phone: "010-8901-2345", productName: "삼성 에어드레서",    modelNo: "DF60A8500KG",   engineerName: "김수현 기사", engineerImg: null, submittedAt: "2024.06.17 18:10", workDurationMin: 61,  diagnosisResult: "NORMAL",         finalAmount: 50000,  rating: 4.8, reviewContent: "빠른 처리 감사해요.", reviewAt: "2024.06.17 18:25", engineerRating: 4.5, engineerPhone: "010-7777-8888", visitDate: "2024.06.17 (월) 16:00 ~ 18:00", address: "서울특별시 마포구 월드컵로 80", memo: "스팀 노즐 청소 및 필터 교체 완료" },
-  { id: 8,  requestId: "AS-20240617-0098", customer: "유한나", phone: "010-9012-3456", productName: "LG 전기오븐",        modelNo: "ML32WW1",       engineerName: "이재훈 기사", engineerImg: null, submittedAt: "2024.06.17 16:45", workDurationMin: 57,  diagnosisResult: "UNREPAIRABLE",   finalAmount: 30000,  rating: 4.5, reviewContent: "친절했어요!", reviewAt: "2024.06.17 17:00", engineerRating: 4.3, engineerPhone: "010-8888-9999", visitDate: "2024.06.17 (월) 14:00 ~ 16:00", address: "서울특별시 강서구 화곡로 20", memo: "히터 손상 심각 — 수리 불가 판정" },
-  { id: 9,  requestId: "AS-20240617-0097", customer: "장하린", phone: "010-0123-4567", productName: "LG 청소기",          modelNo: "A9S-ULTRA",     engineerName: "박상우 기사", engineerImg: null, submittedAt: "2024.06.17 15:30", workDurationMin: 39,  diagnosisResult: "REPAIRED",       finalAmount: 60000,  rating: 4.9, reviewContent: "완벽한 서비스!", reviewAt: "2024.06.17 15:45", engineerRating: 4.9, engineerPhone: "010-9999-0000", visitDate: "2024.06.17 (월) 14:00 ~ 15:30", address: "서울특별시 노원구 동일로 30", memo: "흡입력 저하 원인 점검 및 모터 청소 완료" },
-  { id: 10, requestId: "AS-20240617-0096", customer: "조현우", phone: "010-1234-5678", productName: "삼성 건조기",        modelNo: "DV90T5740SE",   engineerName: "박민수 기사", engineerImg: null, submittedAt: "2024.06.17 14:20", workDurationMin: 72,  diagnosisResult: "PART_REPLACED", finalAmount: 110000, rating: 4.6, reviewContent: "꼼꼼해요.", reviewAt: "2024.06.17 14:35", engineerRating: 4.8, engineerPhone: "010-2222-3333", visitDate: "2024.06.17 (월) 12:00 ~ 14:00", address: "서울특별시 중구 을지로 50", memo: "열풍 시스템 점검 및 필터 교체 완료" },
-];
+// API 응답 → 화면 필드 매핑
+function mapItem(r) {
+  const date = r.submittedAt ? new Date(r.submittedAt) : null;
+  const submittedAtDisplay = date
+    ? `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,"0")}.${String(date.getDate()).padStart(2,"0")} ${String(date.getHours()).padStart(2,"0")}:${String(date.getMinutes()).padStart(2,"0")}`
+    : "-";
+
+  const reviewDate = r.reviewAt ? new Date(r.reviewAt) : null;
+  const reviewAtDisplay = reviewDate
+    ? `${reviewDate.getFullYear()}.${String(reviewDate.getMonth()+1).padStart(2,"0")}.${String(reviewDate.getDate()).padStart(2,"0")} ${String(reviewDate.getHours()).padStart(2,"0")}:${String(reviewDate.getMinutes()).padStart(2,"0")}`
+    : "-";
+
+  return {
+    id:              r.assignmentId,
+    requestId:       r.requestId,
+    customer:        r.customerName ?? "-",
+    phone:           r.customerPhone ?? "-",
+    productName:     r.productName ?? "-",
+    modelNo:         r.modelNo ?? "-",
+    engineerName:    r.engineerName ?? "-",
+    engineerImg:     r.engineerImg ?? null,
+    engineerRating:  r.engineerRating ?? null,
+    engineerPhone:   r.engineerPhone ?? "-",
+    submittedAt:     submittedAtDisplay,
+    workDurationMin: r.workDurationMin ?? null,
+    diagnosisResult: r.diagnosisResult ?? "NORMAL",
+    finalAmount:     r.finalAmount ?? 0,
+    memo:            r.memo ?? "-",
+    visitDate:       r.visitDate ? `${r.visitDate} ${r.visitTime ?? ""}` : "-",
+    address:         r.visitAddress ?? "-",
+    rating:          r.rating ?? null,
+    reviewContent:   r.reviewContent ?? null,
+    reviewAt:        reviewAtDisplay,
+  };
+}
+
+function buildPageNumbers(current, total) {
+  if (total <= 1) return [1];
+  const half = 2;
+  let start = Math.max(1, current - half);
+  let end   = Math.min(total, start + 4);
+  if (end - start < 4) start = Math.max(1, end - 4);
+  const nums = [];
+  for (let p = start; p <= end; p++) nums.push(p);
+  return nums;
+}
 
 export default function AgencyWorkCompleteTab() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedItem, setSelectedItem] =  useState(null);
-  const totalPages = 33;
+  const [currentPage,  setCurrentPage]  = useState(1);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [keyword,      setKeyword]      = useState("");
 
-  const selectedResult = selectedItem ? RESULT_MAP[selectedItem.diagnosisResult] : null;
+  // API 상태
+  const [completeList, setCompleteList] = useState([]);
+  const [totalPages,   setTotalPages]   = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+  const [loading,      setLoading]      = useState(false);
+
+  const fetchCompleted = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res  = await api.get("/api/agency/as-assignments/completed", {
+        params: { page: currentPage - 1, size: 10 },
+      });
+      const data = res.data;
+      // Page<AssignmentCompletedResponse> 또는 배열 모두 처리
+      if (Array.isArray(data)) {
+        setCompleteList(data.map(mapItem));
+        setTotalPages(1);
+        setTotalElements(data.length);
+      } else {
+        setCompleteList((data.content ?? []).map(mapItem));
+        setTotalPages(data.totalPages || 1);
+        setTotalElements(data.totalElements ?? 0);
+      }
+    } catch {
+      // 오류 시 빈 목록 유지
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    fetchCompleted();
+  }, [fetchCompleted]);
+
+  const selectedResult = selectedItem ? (RESULT_MAP[selectedItem.diagnosisResult] ?? RESULT_MAP["NORMAL"]) : null;
+
+  // 키워드 클라이언트 필터 (접수번호·고객명·기사명)
+  const filteredList = keyword.trim()
+    ? completeList.filter(
+        (it) =>
+          String(it.requestId).includes(keyword) ||
+          it.customer.includes(keyword) ||
+          it.engineerName.includes(keyword)
+      )
+    : completeList;
+
+  const pageNumbers = buildPageNumbers(currentPage, totalPages);
 
   return (
     <div className="wct">
@@ -100,9 +148,14 @@ export default function AgencyWorkCompleteTab() {
         <div className="wct-refresh-select">30초 <ChevronDown size={13} /></div>
       </div>
 
-      {/* 통계 카드 */}
+      {/* 통계 — API가 별도 통계 응답을 주지 않으므로 로드된 데이터 기반으로 표시 */}
       <div className="wct-stats">
-        {statCards.map((s) => (
+        {[
+          { label: "전체 완료",      value: totalElements, unit: "건", icon: ClipboardList, color: "orange" },
+          { label: "평균 작업 시간", value: completeList.length > 0
+              ? Math.round(completeList.reduce((s, r) => s + (r.workDurationMin ?? 0), 0) / completeList.length)
+              : 0, unit: "분", icon: Clock, color: "gray" },
+        ].map((s) => (
           <div key={s.label} className="wct-stat-card">
             <div className="wct-stat-card__text">
               <p className="wct-stat-card__value">{s.value.toLocaleString()}<span>{s.unit}</span></p>
@@ -119,23 +172,27 @@ export default function AgencyWorkCompleteTab() {
       <div className="wct-filters">
         <div className="wct-filter-date">
           <CalendarDays size={13} color="#aaa" />
-          <span>2024.06.01 ~ 2024.06.18</span>
-          <CalendarDays size={13} color="#aaa" />
+          <span>날짜 필터</span>
         </div>
-        <div className="wct-filter-select"><span>전체 지역</span><ChevronDown size={13} /></div>
-        <div className="wct-filter-select"><span>전체 제품</span><ChevronDown size={13} /></div>
-        <div className="wct-filter-select"><span>전체 담당 기사</span><ChevronDown size={13} /></div>
-        <div className="wct-filter-select"><span>진단 결과</span><ChevronDown size={13} /></div>
         <div className="wct-search">
           <Search size={13} color="#aaa" />
-          <input type="text" placeholder="접수번호, 고객명, 기사명 검색" />
+          <input
+            type="text"
+            placeholder="접수번호, 고객명, 기사명 검색"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
         </div>
-        <button className="wct-reset-btn"><RefreshCw size={13} /> 필터 초기화</button>
+        <button className="wct-reset-btn" onClick={() => { setKeyword(""); setCurrentPage(1); }}>
+          <RefreshCw size={13} /> 초기화
+        </button>
       </div>
 
       <div className="wct-body">
         <div className="wct-left">
-          <div className="wct-table-meta"><span className="wct-total">완료 작업 목록 (325건)</span></div>
+          <div className="wct-table-meta">
+            <span className="wct-total">완료 작업 목록 ({totalElements.toLocaleString()}건)</span>
+          </div>
 
           <div className="wct-table">
             <div className="wct-table__header">
@@ -150,7 +207,18 @@ export default function AgencyWorkCompleteTab() {
               <span></span>
             </div>
 
-            {completeList.map((item) => {
+            {loading && (
+              <div style={{ padding: "24px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                불러오는 중...
+              </div>
+            )}
+            {!loading && filteredList.length === 0 && (
+              <div style={{ padding: "32px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                완료된 작업이 없습니다.
+              </div>
+            )}
+
+            {!loading && filteredList.map((item) => {
               const result = RESULT_MAP[item.diagnosisResult] ?? { label: item.diagnosisResult, type: "normal" };
               const isSelected = selectedItem?.id === item.id;
               return (
@@ -158,7 +226,9 @@ export default function AgencyWorkCompleteTab() {
                   key={item.id}
                   className={`wct-table__row ${isSelected ? "wct-table__row--selected" : ""}`}
                 >
-                  <span className="wct-table__id">{item.requestId}</span>
+                  <span className="wct-table__id">
+                    {`AS-${String(item.requestId).padStart(6, "0")}`}
+                  </span>
                   <span className="wct-table__customer-col">
                     <span className="wct-table__customer">{item.customer} 고객</span>
                     <span className="wct-table__phone">{item.phone}</span>
@@ -172,7 +242,9 @@ export default function AgencyWorkCompleteTab() {
                     <span>{item.engineerName}</span>
                   </span>
                   <span className="wct-table__completed-at">{item.submittedAt}</span>
-                  <span className="wct-table__work-min">{item.workDurationMin}분</span>
+                  <span className="wct-table__work-min">
+                    {item.workDurationMin != null ? `${item.workDurationMin}분` : "-"}
+                  </span>
                   <span>
                     <span className={`wct-result-badge wct-result-badge--${result.type}`}>{result.label}</span>
                   </span>
@@ -180,12 +252,12 @@ export default function AgencyWorkCompleteTab() {
                     <StarRating rating={item.rating} />
                   </span>
                   <span>
-                   <button
-                    className={`wct-detail-btn ${selectedItem?.id === item.id ? "wct-detail-btn--active" : ""}`}
-                    onClick={() => setSelectedItem(item)}
-                   >
-                    상세보기
-                   </button>
+                    <button
+                      className={`wct-detail-btn ${selectedItem?.id === item.id ? "wct-detail-btn--active" : ""}`}
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      상세보기
+                    </button>
                   </span>
                 </div>
               );
@@ -197,11 +269,18 @@ export default function AgencyWorkCompleteTab() {
             <div className="wct-pagination__left">
               <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
               <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-              {[1,2,3,4,5].map(p => (
+              {pageNumbers.map(p => (
                 <button key={p} className={currentPage === p ? "wct-pagination__active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
               ))}
-              <span className="wct-pagination__ellipsis">...</span>
-              <button className={currentPage === 33 ? "wct-pagination__active" : ""} onClick={() => setCurrentPage(33)}>33</button>
+              {totalPages > pageNumbers[pageNumbers.length - 1] && (
+                <>
+                  <span className="wct-pagination__ellipsis">...</span>
+                  <button
+                    className={currentPage === totalPages ? "wct-pagination__active" : ""}
+                    onClick={() => setCurrentPage(totalPages)}
+                  >{totalPages}</button>
+                </>
+              )}
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
               <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
             </div>
@@ -221,9 +300,8 @@ export default function AgencyWorkCompleteTab() {
             </div>
 
             <div className="wct-detail__body">
-              <p className="wct-detail__id">{selectedItem.requestId}</p>
+              <p className="wct-detail__id">{`AS-${String(selectedItem.requestId).padStart(6, "0")}`}</p>
 
-              {/* 고객 정보 */}
               <div className="wct-detail__section">
                 <p className="wct-detail__section-label">고객 정보</p>
                 <div className="wct-detail__row">
@@ -232,13 +310,11 @@ export default function AgencyWorkCompleteTab() {
                 </div>
               </div>
 
-              {/* 제품 정보 */}
               <div className="wct-detail__section">
                 <p className="wct-detail__section-label">제품 정보</p>
                 <p className="wct-detail__value">{selectedItem.productName} ({selectedItem.modelNo})</p>
               </div>
 
-              {/* 담당 기사 */}
               <div className="wct-detail__section">
                 <p className="wct-detail__section-label">담당 기사</p>
                 <div className="wct-detail__engineer-card">
@@ -246,14 +322,15 @@ export default function AgencyWorkCompleteTab() {
                   <div>
                     <p className="wct-detail__engineer-name">
                       {selectedItem.engineerName}
-                      <span className="wct-detail__rating"> ⭐ {selectedItem.engineerRating}</span>
+                      {selectedItem.engineerRating != null && (
+                        <span className="wct-detail__rating"> ⭐ {selectedItem.engineerRating}</span>
+                      )}
                     </p>
                     <p className="wct-detail__engineer-phone">{selectedItem.engineerPhone}</p>
                   </div>
                 </div>
               </div>
 
-              {/* 예약 정보 */}
               <div className="wct-detail__section">
                 <p className="wct-detail__section-label">예약 정보</p>
                 <div className="wct-detail__info-row"><span className="wct-detail__info-label">예약 일시</span><span>{selectedItem.visitDate}</span></div>
@@ -263,7 +340,7 @@ export default function AgencyWorkCompleteTab() {
               <div className="wct-detail__section">
                 <p className="wct-detail__section-label">작업 정보</p>
                 <div className="wct-detail__info-row"><span className="wct-detail__info-label">보고서 제출</span><span>{selectedItem.submittedAt}</span></div>
-                <div className="wct-detail__info-row"><span className="wct-detail__info-label">작업 시간</span><span>{selectedItem.workDurationMin}분</span></div>
+                <div className="wct-detail__info-row"><span className="wct-detail__info-label">작업 시간</span><span>{selectedItem.workDurationMin != null ? `${selectedItem.workDurationMin}분` : "-"}</span></div>
                 <div className="wct-detail__info-row"><span className="wct-detail__info-label">최종 청구액</span><span className="wct-detail__amount">{selectedItem.finalAmount.toLocaleString()}원</span></div>
               </div>
 
@@ -275,11 +352,17 @@ export default function AgencyWorkCompleteTab() {
 
               <div className="wct-detail__section">
                 <p className="wct-detail__section-label">고객 평가</p>
-                <div className="wct-detail__review-card">
-                  <StarRating rating={selectedItem.rating} />
-                  <p className="wct-detail__review-text">"{selectedItem.reviewContent}"</p>
-                  <p className="wct-detail__review-at">작성일 {selectedItem.reviewAt}</p>
-                </div>
+                {selectedItem.rating != null ? (
+                  <div className="wct-detail__review-card">
+                    <StarRating rating={selectedItem.rating} />
+                    {selectedItem.reviewContent && (
+                      <p className="wct-detail__review-text">"{selectedItem.reviewContent}"</p>
+                    )}
+                    <p className="wct-detail__review-at">작성일 {selectedItem.reviewAt}</p>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: "13px", color: "#aaa" }}>등록된 리뷰가 없습니다.</p>
+                )}
               </div>
             </div>
           </aside>
