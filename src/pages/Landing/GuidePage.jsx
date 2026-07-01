@@ -69,8 +69,8 @@ export default function GuidePage() {
           ))}
         </div>
         <div className="guide__nav-actions">
-          <button className="guide__btn guide__btn--ghost">로그인</button>
-          <button className="guide__btn guide__btn--primary">회원가입</button>
+          <button className="guide__btn guide__btn--ghost" onClick={() => navigate("/auth/login")}>로그인</button>
+          <button className="guide__btn guide__btn--primary" onClick={() => navigate("/auth/signup")}>회원가입</button>
         </div>
       </nav>
 

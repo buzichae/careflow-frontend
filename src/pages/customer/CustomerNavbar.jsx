@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../../styles/Customer/CustomerNavbar.css";
-import { getUserInfo } from "../../apis/auth";
+import { getUserInfo, logout } from "../../apis/auth";
 
 const PAGE_INFO = {
   // "/customer/home":           { title: "안녕하세요 플로우님!", subtitle: "오늘도 우리집 가전의 건강을 체크해보세요." },
@@ -42,6 +42,7 @@ const PAGE_INFO = {
 
 export default function CustomerNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
   const [userName, setUserName] = useState("");
@@ -69,15 +70,12 @@ export default function CustomerNavbar() {
       .catch(() => {});
   });
 
-  const handleLogout = () => {
-    const confirmed = window.confirm("로그아웃 하시겠습니까?");
-
-    if (!confirmed) return;
-
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (_) {}
+    localStorage.removeItem("token");
+    navigate("/auth/login");
   };
 
   return (
@@ -93,7 +91,7 @@ export default function CustomerNavbar() {
         <div className="customer-navbar__profile-wrap" ref={dropdownRef}>
           <button
             className="customer-navbar__profile"
-            onClick={() => setDropdownOpen((p) => !p)}
+            onClick={() => { setDropdownOpen((p) => !p); setLogoutConfirm(false); }}
           >
             <div className="customer-navbar__avatar">
               <UserRound />
@@ -110,25 +108,34 @@ export default function CustomerNavbar() {
           </button>
           {dropdownOpen && (
             <div className="customer-dropdown">
-              <button
-                className="customer-dropdown__item"
-                onClick={() => {
-                  setDropdownOpen(false);
-                  navigate("/customer/mypage");
-                }}
-              >
-                <User size={14} /> 내 정보
-              </button>
-              <button className="customer-dropdown__item">
-                <Settings size={14} /> 설정
-              </button>
-              <div className="customer-dropdown__divider" />
-              <button
-                className="customer-dropdown__item customer-dropdown__item--logout"
-                onClick={handleLogout}
-              >
-                <LogOut size={14} /> 로그아웃
-              </button>
+              {logoutConfirm ? (
+                <div className="customer-dropdown__confirm">
+                  <p className="customer-dropdown__confirm-text">로그아웃 하시겠습니까?</p>
+                  <div className="customer-dropdown__confirm-btns">
+                    <button className="customer-dropdown__confirm-cancel" onClick={() => setLogoutConfirm(false)}>취소</button>
+                    <button className="customer-dropdown__confirm-ok" onClick={handleLogout}>로그아웃</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    className="customer-dropdown__item"
+                    onClick={() => { setDropdownOpen(false); navigate("/customer/mypage"); }}
+                  >
+                    <User size={14} /> 내 정보
+                  </button>
+                  <button className="customer-dropdown__item">
+                    <Settings size={14} /> 설정
+                  </button>
+                  <div className="customer-dropdown__divider" />
+                  <button
+                    className="customer-dropdown__item customer-dropdown__item--logout"
+                    onClick={() => setLogoutConfirm(true)}
+                  >
+                    <LogOut size={14} /> 로그아웃
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

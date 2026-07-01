@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import {  ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
+import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../../apis/auth";
 import "../../styles/Agency/AgencyNavbar.css"
 
 export default function AgencyNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   // TODO: API - GET /api/agency/me
   const agency = { name: "퀵케어 서비스", role: "대행사 관리자" };
@@ -19,10 +23,12 @@ export default function AgencyNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    // await axios.post("/api/auth/logout");
-    // navigate("/login");
-    alert("로그아웃");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (_) {}
+    localStorage.removeItem("token");
+    navigate("/auth/login");
   };
 
   return (
@@ -40,12 +46,24 @@ export default function AgencyNavbar() {
           </button>
           {dropdownOpen && (
             <div className="agency-dropdown">
-              <button className="agency-dropdown__item"><User size={14} /> 내 정보</button>
-              <button className="agency-dropdown__item"><Settings size={14} /> 설정</button>
-              <div className="agency-dropdown__divider" />
-              <button className="agency-dropdown__item agency-dropdown__item--logout" onClick={handleLogout}>
-                <LogOut size={14} /> 로그아웃
-              </button>
+              {logoutConfirm ? (
+                <div className="customer-dropdown__confirm">
+                  <p className="customer-dropdown__confirm-text">로그아웃 하시겠습니까?</p>
+                  <div className="customer-dropdown__confirm-btns">
+                    <button className="customer-dropdown__confirm-cancel" onClick={() => setLogoutConfirm(false)}>취소</button>
+                    <button className="customer-dropdown__confirm-ok" onClick={handleLogout}>로그아웃</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button className="agency-dropdown__item"><User size={14} /> 내 정보</button>
+                  <button className="agency-dropdown__item"><Settings size={14} /> 설정</button>
+                  <div className="agency-dropdown__divider" />
+                  <button className="agency-dropdown__item agency-dropdown__item--logout" onClick={() => setLogoutConfirm(true)}>
+                    <LogOut size={14} /> 로그아웃
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

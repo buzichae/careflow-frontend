@@ -237,63 +237,17 @@
 .auth-signup-role {
   flex: 1;
   display: flex;
-  align-items: stretch;
-  justify-content: center;
-  background: #fff;
-}
-
-.auth-signup-role__inner {
-  width: 100%;
-  max-width: 1200px;
-  display: grid;
-  grid-template-columns: 460px 1fr;
-  align-items: stretch;
-}
-
-.auth-signup-role__left {
-  background: #fff;
-  border-right: 1px solid #f0f0f8;
-  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 40px;
-}
-.auth-signup-role__left .auth-card { width: 100%; }
-
-.auth-signup-role__right {
   background: #f8f7ff;
-  padding: 56px 56px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  padding: 40px 24px;
 }
 
-.auth-service-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #1a1a2e;
+.auth-signup-role .auth-card {
+  width: 100%;
+  max-width: 480px;
 }
 
-.auth-service-list { display: flex; flex-direction: column; gap: 14px; }
-
-.auth-service-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #f0f0f8;
-  padding: 16px 18px;
-}
-.auth-service-item__icon {
-  width: 48px; height: 48px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.auth-service-item__img { width: 28px; height: 28px; object-fit: contain; }
-.auth-service-item__title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
-.auth-service-item__desc  { font-size: 11px; color: #888; line-height: 1.5; }
 
 /* ─────────────────────────────────
    뷰 4: 회원가입 폼
@@ -542,6 +496,25 @@
   padding-left: 4px;
 }
 
+/* 폼 오류 배너 */
+.auth-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #c53030;
+  line-height: 1.5;
+}
+.auth-error-banner::before {
+  content: "⚠";
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 /* 체크박스 행 */
 .auth-row {
   display: flex;
@@ -715,17 +688,14 @@
 ───────────────────────────────── */
 @media (max-width: 860px) {
   .auth-landing,
-  .auth-login,
-  .auth-signup-role {
+  .auth-login {
     grid-template-columns: 1fr;
   }
   .auth-landing__hero { display: none; }
   .auth-login__left   { display: none; }
-  .auth-signup-role__right { display: none; }
 
   .auth-landing__panel,
-  .auth-login__right,
-  .auth-signup-role__left {
+  .auth-login__right {
     padding: 24px 20px;
     justify-content: flex-start;
     align-items: flex-start;

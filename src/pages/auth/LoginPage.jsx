@@ -115,9 +115,11 @@ function LoginForm({ roleKey, onBack }) {
   const [pw, setPw] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [formError, setFormError] = useState("");
 
   async function handleLogin(e) {
     e.preventDefault();
+    setFormError("");
     try {
       const res = await login({ email, password: pw });
       const { accessToken } = res.data;
@@ -129,7 +131,7 @@ function LoginForm({ roleKey, onBack }) {
       navigate(dashPath);
 
     } catch (error) {
-      alert(error.response?.data?.message || "로그인에 실패했습니다.");
+      setFormError(error.response?.data?.message || "로그인에 실패했습니다.");
     }
   }
 
@@ -158,6 +160,9 @@ function LoginForm({ roleKey, onBack }) {
           <div className="auth-login__right">
             <div className="auth-card">
               <form onSubmit={handleLogin} className="auth-form">
+                {formError && (
+                  <div className="auth-error-banner">{formError}</div>
+                )}
                 <AuthInput
                   label="이메일 주소"
                   type="email"
