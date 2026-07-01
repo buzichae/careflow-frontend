@@ -13,6 +13,9 @@ export const signupEngineer = (data) =>
 export const login = (data) =>
   api.post("/api/auth/login", data);
 
+export const logout = () =>
+  api.post("/api/auth/logout");
+
 // 고객 정보 조회
 export const getUserInfo = () => api.get("/api/users/me");
 

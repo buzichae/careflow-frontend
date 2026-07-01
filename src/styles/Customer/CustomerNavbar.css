@@ -122,3 +122,46 @@ div.customer-navbar {
 .customer-dropdown__divider { border-top: 0.5px solid #f0f0f8; margin: 4px 0; }
 .customer-dropdown__item--logout { color: #e24b4a; }
 .customer-dropdown__item--logout:hover { background: #fcebeb; color: #a32d2d; }
+
+/* 로그아웃 확인 인라인 UI */
+.customer-dropdown__confirm {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.customer-dropdown__confirm-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3a3a5c;
+  margin: 0;
+  text-align: center;
+}
+.customer-dropdown__confirm-btns {
+  display: flex;
+  gap: 6px;
+}
+.customer-dropdown__confirm-cancel {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 6px;
+  border: 1px solid #e0e0ec;
+  background: #fff;
+  color: #666;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.customer-dropdown__confirm-cancel:hover { background: #f5f5fb; }
+.customer-dropdown__confirm-ok {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 6px;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.customer-dropdown__confirm-ok:hover { background: #dc2626; }

@@ -1,12 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Plus,
   CalendarCheck,
   AlertTriangle,
   ShieldCheck,
-  Upload,
-  X,
   Check,
   ChevronRight,
   ChevronDown,
@@ -125,9 +123,6 @@ function Stepper({ step }) {
 function ApplianceRegisterFlow({ onClose, onCreated }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [imageFile, setImageFile] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
-  const fileRef = useRef(null);
 
   async function handleRegister() {
     try {
@@ -158,16 +153,9 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
     });
   }
 
-  function handleImage(file) {
-    if (!file) return;
-    setImageFile(file);
-    setImageUrl(URL.createObjectURL(file));
-  }
-
-  function handleDrop(e) {
-    e.preventDefault();
-    handleImage(e.dataTransfer.files[0]);
-  }
+  const previewName = form.categorySub
+    ? getCategoryName(Number(form.categorySub))
+    : "기타";
 
   const categoryLabel =
     form.categoryParent && form.categorySub
@@ -196,57 +184,17 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
           </p>
 
           <div className="car-input-layout">
-            {/* 왼쪽: 이미지 업로드 */}
+            {/* 왼쪽: 카테고리 아이콘 미리보기 */}
             <div className="car-input-image-col">
-              <p className="car-input-section-label">제품 이미지</p>
-              {!imageUrl ? (
-                <div
-                  className="car-upload-zone car-upload-zone--sm"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileRef}
-                    style={{ display: "none" }}
-                    onChange={(e) => handleImage(e.target.files[0])}
-                  />
-                  <div className="car-upload-icon">
-                    <Upload size={22} />
-                  </div>
-                  <p className="car-upload-text" style={{ fontSize: 12 }}>
-                    클릭 또는 드래그
-                  </p>
-                  <p className="car-upload-hint">JPG, PNG (최대 10MB)</p>
-                </div>
-              ) : (
-                <div
-                  className="car-preview-wrap"
-                  style={{ alignItems: "center" }}
-                >
-                  <div className="car-preview-img-wrap">
-                    <img
-                      src={imageUrl}
-                      alt="제품"
-                      className="car-confirm-preview-img"
-                    />
-                    <button
-                      className="car-preview-remove"
-                      onClick={() => {
-                        setImageFile(null);
-                        setImageUrl(null);
-                      }}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <p className="car-preview-name" style={{ fontSize: 11 }}>
-                    {imageFile?.name}
-                  </p>
-                </div>
-              )}
+              <p className="car-input-section-label">아이콘 미리보기</p>
+              <div className="car-icon-preview">
+                <ApplianceIcon name={previewName} size={100} radius={18} />
+                <p className="car-icon-preview__label">
+                  {form.categorySub
+                    ? getCategoryName(Number(form.categorySub))
+                    : "카테고리를 선택하면\n아이콘이 표시됩니다"}
+                </p>
+              </div>
             </div>
 
             {/* 오른쪽: 폼 필드 */}
@@ -392,15 +340,7 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
 
           <div className="car-confirm-wrap">
             <div className="car-confirm-preview">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt="제품"
-                  className="car-confirm-preview-img"
-                />
-              ) : (
-                <div className="car-confirm-preview-placeholder">📷</div>
-              )}
+              <ApplianceIcon name={previewName} size={88} radius={16} />
               <p className="car-confirm-preview-name">{form.modelName}</p>
               <p className="car-confirm-preview-model">{form.serialNumber}</p>
             </div>
@@ -429,24 +369,15 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
       {/* ── Step 3: 등록 완료 ── */}
       {step === 3 && (
         <div className="car-step-body car-step-body--complete">
-          <div className="car-complete-icon">✅</div>
+          <div className="car-complete-icon">
+            <Check size={28} strokeWidth={2.5} />
+          </div>
           <h2 className="car-step-title">가전 등록이 완료되었어요!</h2>
           <p className="car-step-sub">새로운 가전이 목록에 추가되었습니다.</p>
 
           <div className="car-complete-card">
-            <div
-              className="car-confirm-preview"
-              style={{ alignItems: "center" }}
-            >
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt="제품"
-                  className="car-confirm-preview-img"
-                />
-              ) : (
-                <div className="car-confirm-preview-placeholder">📦</div>
-              )}
+            <div className="car-confirm-preview" style={{ alignItems: "center" }}>
+              <ApplianceIcon name={previewName} size={88} radius={16} />
               <p className="car-confirm-preview-name">{form.modelName}</p>
               <p className="car-confirm-preview-model">{form.serialNumber}</p>
             </div>
@@ -1202,6 +1133,21 @@ export default function CustomerAppliances() {
 
             {/* 가전 그리드 */}
             <div className="ca-grid">
+              {appliances.length === 0 && (
+                <div className="ca-empty">
+                  <div className="ca-empty__left">
+                    <ApplianceIcon name="" size={56} radius={14} />
+                    <div className="ca-empty__text">
+                      <p className="ca-empty__title">아직 등록된 가전이 없어요</p>
+                      <p className="ca-empty__sub">가전을 등록하면 상태, 수리 이력, 건강 진단서를<br />한눈에 관리할 수 있어요.</p>
+                    </div>
+                  </div>
+                  <div className="ca-empty__right">
+                    <span className="ca-empty__arrow">↓</span>
+                    <span className="ca-empty__hint">아래 카드를 눌러 시작해보세요</span>
+                  </div>
+                </div>
+              )}
               {filtered.map((a) => (
                 <div key={a.id} className="ca-card">
                   <div className="ca-card__top">
@@ -1301,7 +1247,7 @@ export default function CustomerAppliances() {
               <p className="ca-side-card__title">가전 현황</p>
               <div className="ca-stat-list">
                 <div className="ca-stat-row">
-                  <span className="ca-stat-icon ca-stat-icon--gray">📦</span>
+                  <span className="ca-stat-icon ca-stat-icon--gray"><Package size={14} /></span>
                   <span className="ca-stat-label">전체 가전</span>
                   <span className="ca-stat-value">{appliances.length} 대</span>
                 </div>

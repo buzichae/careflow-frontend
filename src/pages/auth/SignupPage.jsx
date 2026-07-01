@@ -156,54 +156,33 @@ function RoleSelect({ onSelect }) {
     <div className="auth-page">
       <TopNav showBack onBack={() => navigate("/auth/login")} />
       <div className="auth-signup-role">
-        <div className="auth-signup-role__inner">
-          <div className="auth-signup-role__left">
-            <div className="auth-card">
-              <h2 className="auth-card__title">회원가입</h2>
-              <p className="auth-card__sub">계정 유형을 선택해 주세요.</p>
-              <div className="auth-role-list">
-                {ROLES.map((r) => (
-                  <div key={r.key} className="auth-role-row">
-                    <div className="auth-role-row__img-wrap" style={{ background: r.bg }}>
-                      <img src={r.img} alt={r.title} className="auth-role-row__img" />
-                    </div>
-                    <div className="auth-role-row__body">
-                      <p className="auth-role-row__title">{r.title}</p>
-                      <p className="auth-role-row__desc">{r.desc.replace("\n", " ")}</p>
-                    </div>
-                    <button
-                      className="auth-role-card__btn"
-                      style={{ borderColor: r.color, color: r.color }}
-                      onClick={() => onSelect(r.key)}
-                    >
-                      선택하기
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <p className="auth-card__foot">
-                이미 계정이 있으신가요?{" "}
-                <button className="auth-link" onClick={() => navigate("/auth/login")}>로그인</button>
-              </p>
-            </div>
-          </div>
-
-          <div className="auth-signup-role__right">
-            <p className="auth-service-title">CareFlow는 다양한 사용자와 함께합니다</p>
-            <div className="auth-service-list">
-              {ROLES.map((r) => (
-                <div key={r.key} className="auth-service-item">
-                  <div className="auth-service-item__icon" style={{ background: r.bg }}>
-                    <img src={r.img} alt={r.title} className="auth-service-item__img" />
-                  </div>
-                  <div>
-                    <p className="auth-service-item__title">{r.title}</p>
-                    <p className="auth-service-item__desc">{r.desc.replace("\n", " ")}</p>
-                  </div>
+        <div className="auth-card">
+          <h2 className="auth-card__title">회원가입</h2>
+          <p className="auth-card__sub">계정 유형을 선택해 주세요.</p>
+          <div className="auth-role-list">
+            {ROLES.map((r) => (
+              <div key={r.key} className="auth-role-row">
+                <div className="auth-role-row__img-wrap" style={{ background: r.bg }}>
+                  <img src={r.img} alt={r.title} className="auth-role-row__img" />
                 </div>
-              ))}
-            </div>
+                <div className="auth-role-row__body">
+                  <p className="auth-role-row__title">{r.title}</p>
+                  <p className="auth-role-row__desc">{r.desc.replace("\n", " ")}</p>
+                </div>
+                <button
+                  className="auth-role-card__btn"
+                  style={{ borderColor: r.color, color: r.color }}
+                  onClick={() => onSelect(r.key)}
+                >
+                  선택하기
+                </button>
+              </div>
+            ))}
           </div>
+          <p className="auth-card__foot">
+            이미 계정이 있으신가요?{" "}
+            <button className="auth-link" onClick={() => navigate("/auth/login")}>로그인</button>
+          </p>
         </div>
       </div>
       <footer className="auth-footer">
@@ -227,6 +206,7 @@ function SignupForm({ roleKey, onBack }) {
   const [showPw, setShowPw]   = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [agree, setAgree]     = useState(false);
+  const [formError, setFormError] = useState("");
 
   const [formData, setFormData] = useState({
     /* 공통 */
@@ -248,8 +228,10 @@ function SignupForm({ roleKey, onBack }) {
     agencyId: "",
   });
 
-  const handleChange = (field) => (value) =>
+  const handleChange = (field) => (value) => {
+    setFormError("");
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleRegionParent = (v) =>
     setFormData((prev) => ({ ...prev, regionParent: v, regionName: "" }));
@@ -326,11 +308,13 @@ function SignupForm({ roleKey, onBack }) {
     e.preventDefault();
 
     if (step === 1) {
+      setFormError("");
       setStep(2);
       return;
     }
 
     if (step === 2) {
+      setFormError("");
       try {
         const payload = buildPayload();
         switch (roleKey) {
@@ -349,8 +333,12 @@ function SignupForm({ roleKey, onBack }) {
         setStep(3);
       } catch (error) {
         console.error(error);
-        alert(error.response?.data?.message || "회원가입에 실패했습니다.");
-        console.error(error);
+        const data = error.response?.data;
+        if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+          setFormError(data.errors.map((e) => `• ${e.message || e}`).join("\n"));
+        } else {
+          setFormError(data?.message || "회원가입에 실패했습니다. 다시 시도해주세요.");
+        }
       }
     }
 
@@ -369,6 +357,9 @@ function SignupForm({ roleKey, onBack }) {
 
           <div className="auth-card auth-card--form">
             <form onSubmit={handleSubmit} className="auth-form">
+              {formError && (
+                <div className="auth-error-banner" style={{ whiteSpace: "pre-line" }}>{formError}</div>
+              )}
 
               {/* ── Step 1: 필수 계정 정보 ── */}
               {step === 1 && (

@@ -36,6 +36,7 @@ import {
 import { getMyAppliances } from "../../apis/appliances";
 import { getAvailableEngineers, getEngineerAvailability } from "../../apis/engineers";
 import { getRegionByName } from "../../apis/regions";
+import { getUserInfo } from "../../apis/auth";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
@@ -470,6 +471,24 @@ function ASRequestFlow({ onClose }) {
 
   const token = localStorage.getItem("token");
   const customerId = token ? jwtDecode(token).sub : null;
+
+  useEffect(() => {
+    getUserInfo()
+      .then((res) => {
+        const data = res.data ?? res;
+        if (data.addressDetail) setAddressDetail(data.addressDetail);
+        if (data.regionName) {
+          for (const [parent, subs] of Object.entries(REGIONS)) {
+            if (subs.includes(data.regionName)) {
+              setRegionParent(parent);
+              setRegionSub(data.regionName);
+              break;
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     getMyAppliances()

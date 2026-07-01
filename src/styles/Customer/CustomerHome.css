@@ -896,3 +896,54 @@
 .ch-modal__footer-btn--outline  { background: #f5f5fb; border: 1px solid #e8e8f0; color: #555; }
 .ch-modal__footer-btn--download { background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; }
 .ch-modal__footer-btn--primary  { background: #7c5cf7; border: none; color: #fff; }
+
+/* 내 가전 상태 — 빈 상태 */
+/* 내 가전 상태 — 빈 상태 (가로 레이아웃) */
+.ch-appliance-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 20px;
+  background: #faf9ff;
+  border: 1.5px dashed #d4ccff;
+  border-radius: 12px;
+}
+.ch-appliance-empty__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ch-appliance-empty__icon {
+  color: #a78bfa;
+  flex-shrink: 0;
+}
+.ch-appliance-empty__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3a3a5c;
+  margin: 0 0 4px;
+}
+.ch-appliance-empty__sub {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.5;
+}
+.ch-appliance-empty__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #7c5cf7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.ch-appliance-empty__btn:hover { background: #6340e8; }
