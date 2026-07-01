@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Bell, Mail, Calendar, AlertCircle,
   ChevronDown, ChevronLeft, ChevronRight,
@@ -6,6 +6,7 @@ import {
   ClipboardList, Wrench, ShieldCheck, GraduationCap,
 } from "lucide-react";
 import "../../styles/Agency/agency/Agencynoticepage.css";
+import { getAgencyNotifications } from "../../apis/agencyNotification";
 
 const NOTICE_TABS = [
   { key: "ALL",        label: "전체"      },
@@ -22,23 +23,63 @@ const TYPE_MAP = {
   LMS:        { label: "LMS 교육", icon: GraduationCap, color: "green",  bgColor: "#eaf3de" },
 };
 
-const statCards = [
-  { label: "전체 알림",      value: 1248, icon: Bell,        color: "purple" },
-  { label: "읽지 않은 알림", value: 18,   icon: Mail,        color: "orange" },
-  { label: "오늘 발생 알림", value: 42,   icon: Calendar,    color: "blue"   },
-  { label: "중요 알림",      value: 5,    icon: AlertCircle, color: "red"    },
-];
+// 생성 시각 기준 상대 시간 계산
+function computeTimeAgo(createdAt) {
+  if (!createdAt) return "-";
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "방금 전";
+  if (mins < 60) return `${mins}분 전`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "어제";
+  return `${days}일 전`;
+}
 
-const notificationList = [
-  { id: 1, notificationId: "NOT-20240618-001", type: "AS_STATUS",  title: "김철수 기사님이 배정을 수락했습니다.",           body: "AS-20240618-0105 | 김민지 고객 | LG 디오스 냉장고", channel: "SSE",   createdAt: "2024-06-18 14:35:22", timeAgo: "3분 전",    isRead: false, detail: { requestId: "AS-20240618-0105", engineerName: "김철수 기사", engineerRating: 4.9, engineerPhone: "010-1111-2222", customerName: "김민지 고객", productName: "LG 디오스 냉장고", content: "김철수 기사님이 배정을 수락했습니다. 작업 일시: 2024.06.18 (화) 15:30", confirmedAt: "2024.06.18 (화) 14:38:10" } },
-  { id: 2, notificationId: "NOT-20240618-002", type: "AS_STATUS",  title: "AS-20240618-0103 작업이 완료되었습니다.",         body: "이영호 기사 | 박준호 고객",                          channel: "SSE",   createdAt: "2024-06-18 13:30:00", timeAgo: "1시간 전",  isRead: false, detail: { requestId: "AS-20240618-0103", engineerName: "이영호 기사", engineerRating: 4.7, engineerPhone: "010-3333-4444", customerName: "박준호 고객", productName: "LG 에어컨", content: "AS-20240618-0103 작업이 완료되었습니다.", confirmedAt: "2024.06.18 (화) 13:45:00" } },
-  { id: 3, notificationId: "NOT-20240618-003", type: "LMS",        title: "홍길동 기사님이 LMS 필수 교육을 미이수 상태입니다.", body: "배차 대상에서 제외됩니다.",                           channel: "SSE",   createdAt: "2024-06-18 13:00:00", timeAgo: "1시간 전",  isRead: false, detail: { content: "홍길동 기사님(ENG-00128)이 LMS 필수 교육을 미이수 상태입니다.", confirmedAt: null } },
-  { id: 4, notificationId: "NOT-20240618-004", type: "AS_STATUS",  title: "배정 요청이 재배차 되었습니다.",                   body: "AS-20240618-0102 | 30분 내 미수락",                 channel: "SSE",   createdAt: "2024-06-18 12:00:00", timeAgo: "2시간 전",  isRead: true,  detail: { requestId: "AS-20240618-0102", content: "AS-20240618-0102 배정 요청이 30분 내 미수락으로 재배차 되었습니다.", confirmedAt: "2024.06.18 (화) 12:05:00" } },
-  { id: 5, notificationId: "NOT-20240618-005", type: "WARRANTY",   title: "김민지 고객의 LG 에어컨 무상 A/S 기간이 곧 만료됩니다.", body: "만료일: 2024.07.01 | appliance_id: 105",         channel: "PUSH",  createdAt: "2024-06-18 10:00:00", timeAgo: "4시간 전",  isRead: true,  detail: { content: "김민지 고객의 LG 에어컨(appliance_id: 105) 무상 A/S 기간이 2024.07.01에 만료됩니다.", confirmedAt: "2024.06.18 (화) 10:10:00" } },
-  { id: 6, notificationId: "NOT-20240618-006", type: "CONSUMABLE", title: "이영희 고객의 삼성 세탁기 필터 교체 주기가 도래했습니다.", body: "소모품: 세탁기 필터 | 교체 주기: 6개월",            channel: "KAKAO", createdAt: "2024-06-18 09:00:00", timeAgo: "5시간 전",  isRead: true,  detail: { content: "이영희 고객의 삼성 세탁기(appliance_id: 203) 필터 교체 주기(6개월)가 도래했습니다.", confirmedAt: "2024.06.18 (화) 09:15:00" } },
-  { id: 7, notificationId: "NOT-20240617-007", type: "LMS",        title: "2024년 LMS 필수 교육 이수 기한이 30일 남았습니다.", body: "미이수 기사: 3명",                                  channel: "SSE",   createdAt: "2024-06-17 09:00:00", timeAgo: "어제 09:00", isRead: true, detail: { content: "2024년 LMS 필수 교육 이수 기한이 30일 남았습니다. 미이수 기사 3명에게 안내해 주세요.", confirmedAt: "2024.06.17 (월) 09:30:00" } },
-  { id: 8, notificationId: "NOT-20240617-008", type: "AS_STATUS",  title: "AS-20240617-0099 작업이 완료되었습니다.",         body: "김수현 기사 | 오하나 고객",                          channel: "SSE",   createdAt: "2024-06-17 18:10:00", timeAgo: "어제 18:10", isRead: true, detail: { requestId: "AS-20240617-0099", engineerName: "김수현 기사", engineerRating: 4.5, engineerPhone: "010-7777-8888", customerName: "오하나 고객", productName: "삼성 세탁기", content: "AS-20240617-0099 작업이 완료되었습니다.", confirmedAt: "2024.06.17 (월) 18:20:00" } },
-];
+// LocalDateTime 문자열을 표시용 포맷으로 변환
+function formatCreatedAt(createdAt) {
+  if (!createdAt) return "-";
+  const d = new Date(createdAt);
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${yy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+}
+
+// API 응답 NotificationItem → 컴포넌트 내부 형식으로 매핑
+function mapItem(item) {
+  return {
+    id: item.notificationId,
+    notificationId: `NOT-${String(item.notificationId).padStart(8, "0")}`,
+    type: item.type,
+    title: item.title,
+    body: item.body,
+    channel: item.channel,
+    createdAt: formatCreatedAt(item.createdAt),
+    timeAgo: computeTimeAgo(item.createdAt),
+    isRead: false, // 백엔드 미지원: 항상 읽지 않음으로 표시
+    detail: {
+      content: item.body || item.title,
+      confirmedAt: null,
+    },
+  };
+}
+
+// 페이지 번호 배열 생성 (최대 5개, 현재 페이지 중앙)
+function buildPageNumbers(current, total) {
+  if (total <= 1) return [1];
+  const half = 2;
+  let start = Math.max(1, current - half);
+  let end   = Math.min(total, start + 4);
+  if (end - start < 4) start = Math.max(1, end - 4);
+  const nums = [];
+  for (let p = start; p <= end; p++) nums.push(p);
+  return nums;
+}
 
 function NoticeIcon({ type }) {
   const t = TYPE_MAP[type] ?? TYPE_MAP["AS_STATUS"];
@@ -51,15 +92,63 @@ function NoticeIcon({ type }) {
 }
 
 export default function AgencyNoticePage() {
-  const [activeTab, setActiveTab] = useState("ALL");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab,    setActiveTab]    = useState("ALL");
+  const [currentPage,  setCurrentPage]  = useState(1);       // 1-based
   const [selectedItem, setSelectedItem] = useState(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const totalPages = 21;
+  const [autoRefresh,  setAutoRefresh]  = useState(true);
 
-  const filteredList = activeTab === "ALL"
-    ? notificationList
-    : notificationList.filter((n) => n.type === activeTab);
+  // API 상태
+  const [stats,         setStats]         = useState({ totalCount: 0, unreadCount: 0, todayCount: 0 });
+  const [notifications, setNotifications] = useState([]);
+  const [totalPages,    setTotalPages]    = useState(1);
+  const [loading,       setLoading]       = useState(false);
+
+  const timerRef = useRef(null);
+
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res  = await getAgencyNotifications({ page: currentPage - 1, size: 10, type: activeTab });
+      const data = res.data;
+      setStats(data.stats ?? { totalCount: 0, unreadCount: 0, todayCount: 0 });
+      setNotifications((data.content ?? []).map(mapItem));
+      setTotalPages(data.totalPages || 1);
+    } catch {
+      // 에러 시 기존 데이터 유지
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, currentPage]);
+
+  // 탭 또는 페이지 변경 시 재조회
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // 자동 새로고침 (30초 폴링)
+  useEffect(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (autoRefresh) {
+      timerRef.current = setInterval(fetchNotifications, 30000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [autoRefresh, fetchNotifications]);
+
+  // 탭 전환 시 페이지 초기화
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setCurrentPage(1);
+    setSelectedItem(null);
+  };
+
+  const statCards = [
+    { label: "전체 알림",      value: stats.totalCount,  icon: Bell,        color: "purple" },
+    { label: "읽지 않은 알림", value: stats.unreadCount, icon: Mail,        color: "orange" },
+    { label: "오늘 발생 알림", value: stats.todayCount,  icon: Calendar,    color: "blue"   },
+    { label: "중요 알림",      value: 0,                  icon: AlertCircle, color: "red"    },
+  ];
+
+  const pageNumbers = buildPageNumbers(currentPage, totalPages);
 
   return (
     <div className="anp">
@@ -98,7 +187,13 @@ export default function AgencyNoticePage() {
           <div className="anp-tab-bar">
             <div className="anp-tabs">
               {NOTICE_TABS.map((tab) => (
-                <button key={tab.key} className={`anp-tab ${activeTab === tab.key ? "anp-tab--active" : ""}`} onClick={() => setActiveTab(tab.key)}>{tab.label}</button>
+                <button
+                  key={tab.key}
+                  className={`anp-tab ${activeTab === tab.key ? "anp-tab--active" : ""}`}
+                  onClick={() => handleTabChange(tab.key)}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
             <button className="anp-action-btn"><CheckCheck size={13} /> 모두 읽음 처리</button>
@@ -108,11 +203,27 @@ export default function AgencyNoticePage() {
             <div className="anp-table__header">
               <span>알림</span><span>유형</span><span>채널</span><span>발생 시간</span><span></span>
             </div>
-            {filteredList.map((item) => {
-              const typeInfo = TYPE_MAP[item.type];
+
+            {loading && (
+              <div style={{ padding: "24px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                불러오는 중...
+              </div>
+            )}
+
+            {!loading && notifications.length === 0 && (
+              <div style={{ padding: "32px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                알림이 없습니다.
+              </div>
+            )}
+
+            {!loading && notifications.map((item) => {
+              const typeInfo = TYPE_MAP[item.type] ?? TYPE_MAP["AS_STATUS"];
               const isSelected = selectedItem?.id === item.id;
               return (
-                <div key={item.id} className={`anp-table__row ${isSelected ? "anp-table__row--selected" : ""} ${!item.isRead ? "anp-table__row--unread" : ""}`}>
+                <div
+                  key={item.id}
+                  className={`anp-table__row ${isSelected ? "anp-table__row--selected" : ""} ${!item.isRead ? "anp-table__row--unread" : ""}`}
+                >
                   <span className="anp-table__notice-col">
                     {!item.isRead && <span className="anp-unread-dot" />}
                     <NoticeIcon type={item.type} />
@@ -125,7 +236,12 @@ export default function AgencyNoticePage() {
                   <span className="anp-table__channel">{item.channel}</span>
                   <span className="anp-table__time">{item.timeAgo}</span>
                   <span>
-                    <button className={`anp-detail-btn ${isSelected ? "anp-detail-btn--active" : ""}`} onClick={() => setSelectedItem(item)}>상세</button>
+                    <button
+                      className={`anp-detail-btn ${isSelected ? "anp-detail-btn--active" : ""}`}
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      상세
+                    </button>
                   </span>
                 </div>
               );
@@ -135,11 +251,28 @@ export default function AgencyNoticePage() {
           <div className="anp-pagination">
             <div className="anp-pagination__left">
               <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-              {[1,2,3,4,5].map(p => (<button key={p} className={currentPage === p ? "anp-pagination__active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>))}
-              <span className="anp-pagination__ellipsis">...</span>
-              <button className={currentPage === 21 ? "anp-pagination__active" : ""} onClick={() => setCurrentPage(21)}>21</button>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
+              {pageNumbers.map(p => (
+                <button
+                  key={p}
+                  className={currentPage === p ? "anp-pagination__active" : ""}
+                  onClick={() => setCurrentPage(p)}
+                >
+                  {p}
+                </button>
+              ))}
+              {totalPages > pageNumbers[pageNumbers.length - 1] && (
+                <>
+                  <span className="anp-pagination__ellipsis">...</span>
+                  <button
+                    className={currentPage === totalPages ? "anp-pagination__active" : ""}
+                    onClick={() => setCurrentPage(totalPages)}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
               <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
             </div>
             <div className="anp-page-size">10개씩 보기 <ChevronDown size={13} /></div>
@@ -154,36 +287,20 @@ export default function AgencyNoticePage() {
             </div>
             <div className="anp-detail__body">
               <div className="anp-detail__badge-row">
-                <span className={`anp-type-badge anp-type-badge--${TYPE_MAP[selectedItem.type].color}`}>{TYPE_MAP[selectedItem.type].label}</span>
+                <span className={`anp-type-badge anp-type-badge--${(TYPE_MAP[selectedItem.type] ?? TYPE_MAP["AS_STATUS"]).color}`}>
+                  {(TYPE_MAP[selectedItem.type] ?? TYPE_MAP["AS_STATUS"]).label}
+                </span>
               </div>
               <p className="anp-detail__id">{selectedItem.notificationId}</p>
               <div className="anp-detail__row"><span className="anp-detail__label">발생 시간</span><span className="anp-detail__value">{selectedItem.createdAt}</span></div>
               <div className="anp-detail__row"><span className="anp-detail__label">발송 채널</span><span className="anp-detail__value">{selectedItem.channel}</span></div>
 
-              {selectedItem.detail?.engineerName && (
-                <div className="anp-detail__section">
-                  <p className="anp-detail__section-label">대상 기사</p>
-                  <div className="anp-detail__engineer-card">
-                    <div className="anp-detail__engineer-avatar">{selectedItem.detail.engineerName.charAt(0)}</div>
-                    <div>
-                      <p className="anp-detail__engineer-name">
-                        {selectedItem.detail.engineerName}
-                        {selectedItem.detail.engineerRating && <span className="anp-detail__engineer-rating"> ⭐ {selectedItem.detail.engineerRating}</span>}
-                      </p>
-                      {selectedItem.detail.engineerPhone && <p className="anp-detail__engineer-phone">{selectedItem.detail.engineerPhone}</p>}
-                    </div>
-                  </div>
+              <div className="anp-detail__section">
+                <p className="anp-detail__section-label">제목</p>
+                <div className="anp-detail__content-box">
+                  <p className="anp-detail__content">{selectedItem.title}</p>
                 </div>
-              )}
-
-              {selectedItem.detail?.requestId && (
-                <div className="anp-detail__section">
-                  <p className="anp-detail__section-label">관련 작업</p>
-                  <div className="anp-detail__info-row"><span className="anp-detail__label">접수 번호</span><span className="anp-detail__value anp-detail__value--id">{selectedItem.detail.requestId}</span></div>
-                  {selectedItem.detail.customerName && <div className="anp-detail__info-row"><span className="anp-detail__label">고객</span><span className="anp-detail__value">{selectedItem.detail.customerName}</span></div>}
-                  {selectedItem.detail.productName  && <div className="anp-detail__info-row"><span className="anp-detail__label">제품</span><span className="anp-detail__value">{selectedItem.detail.productName}</span></div>}
-                </div>
-              )}
+              </div>
 
               <div className="anp-detail__section">
                 <p className="anp-detail__section-label">내용</p>
@@ -191,21 +308,9 @@ export default function AgencyNoticePage() {
                   <p className="anp-detail__content">{selectedItem.detail?.content}</p>
                 </div>
               </div>
-
-              {selectedItem.detail?.confirmedAt && (
-                <div className="anp-detail__section">
-                  <div className="anp-detail__info-row">
-                    <span className="anp-detail__label">확인 시간</span>
-                    <span className="anp-detail__value">{selectedItem.detail.confirmedAt}</span>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="anp-detail__footer">
-              {selectedItem.detail?.requestId && (
-                <button className="anp-detail__footer-btn anp-detail__footer-btn--outline">관련 작업 보기</button>
-              )}
               <button className="anp-detail__footer-btn anp-detail__footer-btn--primary" onClick={() => setSelectedItem(null)}>닫기</button>
             </div>
           </aside>
