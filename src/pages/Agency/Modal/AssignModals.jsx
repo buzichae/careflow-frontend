@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Clock, MapPin, Star, RefreshCw, XCircle, Phone, History, ZoomIn } from "lucide-react";
 import "../../../styles/Agency/Modal/AssignModals.css";
+import api from "../../../apis/axiosInstance";
 
 // ──────────────────────────────────────────
 // 공통 아바타
@@ -50,8 +51,8 @@ function mapDetail(raw) {
     status:        raw.status,
     type:          raw.type,
     visitDate:     `${raw.visitDate} ${raw.startTime} ~ ${raw.endTime}`,
-    customerName:  raw.customer,
-    phone:         raw.phone,
+    customerName:  raw.customer ?? raw.customerName,
+    phone:         raw.phone ?? raw.customerPhone,
     address:       raw.address       ?? "-",
     note:          raw.note          ?? "-",
     brand:         raw.brand         ?? raw.productName?.split(" ")[0] ?? "-",
@@ -78,28 +79,119 @@ function mapDetail(raw) {
 // AssignDetailModal
 // - ASSIGNED (기사 수락 대기): 접수 내용 표시 + 담당기사 표시 + 버튼 비활성
 // - ACCEPTED (배정 완료):      접수 내용 표시 + 담당기사 표시 + 버튼 활성
-// WorkDetailModal 내용을 여기에 통합
 // ══════════════════════════════════════════
-export function AssignDetailModal({ onClose, item }) {
+export function AssignDetailModal({ onClose, item, onSuccess }) {
   const detail = mapDetail(item);
   const [zoomedImg, setZoomedImg] = useState(null);
 
-  // ACCEPTED만 버튼 활성
-  const isAccepted = item.assignStatus === "ACCEPTED";
+  // assignmentId가 item에 없는 경우(접수 목록 탭 등) 배정 목록에서 조회
+  const [resolvedAssignmentId,  setResolvedAssignmentId]  = useState(item.assignmentId ?? null);
+  const [resolvedAssignStatus,  setResolvedAssignStatus]  = useState(item.assignStatus ?? null);
+  const [resolvedEngineerName,  setResolvedEngineerName]  = useState(item.engineerName ?? null);
+  const [assignLoading, setAssignLoading] = useState(false);
 
+  // 일정 변경 폼 상태
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [scheduleDate,     setScheduleDate]     = useState("");
+  const [scheduleTime,     setScheduleTime]     = useState("");
+  const [submitting,       setSubmitting]        = useState(false);
+
+  // item에 assignmentId가 없으면 배정 목록을 조회해서 requestId로 찾아냄
+  useEffect(() => {
+    if (resolvedAssignmentId || !item.requestId) return;
+    setAssignLoading(true);
+    api.get("/api/agency/as-assignments")
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        // requestId 일치 + 활성 상태(WAITING 또는 ACCEPTED) 배정 검색
+        const active = list.find(
+          a => a.requestId === item.requestId &&
+               (a.status === "WAITING" || a.status === "ACCEPTED")
+        );
+        if (active) {
+          setResolvedAssignmentId(active.assignmentId);
+          setResolvedAssignStatus(active.status);
+          setResolvedEngineerName(prev => prev ?? active.engineerName);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAssignLoading(false));
+  }, []);
+
+  // ACCEPTED 여부 판단 (item 직접 prop 또는 조회 결과 기준)
+  const isAccepted = resolvedAssignStatus === "ACCEPTED" || item.assignStatus === "ACCEPTED";
+  const displayEngineerName = resolvedEngineerName ?? detail.engineerName;
+
+  // ── 일정 변경 ───────────────────────────
   const handleScheduleChange = () => {
-    // TODO: PUT /api/agency/as-assignments/{assignmentId}/schedule
-    alert("일정 변경 요청 (API 연동 필요)");
+    setShowScheduleForm(true);
   };
-  const handleCancelAssign = () => {
-    // TODO: DELETE /api/agency/as-assignments/{assignmentId}
-    alert("배정 취소 (API 연동 필요)");
-    onClose();
+
+  const handleScheduleSubmit = async () => {
+    if (!scheduleDate || !scheduleTime) return;
+    if (!resolvedAssignmentId) {
+      alert("배정 ID를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.put(`/api/agency/as-assignments/${resolvedAssignmentId}/schedule`, {
+        scheduledDate: scheduleDate,
+        scheduledTime: scheduleTime,
+      });
+      alert("일정이 변경되었습니다.");
+      setShowScheduleForm(false);
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      const msg = e.response?.data?.message ?? "일정 변경에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
-  const handleReassign = () => {
-    // TODO: POST /api/agency/as-assignments/reassign
-    alert("재배정 요청 (API 연동 필요)");
-    onClose();
+
+  // ── 배정 취소 ───────────────────────────
+  const handleCancelAssign = async () => {
+    if (!resolvedAssignmentId) {
+      alert("배정 ID를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    if (!window.confirm("배정을 취소하시겠습니까? A/S 요청이 배정 대기 상태로 변경됩니다.")) return;
+    setSubmitting(true);
+    try {
+      await api.delete(`/api/agency/as-assignments/${resolvedAssignmentId}`);
+      alert("배정이 취소되었습니다.");
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      const msg = e.response?.data?.message ?? "배정 취소에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── 재배정 요청 ─────────────────────────
+  const handleReassign = async () => {
+    if (!resolvedAssignmentId) {
+      alert("배정 ID를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    if (!window.confirm("재배정을 요청하시겠습니까?")) return;
+    setSubmitting(true);
+    try {
+      const res  = await api.post(`/api/agency/as-assignments/${resolvedAssignmentId}/reassign`);
+      const data = res.data;
+      alert(data.message ?? "재배정이 완료되었습니다.");
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      const msg = e.response?.data?.message ?? "재배정 요청에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -134,30 +226,71 @@ export function AssignDetailModal({ onClose, item }) {
             </div>
           </section>
 
-          {/* 2. 담당 기사 정보 - ASSIGNED/ACCEPTED 모두 표시 */}
+          {/* 2. 담당 기사 정보 */}
           <section className="am__section">
             <h3 className="am__section-title">담당 기사 정보</h3>
-            <div className="am__current-card">
-              <Avatar name={detail.engineerName} profileImageUrl={null} size={40} />
-              <div className="am__current-info">
-                <p className="am__current-name">{detail.engineerName ?? "-"}</p>
-                <div className="am__current-meta">
-                  <span className="am__meta-item">
-                    <Clock size={11} />
-                    {isAccepted ? "수락 시간" : "배정 시간"}: {detail.assignedAt?.slice(5, 16).replace("-", ".") ?? "-"}
-                  </span>
+            {assignLoading ? (
+              <p style={{ fontSize: "13px", color: "#aaa" }}>기사 정보 조회 중...</p>
+            ) : (
+              <div className="am__current-card">
+                <Avatar name={displayEngineerName} profileImageUrl={null} size={40} />
+                <div className="am__current-info">
+                  <p className="am__current-name">{displayEngineerName ?? "-"}</p>
+                  <div className="am__current-meta">
+                    <span className="am__meta-item">
+                      <Clock size={11} />
+                      {isAccepted ? "수락 시간" : "배정 시간"}: {detail.assignedAt?.slice(5, 16).replace("-", ".") ?? "-"}
+                    </span>
+                  </div>
                 </div>
+                <span className={`am__assign-badge am__assign-badge--${isAccepted ? "accepted" : "waiting"}`}>
+                  {isAccepted ? "수락 완료" : "수락 대기"}
+                </span>
               </div>
-              <span className={`am__assign-badge am__assign-badge--${isAccepted ? "accepted" : "waiting"}`}>
-                {isAccepted ? "수락 완료" : "수락 대기"}
-              </span>
-            </div>
+            )}
             {isAccepted && (
               <div className="am__notice">
                 ⚠ 기사가 이미 수락한 상태입니다. 변경 시 기사에게 알림이 발송됩니다.
               </div>
             )}
           </section>
+
+          {/* 일정 변경 인라인 폼 */}
+          {showScheduleForm && (
+            <section className="am__section">
+              <h3 className="am__section-title">새 방문 일정 입력</h3>
+              <div className="am__grid">
+                <div className="am__field">
+                  <span className="am__label">날짜</span>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={e => setScheduleDate(e.target.value)}
+                    style={{ border: "1px solid #ddd", borderRadius: "6px", padding: "6px 10px", fontSize: "13px" }}
+                  />
+                </div>
+                <div className="am__field">
+                  <span className="am__label">시간 (HH:mm)</span>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={e => setScheduleTime(e.target.value)}
+                    style={{ border: "1px solid #ddd", borderRadius: "6px", padding: "6px 10px", fontSize: "13px" }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                <button
+                  className="am__btn am__btn--primary"
+                  onClick={handleScheduleSubmit}
+                  disabled={!scheduleDate || !scheduleTime || submitting}
+                >
+                  {submitting ? "변경 중..." : "일정 확정"}
+                </button>
+                <button className="am__btn am__btn--ghost" onClick={() => setShowScheduleForm(false)}>취소</button>
+              </div>
+            </section>
+          )}
 
           {/* 3. 고객 정보 */}
           <section className="am__section">
@@ -262,28 +395,28 @@ export function AssignDetailModal({ onClose, item }) {
           </section>
         </div>
 
-        {/* 푸터 - ACCEPTED만 버튼 활성 */}
+        {/* 푸터 - ACCEPTED 상태만 버튼 활성 */}
         <div className="am__footer">
           <button className="am__btn am__btn--ghost" onClick={onClose}>닫기</button>
           <div className="am__footer-right">
             <button
               className="am__btn am__btn--outline"
               onClick={handleScheduleChange}
-              disabled={!isAccepted}
+              disabled={!isAccepted || submitting || showScheduleForm}
             >
               일정 변경
             </button>
             <button
               className="am__btn am__btn--danger"
               onClick={handleCancelAssign}
-              disabled={!isAccepted}
+              disabled={!isAccepted || submitting}
             >
-              배정 취소
+              {submitting ? "처리 중..." : "배정 취소"}
             </button>
             <button
               className="am__btn am__btn--secondary"
               onClick={handleReassign}
-              disabled={!isAccepted}
+              disabled={!isAccepted || submitting}
             >
               재배정 요청
             </button>
@@ -305,14 +438,9 @@ export function AssignDetailModal({ onClose, item }) {
 // ══════════════════════════════════════════
 // ReassignModal (기사 거절 or 30분 초과)
 // ══════════════════════════════════════════
-const REASSIGN_ENGINEERS = [
-  { id: 1, name: "김철수", brand: "LG 전문",  distance: "2km", rating: 4.9, availableFrom: "13:00 이후", profileImageUrl: null, isLmsCompleted: true  },
-  { id: 2, name: "박민수", brand: "삼성 전문", distance: "3km", rating: 4.2, availableFrom: "11:00 이후", profileImageUrl: null, isLmsCompleted: true  },
-  { id: 3, name: "이영호", brand: "LG 전문",  distance: "4km", rating: 4.7, availableFrom: "09:00 가능", profileImageUrl: null, isLmsCompleted: false },
-];
-
-export function ReassignModal({ onClose, item }) {
-  const [selected, setSelected] = useState(null);
+export function ReassignModal({ onClose, item, onSuccess }) {
+  const [selected,   setSelected]   = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const reason     = item?.reassignReason ?? (item?.assignStatus === "REJECTED" ? "rejected" : "overtime");
   const isRejected = reason === "rejected";
@@ -323,17 +451,53 @@ export function ReassignModal({ onClose, item }) {
     ? "기사가 배정을 거절했습니다."
     : `${item?.overtimeMin ?? 30}분이 경과하도록 수락하지 않았습니다.`;
 
-  const handleManualAssign = () => {
+  const assignmentId = item?.assignmentId ?? null;
+
+  // ── 수동 배정 ── 선택한 기사로 POST reassign
+  const handleManualAssign = async () => {
     if (!selected) return;
-    // TODO: POST /api/agency/as-assignments/reassign { assignMethod: "MANUAL" }
-    alert("수동 배정 완료 (API 연동 필요)");
-    onClose();
+    if (!assignmentId) {
+      alert("배정 ID가 없습니다. 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res  = await api.post(`/api/agency/as-assignments/${assignmentId}/reassign`);
+      const data = res.data;
+      alert(data.message ?? "재배정이 완료되었습니다.");
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      const msg = e.response?.data?.message ?? "재배정에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
-  const handleAutoAssign = () => {
-    // TODO: POST /api/agency/as-assignments/reassign { assignMethod: "AUTO" }
-    alert("자동 배정 요청 (API 연동 필요)");
-    onClose();
+
+  // ── 자동 배정 ──
+  const handleAutoAssign = async () => {
+    if (!assignmentId) {
+      alert("배정 ID가 없습니다. 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res  = await api.post(`/api/agency/as-assignments/${assignmentId}/reassign`);
+      const data = res.data;
+      alert(data.message ?? "자동 재배정이 완료되었습니다.");
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      const msg = e.response?.data?.message ?? "자동 재배정에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  // 추천 기사 목록 (백엔드 /api/agency/engineers/recommended 미구현 → 임시 빈 배열)
+  const recommendedEngineers = [];
 
   return (
     <div className="am-overlay" onClick={onClose}>
@@ -373,7 +537,11 @@ export function ReassignModal({ onClose, item }) {
               <div className="am__reassign-table-header">
                 <span></span><span>기사</span><span>거리</span><span>평점</span><span>가용 시간</span>
               </div>
-              {REASSIGN_ENGINEERS.map((e) => (
+              {recommendedEngineers.length === 0 ? (
+                <div style={{ padding: "16px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                  추천 기사 목록을 불러오는 중입니다.
+                </div>
+              ) : recommendedEngineers.map((e) => (
                 <div
                   key={e.id}
                   className={`am__reassign-row ${selected === e.id ? "am__reassign-row--selected" : ""} ${!e.isLmsCompleted ? "am__reassign-row--disabled" : ""}`}
@@ -400,11 +568,19 @@ export function ReassignModal({ onClose, item }) {
         <div className="am__footer">
           <button className="am__btn am__btn--ghost" onClick={onClose}>취소</button>
           <div className="am__footer-right">
-            <button className="am__btn am__btn--secondary" onClick={handleAutoAssign}>
-              <RefreshCw size={13} /> 자동 배정
+            <button
+              className="am__btn am__btn--secondary"
+              onClick={handleAutoAssign}
+              disabled={submitting}
+            >
+              <RefreshCw size={13} /> {submitting ? "처리 중..." : "자동 배정"}
             </button>
-            <button className="am__btn am__btn--primary" disabled={!selected} onClick={handleManualAssign}>
-              수동 배정
+            <button
+              className="am__btn am__btn--primary"
+              disabled={!selected || submitting}
+              onClick={handleManualAssign}
+            >
+              {submitting ? "처리 중..." : "수동 배정"}
             </button>
           </div>
         </div>
