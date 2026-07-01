@@ -30,6 +30,7 @@ import {
   deleteAppliances,
   createAppliance,
   getMyDetailAppliance,
+  getHealthCertificate,
 } from "../../apis/appliances";
 
 /* ─────────────────────────────────
@@ -74,7 +75,6 @@ const EMPTY_FORM = {
   serialNumber: "",
   purchaseDate: "",
   warrantyExpiry: "",
-  status: "정상",
 };
 
 function isFormValid(form) {
@@ -85,8 +85,7 @@ function isFormValid(form) {
     form.modelName.trim() &&
     form.serialNumber.trim() &&
     form.purchaseDate &&
-    form.warrantyExpiry &&
-    form.status
+    form.warrantyExpiry
   );
 }
 
@@ -182,7 +181,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
     { label: "시리얼 번호", value: form.serialNumber },
     { label: "구매 일자", value: form.purchaseDate },
     { label: "보증 만료일", value: form.warrantyExpiry },
-    { label: "가전 상태", value: form.status },
   ];
 
   return (
@@ -365,22 +363,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* 가전 상태 */}
-              <p className="car-input-section-label" style={{ marginTop: 16 }}>
-                가전 상태 <span className="car-required">*</span>
-              </p>
-              <div className="car-status-row">
-                {["정상", "주의", "점검 필요"].map((s) => (
-                  <button
-                    key={s}
-                    className={`car-status-chip ${form.status === s ? `car-status-chip--${s === "정상" ? "green" : s === "주의" ? "orange" : "red"} car-status-chip--active` : ""}`}
-                    onClick={() => handleChange("status", s)}
-                    type="button"
-                  >
-                    {s === "정상" ? "😊" : s === "주의" ? "⚠️" : "🔴"} {s}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -421,11 +403,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
               )}
               <p className="car-confirm-preview-name">{form.modelName}</p>
               <p className="car-confirm-preview-model">{form.serialNumber}</p>
-              <span
-                className={`car-confirm-status car-confirm-status--${form.status === "정상" ? "green" : form.status === "주의" ? "orange" : "red"}`}
-              >
-                {form.status}
-              </span>
             </div>
 
             <div className="car-result-info">
@@ -506,196 +483,21 @@ const SCORE_COLOR = {
 
 // const avgScore = Math.round(ALL_APPLIANCES.reduce((s, a) => s + a.score, 0) / ALL_APPLIANCES.length);
 
-/* ─────────────────────────────────
-   수리 이력 데이터
-───────────────────────────────── */
-const DETAIL = {
-  serial: "23KG89A00123",
-  purchased: "2023.05.12",
-  warranty: "~ 2026.05.11 (무상)",
-  period: "1년 1개월",
-  registered: "2023.05.15",
-  summary: {
-    total: 5,
-    free: 3,
-    paid: 2,
-    totalCost: "315,000원",
-    firstDate: "2024.06.17",
-    nextDate: "2024.09.15",
-  },
-  parts: [
-    { name: "컴프레서", count: 0 },
-    { name: "온도센서", count: 1 },
-    { name: "팬 모터", count: 1 },
-    { name: "도어 패킹", count: 1 },
-    { name: "재생 히터", count: 0 },
-  ],
-  repairs: [
-    {
-      id: "AS-240617-0001",
-      date: "2024.06.17 10:15",
-      symptom: "냉장실 냉동이 약함",
-      symptomTag: "냉방/냉동",
-      diagnosis: "냉각 팬 모터 불량\n냉기 순환 문제 확인",
-      treatment: "냉각 팬 모터 교체\n냉매 압력 점검",
-      type: "유상",
-      engineer: "정우성 기사",
-      rating: 4.8,
-      cost: "120,000원",
-    },
-    {
-      id: "AS-240413-0002",
-      date: "2024.04.13 14:20",
-      symptom: "냉장실 물 고임",
-      symptomTag: "냉방/냉동",
-      diagnosis: "배수구 막힘\n배수 호스 오염",
-      treatment: "배수구 청소\n배수 호스 교체",
-      type: "무상",
-      engineer: "이재훈 기사",
-      rating: 4.9,
-      cost: "0원",
-    },
-    {
-      id: "AS-240201-0003",
-      date: "2024.02.01 09:30",
-      symptom: "소음 발생",
-      symptomTag: "기타",
-      diagnosis: "컴프레서 진동\n발생 확인",
-      treatment: "컴프레서 고정 보강\n진동 패드 부착",
-      type: "무상",
-      engineer: "박현우 기사",
-      rating: 4.7,
-      cost: "0원",
-    },
-    {
-      id: "AS-231015-0004",
-      date: "2023.10.15 11:45",
-      symptom: "냉장실 온도 높음",
-      symptomTag: "냉방/냉동",
-      diagnosis: "온도센서 불량\n센서 값 오류",
-      treatment: "온도센서 교체\n온도 보정",
-      type: "유상",
-      engineer: "최지훈 기사",
-      rating: 4.9,
-      cost: "85,000원",
-    },
-    {
-      id: "AS-230602-0005",
-      date: "2023.06.02 16:10",
-      symptom: "문 닫힘 불량",
-      symptomTag: "기타",
-      diagnosis: "도어 패킹 손상\n밀폐력 저하",
-      treatment: "도어 패킹 교체\n도어 정렬 조정",
-      type: "무상",
-      engineer: "김민수 기사",
-      rating: 4.8,
-      cost: "110,000원",
-    },
-  ],
-};
-
-const DIAGNOSTICS = {
-  1: {
-    certId: 1,
-    grade: "B",
-    score: 75,
-    isCertified: true,
-    issuedAt: "2024.06.17",
+function mapCertToView(cert) {
+  return {
+    certId: cert.certId,
+    grade: cert.grade,
+    score: cert.score,
+    isCertified: cert.isCertified,
+    issuedAt: cert.issuedAt ? cert.issuedAt.slice(0, 10).replace(/-/g, ".") : "—",
     scoreItems: [
-      { label: "수리 횟수", score: 20, max: 25, condition: "1회", icon: "🔧" },
-      {
-        label: "사용 기간",
-        score: 20,
-        max: 25,
-        condition: "1년 이상 ~ 3년 미만",
-        icon: "📅",
-      },
-      {
-        label: "교체 부품 중요도",
-        score: 20,
-        max: 25,
-        condition: "MINOR 부품만 교체",
-        icon: "⚙️",
-      },
-      {
-        label: "최근 수리 일시",
-        score: 15,
-        max: 25,
-        condition: "1년 이상 ~ 2년 미만",
-        icon: "🕐",
-      },
+      { label: "수리 횟수", score: cert.repairCountScore, max: 25, condition: cert.repairCountCondition, icon: "🔧" },
+      { label: "사용 기간", score: cert.usagePeriodScore, max: 25, condition: cert.usagePeriodCondition, icon: "📅" },
+      { label: "교체 부품 중요도", score: cert.partImportanceScore, max: 25, condition: cert.partImportanceCondition, icon: "⚙️" },
+      { label: "최근 수리 일시", score: cert.lastRepairedScore, max: 25, condition: cert.lastRepairedCondition, icon: "🕐" },
     ],
-  },
-  2: {
-    certId: 2,
-    grade: "C",
-    score: 62,
-    isCertified: false,
-    issuedAt: "2024.03.05",
-    scoreItems: [
-      { label: "수리 횟수", score: 15, max: 25, condition: "2회", icon: "🔧" },
-      {
-        label: "사용 기간",
-        score: 18,
-        max: 25,
-        condition: "1년 이상 ~ 3년 미만",
-        icon: "📅",
-      },
-      {
-        label: "교체 부품 중요도",
-        score: 14,
-        max: 25,
-        condition: "MAJOR 부품 교체",
-        icon: "⚙️",
-      },
-      {
-        label: "최근 수리 일시",
-        score: 15,
-        max: 25,
-        condition: "1년 이상 ~ 2년 미만",
-        icon: "🕐",
-      },
-    ],
-  },
-  3: null,
-  6: {
-    certId: 6,
-    grade: "D",
-    score: 48,
-    isCertified: false,
-    issuedAt: "2024.05.20",
-    scoreItems: [
-      {
-        label: "수리 횟수",
-        score: 10,
-        max: 25,
-        condition: "3회 이상",
-        icon: "🔧",
-      },
-      {
-        label: "사용 기간",
-        score: 15,
-        max: 25,
-        condition: "3년 이상",
-        icon: "📅",
-      },
-      {
-        label: "교체 부품 중요도",
-        score: 13,
-        max: 25,
-        condition: "CRITICAL 부품 교체",
-        icon: "⚙️",
-      },
-      {
-        label: "최근 수리 일시",
-        score: 10,
-        max: 25,
-        condition: "6개월 이내",
-        icon: "🕐",
-      },
-    ],
-  },
-};
+  };
+}
 
 const GRADE_META = {
   A: { color: "#16a34a", bg: "#dcfce7" },
@@ -886,9 +688,12 @@ function DeleteConfirmModal({ appliance, onConfirm, onClose }) {
 /* ─── 가전 정보 수정 모달 ─── */
 function ApplianceEditModal({ appliance, onSave, onClose }) {
   const [form, setForm] = useState({
-    brand: appliance.brand,
-    model: appliance.model,
-    status: appliance.status,
+    brand: appliance.brand ?? "",
+    model: appliance.model ?? "",
+    serialNumber: appliance.serialNumber ?? "",
+    purchaseDate: appliance.purchaseDate ?? "",
+    warrantyExpiry: appliance.warrantyExpiry ?? "",
+    // status: appliance.status,
   });
 
   function handleChange(k, v) {
@@ -922,7 +727,30 @@ function ApplianceEditModal({ appliance, onSave, onClose }) {
               onChange={(e) => handleChange("model", e.target.value)}
             />
           </div>
-          <div className="car-field car-field--full">
+          <div className="car-field">
+            <label>시리얼넘버</label>
+            <input
+              value={form.serialNumber}
+              onChange={(e) => handleChange("serialNumber", e.target.value)}
+            />
+          </div>
+          <div className="car-field">
+            <label>구매일자</label>
+            <input
+              type="date"
+              value={form.purchaseDate}
+              onChange={(e) => handleChange("purchaseDate", e.target.value)}
+            />
+          </div>
+          <div className="car-field">
+            <label>보증 만료일</label>
+            <input
+              type="date"
+              value={form.warrantyExpiry}
+              onChange={(e) => handleChange("warrantyExpiry", e.target.value)}
+            />
+          </div>
+          {/* <div className="car-field car-field--full">
             <label>가전 상태</label>
             <div className="car-status-row">
               {["정상", "주의", "점검 필요"].map((s) => (
@@ -936,7 +764,7 @@ function ApplianceEditModal({ appliance, onSave, onClose }) {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
         <div className="ca-modal__footer">
           <button className="ca-btn-secondary" onClick={onClose}>
@@ -959,13 +787,19 @@ function DetailView({ appliance, onBack, onUpdate }) {
   const [page, setPage] = useState(1);
   const [showEdit, setShowEdit] = useState(false);
   const [repairs, setRepairs] = useState([]);
-  const diag = DIAGNOSTICS[appliance.id] ?? null;
+  const [diag, setDiag] = useState(null);
   const PER_PAGE = 5;
 
   useEffect(() => {
     getMyDetailAppliance(appliance.id)
       .then((res) => setRepairs(res.data))
       .catch((err) => console.error("수리 이력 조회 실패:", err));
+  }, [appliance.id]);
+
+  useEffect(() => {
+    getHealthCertificate(appliance.id)
+      .then((res) => setDiag(mapCertToView(res.data)))
+      .catch(() => setDiag(null));
   }, [appliance.id]);
 
   const totalPages = Math.ceil(repairs.length / PER_PAGE);
@@ -1010,7 +844,11 @@ function DetailView({ appliance, onBack, onUpdate }) {
               {[
                 { label: "시리얼 번호", value: appliance.serialNumber ?? "—" },
                 { label: "구매일", value: appliance.purchaseDate ?? "—" },
-                { label: "보증 만료일", value: appliance.warrantyExpiry ?? "—", highlight: true },
+                {
+                  label: "보증 만료일",
+                  value: appliance.warrantyExpiry ?? "—",
+                  highlight: true,
+                },
                 { label: "사용 기간", value: appliance.usagePeriod ?? "—" },
               ].map((r) => (
                 <div key={r.label} className="crh-info-row">
@@ -1040,15 +878,27 @@ function DetailView({ appliance, onBack, onUpdate }) {
             </div>
             <div className="crh-meta-bar__stats">
               {(() => {
-                const freeCount = repairs.filter((r) => !r.finalAmount || r.finalAmount === 0).length;
+                const freeCount = repairs.filter(
+                  (r) => !r.finalAmount || r.finalAmount === 0,
+                ).length;
                 const paidCount = repairs.length - freeCount;
-                const totalCost = repairs.reduce((s, r) => s + (r.finalAmount ?? 0), 0);
-                const firstDate = repairs.length > 0 ? repairs[repairs.length - 1].submittedAt?.slice(0, 10) : "—";
+                const totalCost = repairs.reduce(
+                  (s, r) => s + (r.finalAmount ?? 0),
+                  0,
+                );
+                const firstDate =
+                  repairs.length > 0
+                    ? repairs[repairs.length - 1].submittedAt?.slice(0, 10)
+                    : "—";
                 return [
                   { label: "총 수리", value: `${repairs.length}건` },
                   { label: "무상", value: `${freeCount}건` },
                   { label: "유상", value: `${paidCount}건` },
-                  { label: "총 비용", value: totalCost.toLocaleString() + "원", accent: true },
+                  {
+                    label: "총 비용",
+                    value: totalCost.toLocaleString() + "원",
+                    accent: true,
+                  },
                   { label: "최초 수리일", value: firstDate },
                 ];
               })().map((s) => (
@@ -1093,43 +943,53 @@ function DetailView({ appliance, onBack, onUpdate }) {
 
         <div className="crh-repair-list">
           {repairs.length === 0 ? (
-            <p style={{ color: "#aaa", fontSize: 13, padding: "16px 0" }}>수리 이력이 없습니다.</p>
-          ) : pageRepairs.map((r) => {
-            const isFree = !r.finalAmount || r.finalAmount === 0;
-            const type = isFree ? "무상" : "유상";
-            return (
-              <div key={r.reportId} className="crh-repair-card">
-                <div className="crh-repair-card__meta">
-                  <span className="crh-repair-card__date">
-                    {r.submittedAt ? r.submittedAt.slice(0, 10) : "—"}
-                  </span>
-                  <span
-                    className={`crh-type-badge crh-type-badge--${isFree ? "blue" : "orange"}`}
-                  >
-                    {type}
-                  </span>
-                  <span className="crh-repair-card__engineer">
-                    {r.engineerName ?? "—"}
-                  </span>
-                  <span className="crh-repair-card__cost">
-                    {r.finalAmount != null ? r.finalAmount.toLocaleString() + "원" : "—"}
-                  </span>
-                </div>
+            <p style={{ color: "#aaa", fontSize: 13, padding: "16px 0" }}>
+              수리 이력이 없습니다.
+            </p>
+          ) : (
+            pageRepairs.map((r) => {
+              const isFree = !r.finalAmount || r.finalAmount === 0;
+              const type = isFree ? "무상" : "유상";
+              return (
+                <div key={r.reportId} className="crh-repair-card">
+                  <div className="crh-repair-card__meta">
+                    <span className="crh-repair-card__date">
+                      {r.submittedAt ? r.submittedAt.slice(0, 10) : "—"}
+                    </span>
+                    <span
+                      className={`crh-type-badge crh-type-badge--${isFree ? "blue" : "orange"}`}
+                    >
+                      {type}
+                    </span>
+                    <span className="crh-repair-card__engineer">
+                      {r.engineerName ?? "—"}
+                    </span>
+                    <span className="crh-repair-card__cost">
+                      {r.finalAmount != null
+                        ? r.finalAmount.toLocaleString() + "원"
+                        : "—"}
+                    </span>
+                  </div>
 
-                <div className="crh-repair-card__symptom-row">
-                  <span className="crh-repair-card__symptom-label">증상</span>
-                  <span className="crh-repair-card__symptom">{r.symptomName ?? "—"}</span>
-                </div>
+                  <div className="crh-repair-card__symptom-row">
+                    <span className="crh-repair-card__symptom-label">증상</span>
+                    <span className="crh-repair-card__symptom">
+                      {r.symptomName ?? "—"}
+                    </span>
+                  </div>
 
-                <div className="crh-repair-card__content">
-                  <div className="crh-repair-card__box">
-                    <p className="crh-repair-card__box-label">진단 내용</p>
-                    <p className="crh-repair-card__box-text">{r.diagnosisResult ?? "—"}</p>
+                  <div className="crh-repair-card__content">
+                    <div className="crh-repair-card__box">
+                      <p className="crh-repair-card__box-label">진단 내용</p>
+                      <p className="crh-repair-card__box-text">
+                        {r.diagnosisResult ?? "—"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {totalPages > 1 && (

@@ -12,3 +12,12 @@ export const signupEngineer = (data) =>
 
 export const login = (data) =>
   api.post("/api/auth/login", data);
+
+// 고객 정보 조회
+export const getUserInfo = () => api.get("/api/users/me");
+
+// 고객 정보 수정
+export const updateUserProfile = (data) => api.patch("/api/users/me", data);
+
+// 지역명으로 regionId 조회
+export const getRegionByName = (name) => api.get("/api/regions", { data: { name } });

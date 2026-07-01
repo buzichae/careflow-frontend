@@ -4,6 +4,8 @@
 .feature {
   font-family: var(--font);
   color: var(--text-dark);
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* ===========================

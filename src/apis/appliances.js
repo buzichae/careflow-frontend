@@ -14,3 +14,6 @@ export const createAppliance = (data) =>
 export const getMyDetailAppliance = (applianceId) => {
     return api.get(`/api/appliances/${applianceId}/repair-history`);
 }
+
+export const getHealthCertificate = (applianceId) =>
+    api.get(`/api/appliances/${applianceId}/health-certificate`);

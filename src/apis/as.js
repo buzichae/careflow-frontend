@@ -8,10 +8,10 @@ export const getAsRequestDetail = (requestId) =>
     api.get(`/api/as-requests/${requestId}`);
 
 export const getReport = (reportId) =>
-    api.get(`/api/engineers/me/reports/${reportId}`);
+    api.get(`/api/engineer/work-reports/${reportId}`);
 
 export const approveReport = (reportId) =>
-    api.patch(`/api/engineers/me/reports/${reportId}/approve`);
+    api.patch(`/api/engineer/work-reports/${reportId}/approve`);
 
 export const cancelAsRequest = async(requestId, cancelReason) => {
     const response = await api.patch(
@@ -34,3 +34,6 @@ export const review = async(requestId, rating, content) => {
 
     return response.data;
 }
+
+export const createAsRequest = (payload) =>
+    api.post("/api/as-requests", payload);
