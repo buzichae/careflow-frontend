@@ -106,7 +106,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 80px 80px;
+  gap: 60px;
+  padding: 80px 48px;
   background: #faf8ff;
   min-height: 520px;
   position: relative;
@@ -116,6 +117,8 @@
 .landing__hero-text {
   position: relative;
   z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
   max-width: 520px;
 }
 
@@ -173,8 +176,10 @@
 .landing__hero-visual {
   position: relative;
   z-index: 1;
-  flex-shrink: 0;
-  margin-left: 260px;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .landing__appliances {
@@ -349,7 +354,70 @@
 }
 
 .landing__hero-img {
-  width: 620px;
+  width: 100%;
+  max-width: 560px;
   object-fit: contain;
   display: block;
+}
+
+/* ===========================
+   반응형
+=========================== */
+@media (max-width: 960px) {
+  .landing__hero {
+    gap: 40px;
+    padding: 60px 32px;
+  }
+
+  .landing__title {
+    font-size: 36px;
+  }
+
+  .landing__hero-img {
+    max-width: 380px;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing__hero {
+    flex-direction: column;
+    padding: 48px 24px;
+    gap: 32px;
+    min-height: auto;
+  }
+
+  .landing__hero-text {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .landing__hero-buttons {
+    justify-content: center;
+  }
+
+  .landing__badges {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .landing__title {
+    font-size: 30px;
+  }
+
+  .landing__hero-visual {
+    width: 100%;
+  }
+
+  .landing__hero-img {
+    max-width: 320px;
+  }
+
+  .landing__nav {
+    padding: 0 20px;
+  }
+
+  .landing__nav-links {
+    gap: 16px;
+  }
 }

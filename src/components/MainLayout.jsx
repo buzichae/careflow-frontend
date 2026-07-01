@@ -1,20 +1,16 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import CustomerSidebar from "../components/sidebars/CustomerSidebar.jsx";
 import EngineerSidebar from "../components/sidebars/EngineerSidebar.jsx";
 import AgencySidebar from "../components/sidebars/AgencySidebar.jsx";
 import AdminSidebar from "../components/sidebars/AdminSidebar.jsx";
 
 import AgencyNavbar from "../pages/Agency/AgencyNavbar.jsx";
-
 import AdminNavbar from "../pages/Admin/AdminNavbar.jsx";
-
 import EngineerNavbar from "../pages/Engineer/Engineernavbar.jsx";
-
-import "../styles/Sidebars.css";
 import CustomerNavbar from "../pages/customer/CustomerNavbar.jsx";
 
-// 임시 role - 나중에 로그인 상태(Context or zustand)로 교체
-const MOCK_ROLE = "CUSTOMER"; // "CUSTOMER" | "ENGINEER" | "AGENCY" | "ADMIN"
+import "../styles/Sidebars.css";
+import { getRoleFromToken } from "../utils/auth.js";
 
 const SIDEBARS = {
   CUSTOMER: <CustomerSidebar />,
@@ -25,17 +21,21 @@ const SIDEBARS = {
 
 const NAVBARS = {
   CUSTOMER: <CustomerNavbar />,
-  ENGINEER: <EngineerNavbar />, // 나중에 EngineerNavbar 만들면 교체
+  ENGINEER: <EngineerNavbar />,
   AGENCY: <AgencyNavbar />,
   ADMIN: <AdminNavbar />,
 };
 
 export default function MainLayout() {
+  const role = getRoleFromToken();
+
+  if (!role) return <Navigate to="/auth/login" replace />;
+
   return (
     <div className="layout">
-      {SIDEBARS[MOCK_ROLE]}
+      {SIDEBARS[role]}
       <div className="layout__main">
-        {NAVBARS[MOCK_ROLE]}
+        {NAVBARS[role]}
         <main className="layout__content">
           <Outlet />
         </main>

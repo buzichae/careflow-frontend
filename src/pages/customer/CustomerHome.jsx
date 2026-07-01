@@ -58,7 +58,7 @@ const mockAppliances = [
 const mockAlerts = [
   {
     id: 1,
-    icon: "🔔",
+    Icon: Bell,
     iconBg: "#fff7e6",
     iconColor: "#f59e0b",
     text: "냉장고 필터 교체 주기가 도래했습니다.",
@@ -70,7 +70,7 @@ const mockAlerts = [
   },
   {
     id: 2,
-    icon: "🛡",
+    Icon: Shield,
     iconBg: "#f0edff",
     iconColor: "#734bcf",
     text: "무상 A/S 기간이 7일 후 종료됩니다.",
@@ -82,7 +82,7 @@ const mockAlerts = [
   },
   {
     id: 3,
-    icon: "📅",
+    Icon: CalendarCheck,
     iconBg: "#eff6ff",
     iconColor: "#3b82f6",
     text: "A/S 방문이 2일 후 예정되어 있습니다.",
@@ -690,7 +690,7 @@ export default function CustomerHome() {
                 className="ch-alert-item__icon"
                 style={{ background: a.iconBg, color: a.iconColor }}
               >
-                {a.icon}
+                <a.Icon size={16} />
               </div>
               <span className="ch-alert-item__text">{a.text}</span>
               <span
@@ -717,73 +717,91 @@ export default function CustomerHome() {
             전체 보기 <ChevronRight size={14} />
           </button>
         </div>
-        <div className="ch-appliance-body">
-          <table className="ch-appliance-table">
-            <thead>
-              <tr>
-                <th>제품</th>
-                <th>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {appliances.slice(0, 5).map((a) => (
-                <tr key={a.id}>
-                  <td>
-                    <div className="ch-appliance-table__product">
-                      <ApplianceIcon name={a.name} size={32} radius={6} />
-                      <div>
-                        <p className="ch-appliance-table__name">{a.name}</p>
-                        <p className="ch-appliance-table__brand">{a.brand}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className={`ch-status-badge ch-status-badge--${STATUS_COLOR[a.status] ?? "green"}`}
-                    >
-                      {a.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="ch-distribution">
-            <p className="ch-distribution__title">가전 상태 분포</p>
-            {(() => {
-              const total = appliances.length || 1;
-              const counts = { 정상: 0, 주의: 0, "점검 필요": 0 };
-              appliances.forEach((a) => {
-                if (counts[a.status] !== undefined) counts[a.status]++;
-              });
-              return [
-                { label: "정상", count: counts["정상"], color: "#22c55e" },
-                { label: "주의", count: counts["주의"], color: "#f59e0b" },
-                {
-                  label: "점검 필요",
-                  count: counts["점검 필요"],
-                  color: "#ef4444",
-                },
-              ].map((d) => (
-                <div key={d.label} className="ch-dist-item">
-                  <span className="ch-dist-label">{d.label}</span>
-                  <div className="ch-dist-bar-wrap">
-                    <div
-                      className="ch-dist-bar"
-                      style={{
-                        width: `${Math.round((d.count / total) * 100)}%`,
-                        background: d.color,
-                      }}
-                    />
-                  </div>
-                  <span className="ch-dist-count">{d.count}대</span>
-                </div>
-              ));
-            })()}
-            <p className="ch-distribution__total">총 {appliances.length}대</p>
+        {appliances.length === 0 ? (
+          <div className="ch-appliance-empty">
+            <div className="ch-appliance-empty__left">
+              <WashingMachine size={36} className="ch-appliance-empty__icon" />
+              <div>
+                <p className="ch-appliance-empty__title">아직 등록된 가전이 없어요</p>
+                <p className="ch-appliance-empty__sub">가전을 등록하면 상태와 A/S 이력을 한눈에 확인할 수 있어요.</p>
+              </div>
+            </div>
+            <button
+              className="ch-appliance-empty__btn"
+              onClick={() => navigate("/customer/appliances?register=true")}
+            >
+              <PlusCircle size={14} /> 가전 등록하기
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="ch-appliance-body">
+            <table className="ch-appliance-table">
+              <thead>
+                <tr>
+                  <th>제품</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appliances.slice(0, 5).map((a) => (
+                  <tr key={a.id}>
+                    <td>
+                      <div className="ch-appliance-table__product">
+                        <ApplianceIcon name={a.name} size={32} radius={6} />
+                        <div>
+                          <p className="ch-appliance-table__name">{a.name}</p>
+                          <p className="ch-appliance-table__brand">{a.brand}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span
+                        className={`ch-status-badge ch-status-badge--${STATUS_COLOR[a.status] ?? "green"}`}
+                      >
+                        {a.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="ch-distribution">
+              <p className="ch-distribution__title">가전 상태 분포</p>
+              {(() => {
+                const total = appliances.length || 1;
+                const counts = { 정상: 0, 주의: 0, "점검 필요": 0 };
+                appliances.forEach((a) => {
+                  if (counts[a.status] !== undefined) counts[a.status]++;
+                });
+                return [
+                  { label: "정상", count: counts["정상"], color: "#22c55e" },
+                  { label: "주의", count: counts["주의"], color: "#f59e0b" },
+                  {
+                    label: "점검 필요",
+                    count: counts["점검 필요"],
+                    color: "#ef4444",
+                  },
+                ].map((d) => (
+                  <div key={d.label} className="ch-dist-item">
+                    <span className="ch-dist-label">{d.label}</span>
+                    <div className="ch-dist-bar-wrap">
+                      <div
+                        className="ch-dist-bar"
+                        style={{
+                          width: `${Math.round((d.count / total) * 100)}%`,
+                          background: d.color,
+                        }}
+                      />
+                    </div>
+                    <span className="ch-dist-count">{d.count}대</span>
+                  </div>
+                ));
+              })()}
+              <p className="ch-distribution__total">총 {appliances.length}대</p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 5. 예정된 일정 + 빠른 메뉴 */}

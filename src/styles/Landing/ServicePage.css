@@ -99,13 +99,13 @@
 .service__hero {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 60px 48px;
   background: linear-gradient(135deg, #f8f7ff 0%, #eeeaff 100%);
   min-height: 480px;
   position: relative;
   overflow: hidden;
-  gap: 20px;
+  gap: 48px;
 }
 
 .service__hero-blob {
@@ -122,8 +122,9 @@
 .service__hero-text {
   position: relative;
   z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
   max-width: 570px;
-  margin-left: 100px;
 }
 
 .service__eyebrow {
@@ -191,13 +192,15 @@
 .service__hero-visual {
   position: relative;
   z-index: 1;
-  flex-shrink: 0;
-  margin-left: -20px;
-  left: -80px;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .service__hero-img {
-  width: 660px;
+  width: 100%;
+  max-width: 560px;
   object-fit: contain;
   display: block;
 }
@@ -250,6 +253,8 @@
   align-items: flex-start;
   justify-content: center;
   gap: 0;
+  flex-wrap: wrap;
+  row-gap: 24px;
 }
 
 .service__flow-item {
@@ -329,6 +334,7 @@
   display: flex;
   gap: 20px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .service__target-card {
@@ -373,4 +379,77 @@
   display: flex;
   flex-direction: column;
   text-align: left;
+}
+
+/* ===========================
+   반응형
+=========================== */
+@media (max-width: 960px) {
+  .service__hero {
+    gap: 32px;
+    padding: 48px 32px;
+  }
+
+  .service__title {
+    font-size: 32px;
+  }
+
+  .service__hero-img {
+    max-width: 380px;
+  }
+
+  .service__badges {
+    flex-wrap: wrap;
+  }
+
+  .service__nav {
+    padding: 0 24px;
+  }
+
+  .service__nav-links {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 720px) {
+  .service__hero {
+    flex-direction: column;
+    padding: 40px 24px;
+    gap: 28px;
+    min-height: auto;
+  }
+
+  .service__hero-text {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .service__badges {
+    flex-direction: column;
+  }
+
+  .service__title {
+    font-size: 26px;
+  }
+
+  .service__hero-visual {
+    width: 100%;
+  }
+
+  .service__hero-img {
+    max-width: 300px;
+  }
+
+  .service__floating {
+    display: none;
+  }
+
+  .service__target-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .service__flow-card {
+    width: 140px;
+  }
 }

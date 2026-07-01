@@ -98,7 +98,8 @@
 .guide__hero {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 48px;
   padding: 48px 48px;
   background: linear-gradient(135deg, #f8f7ff 0%, #eeeaff 100%);
   position: relative;
@@ -119,8 +120,9 @@
 .guide__hero-text {
   position: relative;
   z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
   max-width: 500px;
-  margin-left: 100px;
 }
 
 .guide__eyebrow {
@@ -151,12 +153,15 @@
 .guide__hero-visual {
   position: relative;
   z-index: 1;
-  flex-shrink: 0;
-  left: -80px;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .guide__hero-img {
-  width: 520px;
+  width: 100%;
+  max-width: 480px;
   object-fit: contain;
 }
 
@@ -203,8 +208,8 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  flex-wrap: nowrap;
-  overflow-x: hidden;
+  flex-wrap: wrap;
+  row-gap: 24px;
   padding-bottom: 8px;
   padding-top: 16px;
 }
@@ -297,6 +302,7 @@
 .guide__user-grid {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .guide__user-card {
@@ -370,6 +376,7 @@
 .guide__support-grid {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .guide__support-card {
@@ -413,4 +420,81 @@
 .guide__support-arrow {
   font-size: 24px;
   color: #c8c0f0;
+}
+
+/* ===========================
+   반응형
+=========================== */
+@media (max-width: 960px) {
+  .guide__hero {
+    gap: 32px;
+    padding: 40px 32px;
+  }
+
+  .guide__title {
+    font-size: 30px;
+  }
+
+  .guide__hero-img {
+    max-width: 340px;
+  }
+
+  .guide__nav {
+    padding: 0 24px;
+  }
+
+  .guide__nav-links {
+    gap: 16px;
+  }
+
+  .guide__step-item {
+    flex: 0 1 calc(25% - 12px);
+  }
+}
+
+@media (max-width: 720px) {
+  .guide__hero {
+    flex-direction: column;
+    padding: 36px 24px;
+    gap: 24px;
+  }
+
+  .guide__hero-text {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .guide__title {
+    font-size: 26px;
+  }
+
+  .guide__hero-visual {
+    width: 100%;
+  }
+
+  .guide__hero-img {
+    max-width: 280px;
+  }
+
+  .guide__step-item {
+    flex: 0 1 calc(50% - 12px);
+  }
+
+  .guide__user-card {
+    width: 100%;
+  }
+
+  .guide__user-img {
+    width: 100px;
+    min-width: 100px;
+    height: 100px;
+  }
+
+  .guide__support-card {
+    width: 100%;
+  }
+
+  .guide__section {
+    padding: 36px 24px;
+  }
 }

@@ -3,42 +3,64 @@
   padding: 16px 24px; background: #fff; min-height: 100vh;
   font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
   font-size: 13px; color: #1a1a2e;
+  width: 100%; max-width: 100%; box-sizing: border-box; flex: 1;
 }
 
 /* 헤더 */
 .aep-header__title { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
 .aep-header__sub   { font-size: 13px; color: #aaa; }
 
-/* 통계 카드 */
-.aep-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-
-.aep-stat-card {
-  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
-  padding: 14px; display: flex; align-items: center; gap: 12px;
+/* ===========================
+   통계 카드 - cas-kpi 스타일
+=========================== */
+.aep-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 12px;
 }
 
+.aep-stat-card {
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 12px;
+  padding: 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  min-height: 76px;
+}
+
+.aep-stat-card__text { display: flex; flex-direction: column; gap: 3px; z-index: 1; }
+
 .aep-stat-card__icon {
-  width: 44px; height: 44px; border-radius: 10px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 
-.aep-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
-.aep-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
-.aep-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
-.aep-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
-.aep-stat-card__icon--amber  { background: #fef9e0; color: #b45309; }
+.aep-stat-card__icon--purple,
+.aep-stat-card__icon--green,
+.aep-stat-card__icon--blue,
+.aep-stat-card__icon--orange,
+.aep-stat-card__icon--amber {
+  background: none;
+  color: #e3e1f5;
+}
 
-.aep-stat-card__label { font-size: 11px; color: #aaa; margin-bottom: 2px; }
-.aep-stat-card__value { font-size: 20px; font-weight: 700; color: #1a1a2e; }
-.aep-stat-card__value span { font-size: 13px; font-weight: 400; margin-left: 1px; }
+.aep-stat-card__icon svg { width: 100%; height: 100%; color: #e3e1f5; }
+
+.aep-stat-card__label { font-size: 12px; color: #777; margin-top: 6px; order: 2; }
+.aep-stat-card__value { font-size: 20px; font-weight: 800; color: #1a1a2e; line-height: 1; order: 1; }
+.aep-stat-card__value span { font-size: 13px; font-weight: 500; margin-left: 1px; color: #888; }
 
 /* 필터 */
-.aep-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.aep-filters { width: 100%; display: flex; align-items: center; gap: 10px; }
 
 .aep-search {
   display: flex; align-items: center; gap: 6px;
   border: 0.5px solid #e0dcff; border-radius: 8px;
-  padding: 7px 12px; min-width: 200px;
+  padding: 7px 12px; flex: 1; min-width: 300px;
 }
 
 .aep-search input {
@@ -73,23 +95,25 @@
 .aep-left { display: flex; flex-direction: column; gap: 12px; }
 
 /* 테이블 */
-.aep-table { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; overflow: hidden; }
+.aep-table { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; overflow: hidden; width: 100%; }
 
 .aep-table__header {
   display: grid;
-  grid-template-columns: 28px 1.5fr 1fr 0.8fr 0.8fr 1fr 0.9fr 0.7fr 0.7fr 0.7fr 0.7fr 0.7fr;
-  padding: 10px 14px;
+  grid-template-columns: 40px 1.6fr 1fr 1fr 1fr 1fr 90px;
+  padding: 12px 16px;
   background: #f8f7ff; font-size: 11px; color: #aaa; font-weight: 600;
   border-bottom: 0.5px solid #e8e4ff;
+  width: 100%; align-items: center;
 }
 
 .aep-table__row {
   display: grid;
-  grid-template-columns: 28px 1.5fr 1fr 0.8fr 0.8fr 1fr 0.9fr 0.7fr 0.7fr 0.7fr 0.7fr 0.7fr;
-  padding: 10px 14px;
+  grid-template-columns: 40px 1.6fr 1fr 1.2fr 1fr 1fr 90px;
+  padding: 12px 16px;
   border-bottom: 0.5px solid #f5f4ff;
   align-items: center; font-size: 12px; color: #444;
   transition: background 0.1s;
+  width: 100%;
 }
 
 .aep-table__row:last-child { border-bottom: none; }
@@ -128,6 +152,8 @@
 .aep-status-badge--waiting { background: #f0f0f0; color: #666; }
 .aep-status-badge--off     { background: #fef0e0; color: #d97706; }
 .aep-status-badge--rest    { background: #fef0e0; color: #d97706; }
+.aep-status-badge--available { background: #eaf3de; color: #16a34a; }
+.aep-status-badge--booked    { background: #eeeaff; color: #5B4FF5; }
 
 /* 버튼 */
 .aep-detail-btn {
@@ -266,7 +292,6 @@
   text-align: center; padding: 40px 16px; color: #aaa; font-size: 12px; line-height: 2;
 }
 .aep-detail__coming-soon span { font-size: 10px; color: #ccc; }
-
 
 /* LMS 경고 */
 .aep-detail__lms-warn {

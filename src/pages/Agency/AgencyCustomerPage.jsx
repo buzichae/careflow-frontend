@@ -24,9 +24,9 @@ const GRADE_MAP = {
 };
 
 const STATUS_MAP = {
-  ACTIVE:   { label: "활성", type: "active"   },
-  INACTIVE: { label: "비활성", type: "inactive" },
-  SUSPENDED:{ label: "휴면", type: "suspended" },
+  ACTIVE:    { label: "활성",   type: "active"    },
+  INACTIVE:  { label: "비활성", type: "inactive"  },
+  SUSPENDED: { label: "휴면",   type: "suspended" },
 };
 
 const STATUS_OPTIONS = [
@@ -212,6 +212,7 @@ export default function AgencyCustomerPage() {
             onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
           />
         </div>
+
         <select
           className="acp-filter-select"
           value={statusFilter}
@@ -240,7 +241,6 @@ export default function AgencyCustomerPage() {
               <span>이메일</span>
               <span>가입일</span>
               <span>활동 상태</span>
-              <span>고객 등급</span>
               <span>등록 가전 수</span>
               <span>최근 활동일</span>
               <span>관리</span>
@@ -250,6 +250,7 @@ export default function AgencyCustomerPage() {
               const status = STATUS_MAP[item.status] ?? STATUS_MAP.ACTIVE;
               const grade = GRADE_MAP[item.grade] ?? GRADE_MAP.UNKNOWN;
               const isSelected = selectedItem?.userId === item.userId;
+
               return (
                 <div key={item.userId} className={`acp-table__row ${isSelected ? "acp-table__row--selected" : ""}`}>
                   <span><input type="checkbox" /></span>
@@ -261,6 +262,7 @@ export default function AgencyCustomerPage() {
                   <span>
                     <span className={`acp-status-badge acp-status-badge--${status.type}`}>{status.label}</span>
                   </span>
+
                   <span>
                     <span className="acp-grade-badge acp-grade-badge--normal">
                       {grade.label} {grade.icon}
@@ -341,6 +343,7 @@ export default function AgencyCustomerPage() {
                 <div>
                   <div className="acp-detail__info-row"><span className="acp-detail__label">연락처</span><span className="acp-detail__value">{selectedItem.phone} <Phone size={11} /></span></div>
                   <div className="acp-detail__info-row"><span className="acp-detail__label">이메일</span><span className="acp-detail__value">{selectedItem.email} <Mail size={11} /></span></div>
+
                   <div className="acp-detail__info-row"><span className="acp-detail__label">주소</span><span className="acp-detail__value">{selectedItem.address || "-"}</span></div>
                   <div className="acp-detail__info-row"><span className="acp-detail__label">가입일</span><span className="acp-detail__value">{formatDate(selectedItem.joinedAt)}</span></div>
                   <div className="acp-detail__info-row"><span className="acp-detail__label">가입 경로</span><span className="acp-detail__value">{selectedItem.joinPath || "-"}</span></div>
@@ -356,7 +359,9 @@ export default function AgencyCustomerPage() {
                       {(STATUS_MAP[selectedItem.status] ?? STATUS_MAP.ACTIVE).label}
                     </span>
                   </div>
+
                   <div className="acp-detail__info-row"><span className="acp-detail__label">최근 로그인</span><span className="acp-detail__value">{formatDateTime(selectedItem.lastLoginAt)}</span></div>
+
 
                   {/* 관리 버튼 (추후 API 연동 예정) */}
                   <div className="acp-detail__manage-section">
@@ -411,6 +416,7 @@ export default function AgencyCustomerPage() {
               )}
 
               {detailTab === "결제 내역" && (
+
                 <div>
                   {detailLoading && <p className="acp-detail__memo-empty">불러오는 중...</p>}
                   {!detailLoading && detailError && <p className="acp-detail__memo-empty">{detailError}</p>}
@@ -426,6 +432,7 @@ export default function AgencyCustomerPage() {
                       <div className="acp-detail__info-row"><span className="acp-detail__label">결제일</span><span className="acp-detail__value">{formatDateTime(p.paidAt)}</span></div>
                     </div>
                   ))}
+
                 </div>
               )}
             </div>

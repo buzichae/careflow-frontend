@@ -30,27 +30,44 @@
   padding: 5px 10px; font-size: 12px; color: #444; cursor: pointer;
 }
 
-/* 통계 카드 */
+/* ===========================
+   통계 카드 - cas-kpi 스타일
+=========================== */
 .asp-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
 .asp-stat-card {
-  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
-  padding: 16px; display: flex; align-items: flex-start; gap: 12px;
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 12px;
+  padding: 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  min-height: 76px;
 }
+
+.asp-stat-card__text { display: flex; flex-direction: column; gap: 3px; z-index: 1; }
+
 .asp-stat-card__icon {
-  width: 44px; height: 44px; border-radius: 10px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.asp-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
-.asp-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
-.asp-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
-.asp-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
-.asp-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
 
-.asp-stat-card__label { font-size: 11px; color: #aaa; margin-bottom: 4px; }
-.asp-stat-card__value { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
-.asp-stat-card__sub   { font-size: 11px; color: #aaa; }
-.asp-stat-card__sub--up   { color: #5B4FF5; font-weight: 600; }
-.asp-stat-card__sub--down { color: #dc2626; font-weight: 600; }
+.asp-stat-card__icon--purple,
+.asp-stat-card__icon--green,
+.asp-stat-card__icon--orange,
+.asp-stat-card__icon--red,
+.asp-stat-card__icon--blue {
+  background: none;
+  color: #e3e1f5;
+}
+
+.asp-stat-card__icon svg { width: 100%; height: 100%; color: #e3e1f5; }
+
+.asp-stat-card__label { font-size: 12px; color: #777; margin-top: 6px; order: 2; }
+.asp-stat-card__value { font-size: 18px; font-weight: 800; color: #1a1a2e; line-height: 1; order: 1; }
+.asp-stat-card__sub   { display: none; }
 
 /* 필터 */
 .asp-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -117,10 +134,12 @@
 .asp-table__row--selected { background: #ddd8ff; border-left: 3px solid #5B4FF5; }
 
 .asp-table__id { font-size: 11px; color: #5B4FF5; font-weight: 600; }
+.asp-table__name-col { display: flex; align-items: center; gap: 8px; }
 .asp-table__name { font-weight: 600; color: #1a1a2e; display: block; font-size: 12px; }
 .asp-table__sub-id { font-size: 10px; color: #aaa; }
 .asp-table__period { font-size: 11px; color: #666; }
 .asp-table__count { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.asp-table__rating { font-size: 12px; color: #f5a623; font-weight: 600; }
 .asp-table__amount { font-size: 12px; font-weight: 700; color: #1a1a2e; }
 .asp-table__fee { font-size: 11px; color: #666; }
 .asp-table__fee-rate { font-size: 10px; color: #aaa; }
@@ -134,10 +153,11 @@
 
 /* 상태 배지 */
 .asp-status-badge { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
-.asp-status-badge--success { background: #eaf3de; color: #16a34a; }
-.asp-status-badge--ready   { background: #fef0e0; color: #d97706; }
-.asp-status-badge--hold    { background: #fee2e2; color: #dc2626; }
-.asp-status-badge--cancel  { background: #f5f5f5; color: #888;    }
+.asp-status-badge--success  { background: #eaf3de; color: #16a34a; }
+.asp-status-badge--ready    { background: #fef0e0; color: #d97706; }
+.asp-status-badge--approved { background: #e0f0ff; color: #2563eb; }
+.asp-status-badge--hold     { background: #fee2e2; color: #dc2626; }
+.asp-status-badge--cancel   { background: #f5f5f5; color: #888;    }
 
 /* 버튼 */
 .asp-detail-btn {

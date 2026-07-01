@@ -67,8 +67,8 @@ export default function ServicePage() {
            ))}
         </div>
         <div className="service__nav-actions">
-          <button className="service__btn service__btn--ghost">로그인</button>
-          <button className="service__btn service__btn--primary">회원가입</button>
+          <button className="service__btn service__btn--ghost" onClick={() => navigate("/auth/login")}>로그인</button>
+          <button className="service__btn service__btn--primary" onClick={() => navigate("/auth/signup")}>회원가입</button>
         </div>
       </nav>
 

@@ -13,6 +13,7 @@ import {
 } from "../../apis/agencyStatistics";
 import "../../styles/Agency/AgencyStatisticsPage.css";
 
+
 const STAT_TABS = ["대시보드", "작업 통계", "기사 통계", "정산 통계", "고객 통계", "리포트"];
 
 const STATUS_LABEL_MAP = {
@@ -89,6 +90,7 @@ export default function AgencyStatisticsPage() {
   const [hourlyData, setHourlyData] = useState([]);
   const [categoryDist, setCategoryDist] = useState([]);
   const [statusData, setStatusData] = useState([]);
+  const maxStatusVal = Math.max(...statusData.map(s => s.value), 1);
   const [engineerTop5, setEngineerTop5] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState(null);
 
@@ -179,6 +181,7 @@ export default function AgencyStatisticsPage() {
     ...MOCK_MONTHLY_EXTRA,
   ] : [];
 
+
   return (
     <div className="asp2">
       {/* 헤더 */}
@@ -188,6 +191,7 @@ export default function AgencyStatisticsPage() {
           <p className="asp2-header__sub">기간별 서비스 운영 현황을 확인하고 리포트를 생성할 수 있습니다.</p>
         </div>
         <div className="asp2-header__right">
+
           <div className="asp2-filter-date">
             <input
               type="date"
@@ -222,13 +226,14 @@ export default function AgencyStatisticsPage() {
         ))}
       </div>
 
+
       {error && (
         <div className="asp2-coming-soon">통계 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>
       )}
 
       {activeTab === "대시보드" && !error && (
         <div className="asp2-dashboard">
-          {/* 통계 카드 */}
+          {/* 통계 카드 - 더미 유지 */}
           <div className="asp2-stats">
             {(loading && !summary ? Array(6).fill(null) : statCards).map((s, i) => (
               <div key={s?.label ?? i} className="asp2-stat-card">
@@ -247,6 +252,7 @@ export default function AgencyStatisticsPage() {
           </div>
 
           <div className="asp2-grid">
+
             {/* 좌측: 라인차트 + 바차트 */}
             <div className="asp2-col">
               <div className="asp2-chart-card">
@@ -268,6 +274,7 @@ export default function AgencyStatisticsPage() {
 
               <div className="asp2-chart-card">
                 <div className="asp2-chart-card__header">
+
                   <h3 className="asp2-chart-title">일별 시간대별 접수 현황</h3>
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
@@ -285,13 +292,8 @@ export default function AgencyStatisticsPage() {
                 <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>최근 주요 지표 요약</h3>
                 <div className="asp2-summary-table">
                   <div className="asp2-summary-table__header">
-                    <span>기간</span>
-                    <span>접수 건수</span>
-                    <span>완료 건수</span>
-                    <span>완료율</span>
-                    <span>평균 처리 시간</span>
-                    <span>평균 평점</span>
-                    <span>총 정산 금액</span>
+                    <span>기간</span><span>접수</span><span>완료</span><span>완료율</span>
+                    <span>처리 시간</span><span>평점</span><span>정산 금액</span>
                   </div>
                   {MOCK_SUMMARY_TABLE.map((row, i) => (
                     <div key={i} className="asp2-summary-table__row">
@@ -308,6 +310,7 @@ export default function AgencyStatisticsPage() {
               </div>
             </div>
 
+
             {/* 중앙: 도넛차트 + 상태별 건수 */}
             <div className="asp2-col">
               <div className="asp2-chart-card">
@@ -317,15 +320,9 @@ export default function AgencyStatisticsPage() {
                 <div className="asp2-donut-wrap">
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
-                      <Pie
-                        data={categoryDist}
-                        cx="50%" cy="50%"
-                        innerRadius={50} outerRadius={75}
-                        dataKey="value" startAngle={90} endAngle={-270}
-                      >
-                        {categoryDist.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
+                      <Pie data={categoryDist} cx="50%" cy="50%" innerRadius={50} outerRadius={75}
+                        dataKey="value" startAngle={90} endAngle={-270}>
+                        {categoryDist.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
                       <Tooltip formatter={(v) => `${v}건`} />
                     </PieChart>
@@ -346,22 +343,32 @@ export default function AgencyStatisticsPage() {
                 <div className="asp2-chart-card__header">
                   <h3 className="asp2-chart-title">상태별 건수</h3>
                 </div>
-                {statusData.map((s) => (
+                {loading ? (
+                  <p style={{ color: "#aaa", fontSize: "12px" }}>로딩 중...</p>
+                ) : statusData.map((s) => (
                   <div key={s.label} className="asp2-status-row">
                     <span className="asp2-status-row__label">{s.label}</span>
                     <div className="asp2-status-row__bar-wrap">
-                      <div className="asp2-status-row__bar" style={{ width: `${s.pct}%`, background: s.color }} />
+                      <div
+                        className="asp2-status-row__bar"
+                        style={{ width: `${(s.value / maxStatusVal) * 100}%`, background: s.color }}
+                      />
                     </div>
-                    <span className="asp2-status-row__val">{s.value.toLocaleString()}건 ({s.pct}%)</span>
+                    <span className="asp2-status-row__val">{s.value.toLocaleString()}건</span>
                   </div>
                 ))}
               </div>
             </div>
 
+
             {/* 우측: TOP5 + 이달의요약 */}
+
             <div className="asp2-col">
+
+              {/* 우수 기사 TOP3 - 15번 API */}
               <div className="asp2-chart-card">
                 <div className="asp2-chart-card__header">
+
                   <h3 className="asp2-chart-title">기사별 완료 건수 TOP 5</h3>
                 </div>
                 {engineerTop5.length === 0 && <p className="asp2-empty">데이터가 없습니다.</p>}
@@ -374,6 +381,7 @@ export default function AgencyStatisticsPage() {
                     <span className="asp2-top-row__count">{e.count}건</span>
                   </div>
                 ))}
+
               </div>
 
               <div className="asp2-chart-card">

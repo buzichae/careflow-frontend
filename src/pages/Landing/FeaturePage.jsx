@@ -171,8 +171,8 @@ export default function FeaturePage() {
           ))}
         </div>
         <div className="feature__nav-actions">
-          <button className="feature__btn feature__btn--ghost">로그인</button>
-          <button className="feature__btn feature__btn--primary">회원가입</button>
+          <button className="feature__btn feature__btn--ghost" onClick={() => navigate("/auth/login")}>로그인</button>
+          <button className="feature__btn feature__btn--primary" onClick={() => navigate("/auth/signup")}>회원가입</button>
         </div>
       </nav>
 

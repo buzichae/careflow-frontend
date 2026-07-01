@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, LogOut, UserRound } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { logout } from "../../apis/auth";
 import "../../styles/Admin/AdminNavbar.css";
 
 const PAGE_INFO = {
@@ -13,6 +14,7 @@ const PAGE_INFO = {
 
 export default function AdminNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,13 +50,29 @@ export default function AdminNavbar() {
           </button>
           {dropdownOpen && (
             <div className="admin-dropdown">
-              <div className="admin-dropdown__divider" />
-              <button
-                className="admin-dropdown__item admin-dropdown__item--logout"
-                onClick={() => { setDropdownOpen(false); navigate("/auth/login"); }}
-              >
-                <LogOut size={14} /> 로그아웃
-              </button>
+              {logoutConfirm ? (
+                <div className="customer-dropdown__confirm">
+                  <p className="customer-dropdown__confirm-text">로그아웃 하시겠습니까?</p>
+                  <div className="customer-dropdown__confirm-btns">
+                    <button className="customer-dropdown__confirm-cancel" onClick={() => setLogoutConfirm(false)}>취소</button>
+                    <button className="customer-dropdown__confirm-ok" onClick={async () => {
+                      try { await logout(); } catch (_) {}
+                      localStorage.removeItem("token");
+                      navigate("/auth/login");
+                    }}>로그아웃</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="admin-dropdown__divider" />
+                  <button
+                    className="admin-dropdown__item admin-dropdown__item--logout"
+                    onClick={() => setLogoutConfirm(true)}
+                  >
+                    <LogOut size={14} /> 로그아웃
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
