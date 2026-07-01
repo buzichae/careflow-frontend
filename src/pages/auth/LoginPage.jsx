@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import mainImg from "../../assets/main.png";
 import { ROLES } from "./authConstants";
+import { parseJwt, ROLE_DASH } from "../../utils/auth";
 import "../../styles/Auth/Auth.css";
 import { login } from "../../apis/auth";
 
@@ -123,9 +124,9 @@ function LoginForm({ roleKey, onBack }) {
 
       // console.log(res.data);
       localStorage.setItem("token", accessToken);
-      const role = ROLES.find((r) => r.key === roleKey);
-
-      navigate(role?.dashPath || "/customer/home");
+      const payload = parseJwt(accessToken);
+      const dashPath = ROLE_DASH[payload?.role] ?? "/customer/home";
+      navigate(dashPath);
 
     } catch (error) {
       alert(error.response?.data?.message || "로그인에 실패했습니다.");

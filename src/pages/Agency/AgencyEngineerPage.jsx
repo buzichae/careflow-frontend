@@ -64,7 +64,6 @@ function ScheduleCalendar({ engineerUserId }) {
 
   useEffect(() => {
     setLoading(true);
-    // 14번: GET /api/agency/engineers/{engineerUserId}/schedules?year=&month=
     apiFetch(`/api/agency/engineers/${engineerUserId}/schedules?year=${year}&month=${month}`)
       .then(setSchedules)
       .catch(console.error)
@@ -80,12 +79,9 @@ function ScheduleCalendar({ engineerUserId }) {
     else setMonth(m => m + 1);
   };
 
-  // scheduleId 기준 날짜→상태 맵
-  // API 응답: [{ scheduleId, workDate, timeSlots, status }]
   const scheduleMap = {};
   schedules.forEach(s => { scheduleMap[s.workDate] = s; });
 
-  // 달력 날짜 계산
   const firstDay = new Date(year, month - 1, 1).getDay();
   const lastDate = new Date(year, month, 0).getDate();
   const cells = [];
@@ -142,7 +138,6 @@ function ScheduleCalendar({ engineerUserId }) {
             })}
           </div>
 
-          {/* 범례 */}
           <div style={{ display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
             {[
               { status: "AVAILABLE", label: "근무 가능" },
@@ -156,7 +151,6 @@ function ScheduleCalendar({ engineerUserId }) {
             ))}
           </div>
 
-          {/* 이번 달 타임슬롯 목록 */}
           {schedules.length > 0 && (
             <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
               <p style={{ fontSize: "11px", color: "#aaa", fontWeight: 600 }}>근무 일정 상세</p>
@@ -194,22 +188,18 @@ export default function AgencyEngineerPage() {
   const [listLoading, setListLoading]   = useState(true);
 
   // ── 12번: 기사 상세 ──────────────────────────
-  const [selectedItem, setSelectedItem]       = useState(null);
-  const [detailData, setDetailData]           = useState(null);
-  const [detailLoading, setDetailLoading]     = useState(false);
-  const [detailTab, setDetailTab]             = useState("기본 정보");
+  const [selectedItem, setSelectedItem]   = useState(null);
+  const [detailData, setDetailData]       = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailTab, setDetailTab]         = useState("기본 정보");
 
   // ── 필터 / 페이지 ────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 15; // TODO: API 응답에서 totalPages 받아오기
+  const totalPages = 15;
 
-  // 11번 API 호출
   const fetchEngineers = useCallback(() => {
     setListLoading(true);
-    // 11번: GET /api/agency/engineers
-    // 응답: [{ engineerUserId, name, categoryId, categoryName, skillLevel,
-    //          serviceRegionIds, isLmsCompleted, currentWorkStatus }]
     apiFetch("/api/agency/engineers")
       .then(data => setEngineerList(Array.isArray(data) ? data : []))
       .catch(console.error)
@@ -218,17 +208,11 @@ export default function AgencyEngineerPage() {
 
   useEffect(() => { fetchEngineers(); }, [fetchEngineers]);
 
-  // 12번 API 호출 (상세 클릭 시)
   const handleSelectEngineer = useCallback(async (engineer) => {
     setSelectedItem(engineer);
     setDetailTab("기본 정보");
     setDetailLoading(true);
     try {
-      // 12번: GET /api/agency/engineers/{engineerUserId}/profile
-      // 응답: { engineerUserId, name, email, phone, categoryId, categoryName,
-      //          careerStartedYear, skillLevel, introduction, profileImageUrl,
-      //          avgRating, totalReviews, isLmsCompleted, expertBrands,
-      //          serviceRegionIds, createdAt, updatedAt }
       const data = await apiFetch(`/api/agency/engineers/${engineer.engineerUserId}/profile`);
       setDetailData(data);
     } catch (e) {
@@ -239,7 +223,6 @@ export default function AgencyEngineerPage() {
     }
   }, []);
 
-  // 클라이언트 사이드 검색 필터
   const filteredList = engineerList.filter(e =>
     !searchQuery ||
     e.name?.includes(searchQuery) ||
@@ -253,41 +236,51 @@ export default function AgencyEngineerPage() {
         <p className="aep-header__sub">소속 기사 정보를 관리하고 근무 현황과 실적을 확인할 수 있습니다.</p>
       </div>
 
-      {/* 통계 카드 - 11번 API 집계 */}
+      {/* 통계 카드 */}
       <div className="aep-stats">
         <div className="aep-stat-card">
-          <div className="aep-stat-card__icon aep-stat-card__icon--purple"><Users size={20} /></div>
-          <div>
-            <p className="aep-stat-card__label">전체 기사</p>
+          <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">{listLoading ? "..." : engineerList.length}<span>명</span></p>
+            <p className="aep-stat-card__label">전체 기사</p>
+          </div>
+          <div className="aep-stat-card__icon aep-stat-card__icon--purple">
+            <Users size={40} strokeWidth={1} />
           </div>
         </div>
+
         <div className="aep-stat-card">
-          <div className="aep-stat-card__icon aep-stat-card__icon--green"><Circle size={20} /></div>
-          <div>
-            <p className="aep-stat-card__label">활동 중</p>
+          <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">
               {listLoading ? "..." : engineerList.filter(e => e.currentWorkStatus === "AVAILABLE" || e.currentWorkStatus === "BOOKED").length}
               <span>명</span>
             </p>
+            <p className="aep-stat-card__label">활동 중</p>
+          </div>
+          <div className="aep-stat-card__icon aep-stat-card__icon--green">
+            <Circle size={40} strokeWidth={1} />
           </div>
         </div>
+
         <div className="aep-stat-card">
-          <div className="aep-stat-card__icon aep-stat-card__icon--blue"><BookCheck size={20} /></div>
-          <div>
-            <p className="aep-stat-card__label">교육 이수 완료</p>
+          <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">
               {listLoading ? "..." : engineerList.filter(e => e.isLmsCompleted).length}
               <span>명</span>
             </p>
+            <p className="aep-stat-card__label">교육 이수 완료</p>
+          </div>
+          <div className="aep-stat-card__icon aep-stat-card__icon--blue">
+            <BookCheck size={40} strokeWidth={1} />
           </div>
         </div>
+
         <div className="aep-stat-card">
-          <div className="aep-stat-card__icon aep-stat-card__icon--amber"><Star size={20} /></div>
-          <div>
-            <p className="aep-stat-card__label">평균 평점</p>
-            {/* 평균 평점은 별도 API 없음 → 더미 유지 */}
+          <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">4.8<span>/5.0</span></p>
+            <p className="aep-stat-card__label">평균 평점</p>
+          </div>
+          <div className="aep-stat-card__icon aep-stat-card__icon--amber">
+            <Star size={40} strokeWidth={1} />
           </div>
         </div>
       </div>
@@ -330,11 +323,8 @@ export default function AgencyEngineerPage() {
             ) : filteredList.length === 0 ? (
               <p style={{ padding: "16px", color: "#aaa", fontSize: "13px" }}>소속 기사가 없습니다.</p>
             ) : (
-              // 11번 API 응답 필드:
-              // engineerUserId, name, categoryId, categoryName,
-              // skillLevel, serviceRegionIds, isLmsCompleted, currentWorkStatus
               filteredList.map((item) => {
-                const skill    = SKILL_MAP[item.skillLevel]          ?? { label: item.skillLevel, type: "beginner", en: item.skillLevel };
+                const skill    = SKILL_MAP[item.skillLevel] ?? { label: item.skillLevel, type: "beginner", en: item.skillLevel };
                 const schedule = SCHEDULE_STATUS_MAP[item.currentWorkStatus] ?? { label: "-", type: "off" };
                 const isSelected = selectedItem?.engineerUserId === item.engineerUserId;
                 return (
@@ -395,7 +385,7 @@ export default function AgencyEngineerPage() {
           </div>
         </div>
 
-        {/* 우측 상세 패널 - 12번 API */}
+        {/* 우측 상세 패널 */}
         {selectedItem && (
           <aside className="aep-detail">
             <div className="aep-detail__header">
@@ -405,7 +395,6 @@ export default function AgencyEngineerPage() {
               </button>
             </div>
 
-            {/* 프로필 */}
             <div className="aep-detail__profile">
               <Avatar
                 name={detailData?.name ?? selectedItem.name}
@@ -428,7 +417,6 @@ export default function AgencyEngineerPage() {
               </div>
             </div>
 
-            {/* 탭 */}
             <div className="aep-detail__tabs">
               {DETAIL_TABS.map((tab) => (
                 <button
@@ -442,7 +430,6 @@ export default function AgencyEngineerPage() {
             </div>
 
             <div className="aep-detail__body">
-              {/* 기본 정보 탭 - 12번 API */}
               {detailTab === "기본 정보" && (
                 detailLoading ? (
                   <p style={{ color: "#aaa", fontSize: "13px", padding: "12px" }}>로딩 중...</p>
@@ -491,7 +478,6 @@ export default function AgencyEngineerPage() {
                       <span className="aep-detail__info-value">{detailData.createdAt?.slice(0, 10)}</span>
                     </div>
 
-                    {/* LMS */}
                     <div className="aep-detail__lms-section">
                       <p className="aep-detail__section-label">LMS 교육 상태</p>
                       <div className="aep-detail__lms-row">
@@ -505,7 +491,6 @@ export default function AgencyEngineerPage() {
                       )}
                     </div>
 
-                    {/* 평점 */}
                     <div className="aep-detail__month-section">
                       <p className="aep-detail__section-label">평점 현황</p>
                       <div className="aep-detail__month-cards">
@@ -525,7 +510,6 @@ export default function AgencyEngineerPage() {
                 )
               )}
 
-              {/* 근무표 탭 - 14번 API */}
               {detailTab === "근무표" && (
                 <ScheduleCalendar engineerUserId={selectedItem.engineerUserId} />
               )}
