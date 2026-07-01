@@ -3,6 +3,10 @@
   padding: 16px 24px; background: #fff; min-height: 100vh;
   font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
   font-size: 13px; color: #1a1a2e;
+   width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    flex: 1;
 }
 
 /* 헤더 */
@@ -10,7 +14,12 @@
 .aep-header__sub   { font-size: 13px; color: #aaa; }
 
 /* 통계 카드 */
-.aep-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.aep-stats { 
+  width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(180px,1fr));
+    gap: 16px; 
+}
 
 .aep-stat-card {
   background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
@@ -33,12 +42,16 @@
 .aep-stat-card__value span { font-size: 13px; font-weight: 400; margin-left: 1px; }
 
 /* 필터 */
-.aep-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.aep-filters{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
 
-.aep-search {
-  display: flex; align-items: center; gap: 6px;
-  border: 0.5px solid #e0dcff; border-radius: 8px;
-  padding: 7px 12px; min-width: 200px;
+.aep-search{
+   flex:1;
+    min-width:300px;
 }
 
 .aep-search input {
@@ -73,23 +86,27 @@
 .aep-left { display: flex; flex-direction: column; gap: 12px; }
 
 /* 테이블 */
-.aep-table { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; overflow: hidden; }
+.aep-table { background: #fff; border: 1px solid #e8e4ff; border-radius: 12px; overflow: hidden;   width:100%;}
 
 .aep-table__header {
   display: grid;
-  grid-template-columns: 28px 1.5fr 1fr 0.8fr 0.8fr 1fr 0.9fr 0.7fr 0.7fr 0.7fr 0.7fr 0.7fr;
-  padding: 10px 14px;
+  grid-template-columns: 40px 1.6fr 1fr 1fr 1fr 1fr 90px;
+  padding: 12px 16px;
   background: #f8f7ff; font-size: 11px; color: #aaa; font-weight: 600;
   border-bottom: 0.5px solid #e8e4ff;
+  width:100%;
+  align-items: center;
 }
 
 .aep-table__row {
   display: grid;
-  grid-template-columns: 28px 1.5fr 1fr 0.8fr 0.8fr 1fr 0.9fr 0.7fr 0.7fr 0.7fr 0.7fr 0.7fr;
-  padding: 10px 14px;
+  grid-template-columns: 40px 1.6fr 1fr 1.2fr 1fr 1fr 90px;
+  padding: 12px 16px;
   border-bottom: 0.5px solid #f5f4ff;
   align-items: center; font-size: 12px; color: #444;
   transition: background 0.1s;
+  width:100%;
+  align-items: center;
 }
 
 .aep-table__row:last-child { border-bottom: none; }

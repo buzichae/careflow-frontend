@@ -20,3 +20,14 @@ export const getAgencySettlementSummary = (year, month) =>
  */
 export const updateSettlementStatus = (settlementId, status) =>
     api.patch(`/api/agency/settlements/${settlementId}/status`, { status });
+
+/**
+ * 월별 정산 리포트 CSV 다운로드
+ * GET /api/agency/settlements/monthly-report/download?year=&month=
+ * - responseType: "blob" 으로 받아 브라우저 다운로드 트리거
+ */
+export const downloadMonthlySettlementCsv = (year, month) =>
+    api.get("/api/agency/settlements/monthly-report/download", {
+        params: { year, month },
+        responseType: "blob",
+    });

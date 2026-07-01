@@ -5,7 +5,7 @@ import {
   ChevronsLeft, ChevronsRight, RefreshCw, X, Download, Building2,
 } from "lucide-react";
 import "../../styles/Agency/Agencysettlementpage.css";
-import { getAgencySettlements, getAgencySettlementSummary, updateSettlementStatus } from "../../apis/agencySettlement";
+import { getAgencySettlements, getAgencySettlementSummary, updateSettlementStatus, downloadMonthlySettlementCsv } from "../../apis/agencySettlement";
 
 // 백엔드 status 값 → UI 레이블/스타일 매핑
 const STATUS_MAP = {
@@ -142,6 +142,22 @@ export default function AgencySettlementPage() {
     setDateTo("");
     setActiveTab("전체");
     setCurrentPage(1);
+  };
+
+  // 월별 정산 CSV 다운로드 — 이번 달 기준
+  const handleDownloadCsv = async () => {
+    const { year, month } = getCurrentYearMonth();
+    try {
+      const res = await downloadMonthlySettlementCsv(year, month);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `settlement_report_${year}_${String(month).padStart(2, "0")}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("CSV 다운로드에 실패했습니다.");
+    }
   };
 
   // 통계 카드 구성 (summaryStats API 연동)
@@ -286,7 +302,7 @@ export default function AgencySettlementPage() {
           />
         </div>
         <button className="asp-reset-btn" onClick={handleReset}><RefreshCw size={13} /> 필터 초기화</button>
-        <button className="asp-excel-btn"><Download size={13} /> 엑셀 다운로드</button>
+        <button className="asp-excel-btn" onClick={handleDownloadCsv}><Download size={13} /> CSV 다운로드</button>
       </div>
 
       <div className="asp-body">
