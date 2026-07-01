@@ -153,10 +153,11 @@
 
 /* 상태 배지 */
 .asp-status-badge { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
-.asp-status-badge--success { background: #eaf3de; color: #16a34a; }
-.asp-status-badge--ready   { background: #fef0e0; color: #d97706; }
-.asp-status-badge--hold    { background: #fee2e2; color: #dc2626; }
-.asp-status-badge--cancel  { background: #f5f5f5; color: #888;    }
+.asp-status-badge--success  { background: #eaf3de; color: #16a34a; }
+.asp-status-badge--ready    { background: #fef0e0; color: #d97706; }
+.asp-status-badge--approved { background: #e0f0ff; color: #2563eb; }
+.asp-status-badge--hold     { background: #fee2e2; color: #dc2626; }
+.asp-status-badge--cancel   { background: #f5f5f5; color: #888;    }
 
 /* 버튼 */
 .asp-detail-btn {

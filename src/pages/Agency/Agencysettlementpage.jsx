@@ -9,10 +9,10 @@ import { getAgencySettlements, getAgencySettlementSummary, updateSettlementStatu
 
 // 백엔드 status 값 → UI 레이블/스타일 매핑
 const STATUS_MAP = {
-  PAID:     { label: "지급 완료", type: "success" },
-  PENDING:  { label: "지급 대기", type: "ready"   },
-  APPROVED: { label: "지급 대기", type: "ready"   },
-  DISPUTED: { label: "보류",     type: "hold"    },
+  PAID:     { label: "지급 완료", type: "success"  },
+  PENDING:  { label: "지급 대기", type: "ready"    },
+  APPROVED: { label: "승인됨",   type: "approved" },
+  DISPUTED: { label: "보류",     type: "hold"     },
 };
 
 const TYPE_MAP = {
