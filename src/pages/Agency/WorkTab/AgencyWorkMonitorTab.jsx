@@ -1,286 +1,186 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  ClipboardList, Clock, Wrench, CheckCircle, UserCheck,
+  ClipboardList, Clock, Wrench, CheckCircle,
   Search, ChevronDown, ChevronLeft, ChevronRight,
-  ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw, Phone, 
+  ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw, Phone,
 } from "lucide-react";
 import "../../../styles/Agency/WorkTab/AgencyWorkMonitorTab.css";
+import { getInProgressAssignments } from "../../../apis/agencyAssignment";
 
-// ──────────────────────────────────────────
-// TODO: API 연동
-// GET /api/agency/as-assignments/in-progress?page=0&size=10
-// as_assignments WHERE status IN (ACCEPTED, COMPLETED)
-// + as_requests + appliances + users(고객) + engineer_profiles JOIN
-// + as_status_logs (request_id 기준 최신 로그)
-//
-// 실시간 갱신: SSE /api/sse/agency/{agencyId}/work-status 구독
-// or 자동 polling (현재 구현)
-// ──────────────────────────────────────────
-
-// ──────────────────────────────────────────
-// as_status_logs.to_status ENUM 기준으로 진행 상태 매핑
-// DB ENUM: WAITING / ENGINEER_DEPARTED / ENGINEER_ARRIVED / IN_PROGRESS / COMPLETED
-// ──────────────────────────────────────────
+// as_status_logs.to_status ENUM → UI 표현 매핑
 const STATUS_LOG_MAP = {
-  WAITING:           { label: "방문 대기",   type: "waiting",  stepIdx: 1 },
-  ENGINEER_DEPARTED: { label: "기사 이동 중", type: "moving",   stepIdx: 2 },
-  ENGINEER_ARRIVED:  { label: "기사 도착",   type: "arrived",  stepIdx: 3 },
-  IN_PROGRESS:       { label: "작업 진행 중", type: "working",  stepIdx: 4 },
-  COMPLETED:         { label: "작업 완료",   type: "done",     stepIdx: 5 },
+  WAITING:           { label: "방문 대기",   type: "waiting"  },
+  ENGINEER_DEPARTED: { label: "기사 이동 중", type: "moving"   },
+  ENGINEER_ARRIVED:  { label: "기사 도착",   type: "arrived"  },
+  IN_PROGRESS:       { label: "작업 진행 중", type: "working"  },
+  COMPLETED:         { label: "작업 완료",   type: "done"     },
 };
 
-
-
-// 통계 카드 - as_status_logs 기반 집계
-const statCards = [
-  { label: "전체 진행 중",   value: 25, icon: ClipboardList, color: "purple" },
-  { label: "기사 이동 중",  value: 8,  icon: Clock,         color: "blue"   },
-  { label: "작업 진행 중",  value: 14, icon: Wrench,        color: "green"  },
-  { label: "고객 확인 대기",value: 3,  icon: UserCheck,   color: "orange" },
-  { label: "완료",          value: 18, icon: CheckCircle,        color: "gray"   },
-];
-
-// ──────────────────────────────────────────
-//  진행 현황 스텝 - as_status_logs.to_status ENUM 기준
-// as_requests.status 흐름과 별개로 기사 현장 단계 추적
-// ──────────────────────────────────────────
+// 진행 단계 순서 (stepTimes 키와 동일)
 const WORK_STEPS = [
-  { key: "ACCEPTED",          label: "배정 완료" },  // as_assignments.status
-  { key: "WAITING",           label: "방문 대기" },  // as_status_logs.to_status
+  { key: "ACCEPTED",          label: "배정 완료" },
+  { key: "WAITING",           label: "방문 대기" },
   { key: "ENGINEER_DEPARTED", label: "이동 중"   },
   { key: "ENGINEER_ARRIVED",  label: "도착"      },
   { key: "IN_PROGRESS",       label: "작업 중"   },
   { key: "COMPLETED",         label: "완료"      },
 ];
 
-// ──────────────────────────────────────────
-// TODO: API 연동 포인트 1
-// GET /api/agency/as-assignments/in-progress
-// 응답 필드:
-//   assignmentId, requestId, assignMethod (DB: assign_method ENUM('AUTO','MANUAL'))
-//   customerId, customerName, customerPhone
-//   productName, modelNo
-//   engineerName, engineerPhone, engineerRating, engineerImg
-//   latestLogStatus (as_status_logs 최신 to_status)
-//   assignmentStatus (as_assignments.status)
-//   updatedAt, visitDate, visitAddress
-//   logs: [{ toStatus, memo, createdAt }]  ← as_status_logs
-//   stepTimes: { ACCEPTED, WAITING, ENGINEER_DEPARTED, ... }
-// ──────────────────────────────────────────
-const monitorList = [
-  {
-    id: 1,
-    requestId: "AS-20240618-0001", createdAt: "2024.06.18",
-    customer: "김민지", phone: "010-1234-5678",
-    productName: "LG 디오스 냉장고", modelNo: "M874GBB231",
-    engineerName: "김철수 기사", engineerImg: null,
-    engineerRating: 4.9, engineerPhone: "010-1111-2222",
-    assignMethod: "MANUAL",             // as_requests.assign_type → MANUAL
-    assignmentStatus: "ACCEPTED",       // as_assignments.status
-    latestLogStatus: "IN_PROGRESS",     // as_status_logs 최신 to_status
-    updatedAt: "2024.06.18 10:20",
-    visitDate: "2024.06.18 (화) 10:00 ~ 12:00",
-    address: "서울특별시 강남구 역삼로 123-45",
-    logs: [
-      { toStatus: "IN_PROGRESS",       memo: "김철수 기사가 작업을 시작했습니다.", createdAt: "2024-06-18 10:00" },
-      { toStatus: "ENGINEER_ARRIVED",  memo: "김철수 기사가 도착했습니다.",       createdAt: "2024-06-18 09:50" },
-      { toStatus: "ENGINEER_DEPARTED", memo: "김철수 기사가 출발했습니다.",       createdAt: "2024-06-18 09:35" },
-      { toStatus: "WAITING",           memo: "배정이 완료됐습니다.",             createdAt: "2024-06-18 09:10" },
-    ],
-    stepTimes: {
-      ACCEPTED:          "09:10",
-      WAITING:           "09:10",
-      ENGINEER_DEPARTED: "09:35",
-      ENGINEER_ARRIVED:  "09:50",
-      IN_PROGRESS:       "10:00",
-      COMPLETED:         null,
-    },
-  },
-  {
-    id: 2,
-    requestId: "AS-20240618-0002", createdAt: "2024.06.18",
-    customer: "이영희", phone: "010-2345-6789",
-    productName: "삼성 세탁기", modelNo: "WF21T6500KP",
-    engineerName: "박민수 기사", engineerImg: null,
-    engineerRating: 4.8, engineerPhone: "010-2222-3333",
-    assignMethod: "AUTO",
-    assignmentStatus: "ACCEPTED",
-    latestLogStatus: "ENGINEER_DEPARTED",
-    updatedAt: "2024.06.18 09:50",
-    visitDate: "2024.06.18 (화) 14:00 ~ 16:00",
-    address: "서울특별시 송파구 올림픽로 100",
-    logs: [
-      { toStatus: "ENGINEER_DEPARTED", memo: "박민수 기사가 출발했습니다.", createdAt: "2024-06-18 09:50" },
-      { toStatus: "WAITING",           memo: "배정이 완료됐습니다.",       createdAt: "2024-06-18 09:30" },
-    ],
-    stepTimes: {
-      ACCEPTED: "09:30", WAITING: "09:30",
-      ENGINEER_DEPARTED: "09:50", ENGINEER_ARRIVED: null, IN_PROGRESS: null, COMPLETED: null,
-    },
-  },
-  {
-    id: 3,
-    requestId: "AS-20240618-0003", createdAt: "2024.06.18",
-    customer: "박준호", phone: "010-3456-7890",
-    productName: "LG 에어컨", modelNo: "FQ18HDWHRN",
-    engineerName: "이영호 기사", engineerImg: null,
-    engineerRating: 4.7, engineerPhone: "010-3333-4444",
-    assignMethod: "MANUAL",
-    assignmentStatus: "ACCEPTED",
-    latestLogStatus: "IN_PROGRESS",
-    updatedAt: "2024.06.18 10:10",
-    visitDate: "2024.06.18 (화) 16:00 ~ 18:00",
-    address: "서울특별시 강동구 천호대로 200",
-    logs: [
-      { toStatus: "IN_PROGRESS", memo: "이영호 기사가 작업을 시작했습니다.", createdAt: "2024-06-18 10:10" },
-    ],
-    stepTimes: {
-      ACCEPTED: "09:40", WAITING: "09:40",
-      ENGINEER_DEPARTED: "10:00", ENGINEER_ARRIVED: "10:05", IN_PROGRESS: "10:10", COMPLETED: null,
-    },
-  },
-  {
-    id: 4,
-    requestId: "AS-20240618-0004", createdAt: "2024.06.18",
-    customer: "최서연", phone: "010-4567-8901",
-    productName: "삼성 QLED TV", modelNo: "KQ55QC67AFXKR",
-    engineerName: "최지현 기사", engineerImg: null,
-    engineerRating: 4.6, engineerPhone: "010-4444-5555",
-    assignMethod: "AUTO",
-    assignmentStatus: "COMPLETED",      // as_assignments.status=COMPLETED → 고객 확인 대기
-    latestLogStatus: "COMPLETED",       // as_status_logs 최신
-    updatedAt: "2024.06.18 09:30",
-    visitDate: "2024.06.18 (화) 11:00 ~ 13:00",
-    address: "서울특별시 서초구 강남대로 300",
-    logs: [
-      { toStatus: "COMPLETED", memo: "최지현 기사가 작업을 완료했습니다.", createdAt: "2024-06-18 09:30" },
-    ],
-    stepTimes: {
-      ACCEPTED: "08:50", WAITING: "08:50",
-      ENGINEER_DEPARTED: "09:10", ENGINEER_ARRIVED: "09:20", IN_PROGRESS: "09:20", COMPLETED: "09:30",
-    },
-  },
-  {
-    id: 5,
-    requestId: "AS-20240618-0005", createdAt: "2024.06.18",
-    customer: "정유진", phone: "010-5678-9012",
-    productName: "LG 식기세척기", modelNo: "DFB22S",
-    engineerName: "정유진 기사", engineerImg: null,
-    engineerRating: 4.5, engineerPhone: "010-5555-6666",
-    assignMethod: "MANUAL",
-    assignmentStatus: "ACCEPTED",
-    latestLogStatus: "IN_PROGRESS",
-    updatedAt: "2024.06.18 10:35",
-    visitDate: "2024.06.18 (화) 15:00 ~ 17:00",
-    address: "서울특별시 강남구 테헤란로 50",
-    logs: [],
-    stepTimes: {
-      ACCEPTED: "09:20", WAITING: "09:20",
-      ENGINEER_DEPARTED: "10:00", ENGINEER_ARRIVED: null, IN_PROGRESS: "10:35", COMPLETED: null,
-    },
-  },
-  {
-    id: 6,
-    requestId: "AS-20240618-0006", createdAt: "2024.06.17",
-    customer: "이태훈", phone: "010-6789-0123",
-    productName: "위니아 김치냉장고", modelNo: "WQ57DGK",
-    engineerName: "홍길동 기사", engineerImg: null,
-    engineerRating: 4.4, engineerPhone: "010-6666-7777",
-    assignMethod: "AUTO",
-    assignmentStatus: "ACCEPTED",
-    latestLogStatus: "ENGINEER_DEPARTED",
-    updatedAt: "2024.06.18 08:55",
-    visitDate: "2024.06.18 (화) 13:00 ~ 15:00",
-    address: "서울특별시 강북구 미아로 10",
-    logs: [],
-    stepTimes: {
-      ACCEPTED: "08:30", WAITING: "08:30",
-      ENGINEER_DEPARTED: "08:55", ENGINEER_ARRIVED: null, IN_PROGRESS: null, COMPLETED: null,
-    },
-  },
-  {
-    id: 7,
-    requestId: "AS-20240618-0007", createdAt: "2024.06.17",
-    customer: "김수현", phone: "010-8901-2345",
-    productName: "삼성 에어드레서", modelNo: "DF60A8500KG",
-    engineerName: "강이진 기사", engineerImg: null,
-    engineerRating: null, engineerPhone: null,
-    assignMethod: "MANUAL",
-    assignmentStatus: "ACCEPTED",
-    latestLogStatus: "IN_PROGRESS",
-    updatedAt: "2024.06.18 10:40",
-    visitDate: "2024.06.18 (화) 15:00 ~ 17:00",
-    address: "서울특별시 마포구 월드컵로 80",
-    logs: [],
-    stepTimes: {
-      ACCEPTED: "09:00", WAITING: "09:00",
-      ENGINEER_DEPARTED: "10:00", ENGINEER_ARRIVED: null, IN_PROGRESS: "10:40", COMPLETED: null,
-    },
-  },
-  {
-    id: 8,
-    requestId: "AS-20240618-0008", createdAt: "2024.06.17",
-    customer: "유한나", phone: "010-9012-3456",
-    productName: "LG 전기오븐", modelNo: "ML32WW1",
-    engineerName: "이재훈 기사", engineerImg: null,
-    engineerRating: 4.3, engineerPhone: "010-7777-8888",
-    assignMethod: "AUTO",
-    assignmentStatus: "COMPLETED",
-    latestLogStatus: "COMPLETED",
-    updatedAt: "2024.06.18 09:45",
-    visitDate: "2024.06.18 (화) 09:00 ~ 11:00",
-    address: "서울특별시 강서구 화곡로 20",
-    logs: [],
-    stepTimes: {
-      ACCEPTED: "08:00", WAITING: "08:00",
-      ENGINEER_DEPARTED: "08:30", ENGINEER_ARRIVED: "09:00", IN_PROGRESS: "09:00", COMPLETED: "09:45",
-    },
-  },
+// latestLogStatus 필터 옵션
+const LOG_STATUS_OPTIONS = [
+  { value: "",                  label: "전체 상태" },
+  { value: "WAITING",           label: "방문 대기" },
+  { value: "ENGINEER_DEPARTED", label: "기사 이동 중" },
+  { value: "ENGINEER_ARRIVED",  label: "기사 도착" },
+  { value: "IN_PROGRESS",       label: "작업 진행 중" },
+  { value: "COMPLETED",         label: "작업 완료" },
 ];
 
-function Avatar({ name, profileImageUrl, size = 32 }) {
-  return (
-    <div className="wmt-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
-      {profileImageUrl ? <img src={profileImageUrl} alt={name} /> : <span>{name?.charAt(0) ?? "?"}</span>}
-    </div>
-  );
-}
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+const INTERVAL_OPTIONS  = [10, 30, 60];
 
-// 현재 스텝 인덱스 계산
+// 현재 스텝 인덱스 계산 (WORK_STEPS 기준)
 function getCurrentStepIdx(latestLogStatus, assignmentStatus) {
   if (assignmentStatus === "COMPLETED" || latestLogStatus === "COMPLETED") return 5;
   const map = { WAITING: 1, ENGINEER_DEPARTED: 2, ENGINEER_ARRIVED: 3, IN_PROGRESS: 4 };
   return map[latestLogStatus] ?? 0;
 }
 
-export default function AgencyWorkMonitorTab() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(30);
-  const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
-  const totalPages = 5;
-  const INTERVAL_OPTIONS = [10, 30, 60];
+// 날짜+시간 문자열 조합 → UI 표시용
+function formatVisitDateTime(visitDate, visitTime) {
+  if (!visitDate) return "-";
+  return visitTime ? `${visitDate} ${visitTime}` : visitDate;
+}
 
-  // 수정 3: SSE 연동 주석 추가 / 현재는 polling
+// ISO 날짜시간 → "MM.DD HH:mm"
+function formatUpdatedAt(isoStr) {
+  if (!isoStr) return "-";
+  const d = new Date(isoStr);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${mm}.${dd} ${hh}:${min}`;
+}
+
+// createdAt ISO → "YYYY.MM.DD"
+function formatCreatedAt(isoStr) {
+  if (!isoStr) return "-";
+  const d = new Date(isoStr);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function Avatar({ name, profileImageUrl, size = 32 }) {
+  return (
+    <div className="wmt-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
+      {profileImageUrl
+        ? <img src={profileImageUrl} alt={name} />
+        : <span>{name?.charAt(0) ?? "?"}</span>}
+    </div>
+  );
+}
+
+export default function AgencyWorkMonitorTab() {
+  // ── 필터 상태 ──
+  const [filters, setFilters] = useState({
+    date:            "",
+    latestLogStatus: "",
+    brand:           "",
+    keyword:         "",
+  });
+
+  // ── 페이지네이션 상태 ──
+  const [page, setPage]   = useState(0); // 0-based (API 기준)
+  const [size, setSize]   = useState(10);
+
+  // ── API 응답 상태 ──
+  const [stats,        setStats]        = useState({ totalCount: 0, movingCount: 0, inProgressCount: 0, completedCount: 0 });
+  const [content,      setContent]      = useState([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages,   setTotalPages]   = useState(0);
+
+  // ── UI 상태 ──
+  const [selectedItem,          setSelectedItem]          = useState(null);
+  const [autoRefresh,           setAutoRefresh]           = useState(true);
+  const [refreshInterval,       setRefreshInterval]       = useState(30);
+  const [showIntervalDropdown,  setShowIntervalDropdown]  = useState(false);
+  const [showSizeDropdown,      setShowSizeDropdown]      = useState(false);
+  const [loading,               setLoading]               = useState(false);
+  const [error,                 setError]                 = useState(null);
+
+  // ── API 호출 ──
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await getInProgressAssignments({
+        page,
+        size,
+        date:            filters.date            || undefined,
+        latestLogStatus: filters.latestLogStatus || undefined,
+        brand:           filters.brand           || undefined,
+        keyword:         filters.keyword         || undefined,
+      });
+      setStats(data.stats ?? { totalCount: 0, movingCount: 0, inProgressCount: 0, completedCount: 0 });
+      setContent(data.content ?? []);
+      setTotalElements(data.totalElements ?? 0);
+      setTotalPages(data.totalPages ?? 0);
+      // 선택 항목이 있었으면 갱신된 데이터로 교체
+      if (selectedItem) {
+        const refreshed = (data.content ?? []).find(i => i.assignmentId === selectedItem.assignmentId);
+        setSelectedItem(refreshed ?? null);
+      }
+    } catch (err) {
+      console.error("진행 중 배정 조회 실패:", err);
+      setError("데이터를 불러오는 데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, size, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 필터·페이지 변경 시 재조회
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // 자동 갱신 polling
   useEffect(() => {
     if (!autoRefresh) return;
-    const timer = setInterval(() => {
-      // TODO: API 재호출 or SSE 구독
-      // SSE: const source = new EventSource(`/api/sse/agency/${agencyId}/work-status`);
-      // source.onmessage = (e) => { setMonitorList(JSON.parse(e.data)); };
-      console.log(`${refreshInterval}초마다 갱신`);
-    }, refreshInterval * 1000);
+    const timer = setInterval(fetchData, refreshInterval * 1000);
     return () => clearInterval(timer);
-  }, [autoRefresh, refreshInterval]);
+  }, [autoRefresh, refreshInterval, fetchData]);
 
-  const selectedStatus = selectedItem
-    ? STATUS_LOG_MAP[selectedItem.latestLogStatus]
-    : null;
+  // ── 필터 핸들러 ──
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setPage(0); // 필터 변경 시 첫 페이지로
+  };
 
+  const handleResetFilters = () => {
+    setFilters({ date: "", latestLogStatus: "", brand: "", keyword: "" });
+    setPage(0);
+  };
+
+  // ── 통계 카드 목록 (API stats 기반) ──
+  const statCards = [
+    { label: "전체 진행 중", value: stats.totalCount,      icon: ClipboardList, color: "purple" },
+    { label: "기사 이동 중", value: stats.movingCount,     icon: Clock,         color: "blue"   },
+    { label: "작업 진행 중", value: stats.inProgressCount, icon: Wrench,        color: "green"  },
+    { label: "완료",         value: stats.completedCount,  icon: CheckCircle,   color: "gray"   },
+  ];
+
+  // ── 선택 항목 상태 ──
+  const selectedStatus  = selectedItem ? STATUS_LOG_MAP[selectedItem.latestLogStatus]  : null;
   const selectedStepIdx = selectedItem
     ? getCurrentStepIdx(selectedItem.latestLogStatus, selectedItem.assignmentStatus)
     : 0;
+
+  // ── 페이지 버튼 목록 (최대 5개 표시) ──
+  const pageNumbers = (() => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i);
+    const start = Math.max(0, Math.min(page - 2, totalPages - 5));
+    return Array.from({ length: 5 }, (_, i) => start + i);
+  })();
 
   return (
     <div className="wmt">
@@ -313,6 +213,9 @@ export default function AgencyWorkMonitorTab() {
             </div>
           )}
         </div>
+        <button className="wmt-refresh-now-btn" onClick={fetchData} title="지금 새로고침">
+          <RefreshCw size={13} />
+        </button>
       </div>
 
       {/* 통계 카드 */}
@@ -334,21 +237,56 @@ export default function AgencyWorkMonitorTab() {
         {/* 좌측 테이블 */}
         <div className="wmt-left">
           <div className="wmt-filters">
-            <div className="wmt-filter-select"><span>날짜 선택</span><ChevronDown size={13} /></div>
-            <div className="wmt-filter-select"><span>전체 지역</span><ChevronDown size={13} /></div>
-            <div className="wmt-filter-select"><span>전체 상태</span><ChevronDown size={13} /></div>
-            <div className="wmt-filter-select"><span>전체 브랜드</span><ChevronDown size={13} /></div>
-            <div className="wmt-filter-select"><span>담당 기사</span><ChevronDown size={13} /></div>
+            {/* 날짜 필터 */}
+            <input
+              type="date"
+              className="wmt-filter-date"
+              value={filters.date}
+              onChange={e => handleFilterChange("date", e.target.value)}
+            />
+
+            {/* 진행 상태 필터 */}
+            <select
+              className="wmt-filter-select"
+              value={filters.latestLogStatus}
+              onChange={e => handleFilterChange("latestLogStatus", e.target.value)}
+            >
+              {LOG_STATUS_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+
+            {/* 브랜드 필터 */}
+            <input
+              type="text"
+              className="wmt-filter-brand"
+              placeholder="브랜드"
+              value={filters.brand}
+              onChange={e => handleFilterChange("brand", e.target.value)}
+            />
+
+            {/* 키워드 검색 */}
             <div className="wmt-search">
               <Search size={13} color="#aaa" />
-              <input type="text" placeholder="접수번호, 고객명, 제품명 검색" />
+              <input
+                type="text"
+                placeholder="접수번호, 고객명, 제품명 검색"
+                value={filters.keyword}
+                onChange={e => handleFilterChange("keyword", e.target.value)}
+              />
             </div>
-            <button className="wmt-reset-btn"><RefreshCw size={13} /> 필터 초기화</button>
+
+            <button className="wmt-reset-btn" onClick={handleResetFilters}>
+              <RefreshCw size={13} /> 필터 초기화
+            </button>
           </div>
 
           <div className="wmt-table-meta">
-            <span className="wmt-total">진행 작업 목록 (24건)</span>
+            <span className="wmt-total">진행 작업 목록 ({totalElements}건)</span>
           </div>
+
+          {/* 에러 메시지 */}
+          {error && <p className="wmt-error">{error}</p>}
 
           <div className="wmt-table">
             <div className="wmt-table__header">
@@ -362,21 +300,29 @@ export default function AgencyWorkMonitorTab() {
               <span>액션</span>
             </div>
 
-            {monitorList.map((item) => {
+            {loading && (
+              <div className="wmt-loading">데이터를 불러오는 중...</div>
+            )}
+
+            {!loading && content.length === 0 && (
+              <div className="wmt-empty">진행 중인 배정이 없습니다.</div>
+            )}
+
+            {!loading && content.map((item) => {
               const s = STATUS_LOG_MAP[item.latestLogStatus] ?? { label: "대기", type: "waiting" };
-              const isSelected = selectedItem?.id === item.id;
+              const isSelected = selectedItem?.assignmentId === item.assignmentId;
               return (
                 <div
-                  key={item.id}
+                  key={item.assignmentId}
                   className={`wmt-table__row ${isSelected ? "wmt-table__row--selected" : ""}`}
                 >
                   <span className="wmt-table__id-col">
-                    <span className="wmt-table__id">{item.requestId}</span>
-                    <span className="wmt-table__date">접수일 {item.createdAt}</span>
+                    <span className="wmt-table__id">#{item.requestId}</span>
+                    <span className="wmt-table__date">접수일 {formatCreatedAt(item.createdAt)}</span>
                   </span>
                   <span className="wmt-table__customer-col">
-                    <span className="wmt-table__customer">{item.customer}</span>
-                    <span className="wmt-table__phone">{item.phone}</span>
+                    <span className="wmt-table__customer">{item.customerName}</span>
+                    <span className="wmt-table__phone">{item.customerPhone}</span>
                   </span>
                   <span className="wmt-table__product-col">
                     <span className="wmt-table__product-name">{item.productName}</span>
@@ -384,7 +330,7 @@ export default function AgencyWorkMonitorTab() {
                   </span>
                   <span className="wmt-table__engineer-col">
                     {item.engineerName
-                      ? <><Avatar name={item.engineerName} size={26} /><span>{item.engineerName}</span></>
+                      ? <><Avatar name={item.engineerName} profileImageUrl={item.engineerImg} size={26} /><span>{item.engineerName}</span></>
                       : <span className="wmt-table__no-engineer">-</span>
                     }
                   </span>
@@ -392,13 +338,13 @@ export default function AgencyWorkMonitorTab() {
                     <span className={`wmt-badge wmt-badge--${s.type}`}>{s.label}</span>
                   </span>
                   <span className="wmt-table__step">{s.label}</span>
-                  <span className="wmt-table__updated">{item.updatedAt?.slice(5)}</span>
-                  <span className="wmt-table__actions" onClick={(e) => e.stopPropagation()}>
+                  <span className="wmt-table__updated">{formatUpdatedAt(item.updatedAt)}</span>
+                  <span className="wmt-table__actions" onClick={e => e.stopPropagation()}>
                     <button
-                     className={`wmt-detail-btn ${selectedItem?.id === item.id ? "wmt-detail-btn--active" : ""}`}
-                     onClick={() => setSelectedItem(item)}
+                      className={`wmt-detail-btn ${isSelected ? "wmt-detail-btn--active" : ""}`}
+                      onClick={() => setSelectedItem(isSelected ? null : item)}
                     >
-                     상세보기
+                      {isSelected ? "닫기" : "상세보기"}
                     </button>
                     <button className="wmt-more-btn"><MoreVertical size={14} /></button>
                   </span>
@@ -410,24 +356,47 @@ export default function AgencyWorkMonitorTab() {
           {/* 페이지네이션 */}
           <div className="wmt-pagination">
             <div className="wmt-pagination__left">
-              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-              {[1,2,3,4,5].map(p => (
-                <button key={p} className={currentPage === p ? "wmt-pagination__active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
+              <button onClick={() => setPage(0)} disabled={page === 0}><ChevronsLeft size={14} /></button>
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}><ChevronLeft size={14} /></button>
+              {pageNumbers.map(p => (
+                <button
+                  key={p}
+                  className={page === p ? "wmt-pagination__active" : ""}
+                  onClick={() => setPage(p)}
+                >
+                  {p + 1}
+                </button>
               ))}
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
-              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
+              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronRight size={14} /></button>
+              <button onClick={() => setPage(Math.max(0, totalPages - 1))} disabled={page >= totalPages - 1}><ChevronsRight size={14} /></button>
             </div>
-            <div className="wmt-page-size">10개씩 보기 <ChevronDown size={13} /></div>
+            {/* 페이지 크기 선택 */}
+            <div className="wmt-page-size-wrap">
+              <div className="wmt-page-size" onClick={() => setShowSizeDropdown(p => !p)}>
+                {size}개씩 보기 <ChevronDown size={13} />
+              </div>
+              {showSizeDropdown && (
+                <div className="wmt-refresh-dropdown">
+                  {PAGE_SIZE_OPTIONS.map(s => (
+                    <button
+                      key={s}
+                      className={`wmt-refresh-dropdown__item ${size === s ? "wmt-refresh-dropdown__item--active" : ""}`}
+                      onClick={() => { setSize(s); setPage(0); setShowSizeDropdown(false); }}
+                    >
+                      {s}개씩
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* 오늘 진행 요약 */}
           <div className="wmt-table-meta">
             <span className="wmt-total">오늘 진행 요약</span>
           </div>
-          {/* 오늘 진행 요약 */}
           <div className="wmt-today">
             <div className="wmt-today__cards">
-              
               {statCards.map((s) => (
                 <div key={s.label} className="wmt-today__card">
                   <div className={`wmt-today__icon wmt-today__icon--${s.color}`}><s.icon size={16} /></div>
@@ -449,35 +418,37 @@ export default function AgencyWorkMonitorTab() {
               </span>
             </div>
 
-            <p className="wmt-detail__id">{selectedItem.requestId}</p>
+            <p className="wmt-detail__id">#{selectedItem.requestId}</p>
+            <p className="wmt-detail__created">접수일 {formatCreatedAt(selectedItem.createdAt)}</p>
 
             {/* 고객 정보 */}
             <div className="wmt-detail__section">
               <p className="wmt-detail__section-label">고객 정보</p>
               <div className="wmt-detail__row">
-                <span>{selectedItem.customer} 고객</span>
-                <span className="wmt-detail__phone"><Phone size={11} /> {selectedItem.phone}</span>
+                <span>{selectedItem.customerName} 고객</span>
+                <span className="wmt-detail__phone"><Phone size={11} /> {selectedItem.customerPhone}</span>
               </div>
             </div>
 
             {/* 제품 정보 */}
             <div className="wmt-detail__section">
               <p className="wmt-detail__section-label">제품 정보</p>
-              <p className="wmt-detail__value">{selectedItem.productName} ({selectedItem.modelNo})</p>
+              <p className="wmt-detail__value">{selectedItem.productName} ({selectedItem.modelNo ?? "-"})</p>
             </div>
 
             {/* 담당 기사 */}
             <div className="wmt-detail__section">
               <div className="wmt-detail__section-header">
                 <p className="wmt-detail__section-label">담당 기사</p>
-                <button className="wmt-detail__engineer-link">기사 정보 보기</button>
               </div>
               <div className="wmt-detail__engineer-card">
-                <Avatar name={selectedItem.engineerName} size={36} />
+                <Avatar name={selectedItem.engineerName} profileImageUrl={selectedItem.engineerImg} size={36} />
                 <div>
                   <p className="wmt-detail__engineer-name">
                     {selectedItem.engineerName ?? "-"}
-                    {selectedItem.engineerRating && <span className="wmt-detail__rating"> ⭐ {selectedItem.engineerRating}</span>}
+                    {selectedItem.engineerRating != null && (
+                      <span className="wmt-detail__rating"> ⭐ {selectedItem.engineerRating}</span>
+                    )}
                   </p>
                   {selectedItem.engineerPhone && (
                     <p className="wmt-detail__engineer-phone">{selectedItem.engineerPhone}</p>
@@ -489,18 +460,20 @@ export default function AgencyWorkMonitorTab() {
             {/* 예약 정보 */}
             <div className="wmt-detail__section">
               <p className="wmt-detail__section-label">예약 정보</p>
-              <p className="wmt-detail__value">{selectedItem.visitDate}</p>
-              <p className="wmt-detail__address">{selectedItem.address}</p>
+              <p className="wmt-detail__value">
+                {formatVisitDateTime(selectedItem.visitDate, selectedItem.visitTime)}
+              </p>
+              <p className="wmt-detail__address">{selectedItem.visitAddress}</p>
             </div>
 
-            {/* 수정 2: 진행 현황 - as_status_logs.to_status ENUM 기준 스텝 */}
+            {/* 진행 현황 스텝 */}
             <div className="wmt-detail__section">
               <p className="wmt-detail__section-label">진행 현황</p>
               <div className="wmt-steps">
                 {WORK_STEPS.map((step, i) => {
-                  const isDone = i <= selectedStepIdx - 1;
+                  const isDone    = i <= selectedStepIdx - 1;
                   const isCurrent = i === selectedStepIdx - 1;
-                  const stepTime = selectedItem.stepTimes?.[step.key];
+                  const stepTime  = selectedItem.stepTimes?.[step.key];
                   return (
                     <div key={step.key} className="wmt-step-item">
                       <div className={`wmt-step-dot ${isDone ? "wmt-step-dot--done" : ""} ${isCurrent ? "wmt-step-dot--current" : ""}`} />
@@ -515,8 +488,8 @@ export default function AgencyWorkMonitorTab() {
               </div>
             </div>
 
-            {/* 단계별 로그 - as_status_logs 기반 */}
-            {selectedItem.logs.length > 0 && (
+            {/* 단계별 로그 */}
+            {selectedItem.logs?.length > 0 && (
               <div className="wmt-detail__section">
                 <p className="wmt-detail__section-label">단계별 로그</p>
                 <div className="wmt-logs">
@@ -532,8 +505,6 @@ export default function AgencyWorkMonitorTab() {
                 </div>
               </div>
             )}
-
-
           </aside>
         )}
       </div>
