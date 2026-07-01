@@ -165,17 +165,17 @@ export default function AgencyWorkReceiptTab() {
   return (
     <div className="receipt-tab">
 
-      {/* ── 통계 카드 (기존 그대로) ── */}
+      {/* ── 통계 카드 ── */}
       <div className="receipt-stats">
         {statCards.map((s) => (
           <div key={s.label} className="receipt-stat-card">
-            <div className={`receipt-stat-card__icon receipt-stat-card__icon--${s.color}`}>
-              <s.icon size={20} />
-            </div>
-            <div>
-              <p className="receipt-stat-card__label">{s.label}</p>
+            <div className="receipt-stat-card__text">
               <p className="receipt-stat-card__value">{s.value}<span>건</span></p>
+              <p className="receipt-stat-card__label">{s.label}</p>
               <p className="receipt-stat-card__today">오늘 {s.today}</p>
+            </div>
+            <div className={`receipt-stat-card__icon receipt-stat-card__icon--${s.color}`}>
+              <s.icon size={40} strokeWidth={1} />
             </div>
           </div>
         ))}

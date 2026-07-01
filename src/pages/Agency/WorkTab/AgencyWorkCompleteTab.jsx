@@ -104,10 +104,12 @@ export default function AgencyWorkCompleteTab() {
       <div className="wct-stats">
         {statCards.map((s) => (
           <div key={s.label} className="wct-stat-card">
-            <div className={`wct-stat-card__icon wct-stat-card__icon--${s.color}`}><s.icon size={20} /></div>
-            <div>
-              <p className="wct-stat-card__label">{s.label}</p>
+            <div className="wct-stat-card__text">
               <p className="wct-stat-card__value">{s.value.toLocaleString()}<span>{s.unit}</span></p>
+              <p className="wct-stat-card__label">{s.label}</p>
+            </div>
+            <div className={`wct-stat-card__icon wct-stat-card__icon--${s.color}`}>
+              <s.icon size={40} strokeWidth={1} />
             </div>
           </div>
         ))}

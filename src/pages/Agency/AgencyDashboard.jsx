@@ -10,7 +10,7 @@ const BASE_URL = "http://localhost:8080";
 
 // 공통 fetch 헬퍼 (JWT 자동 첨부)
 async function apiFetch(path) {
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
@@ -141,69 +141,60 @@ export default function AgencyDashboard() {
       {/* 통계 카드 */}
       <div className="agency-stats">
         <div className="agency-stat-card">
-          <div className="agency-stat-card__icon agency-stat-card__icon--blue">
-            <ClipboardList size={20} />
-          </div>
-          <div>
-            <p className="agency-stat-card__label">오늘 기사 수락</p>
+          <div className="agency-stat-card__text">
             <p className="agency-stat-card__value">
               {summaryLoading ? "..." : statsCards.inProgress.value}<span>건</span>
             </p>
-            <p className="agency-stat-card__sub">{statsCards.inProgress.sub}</p>
+            <p className="agency-stat-card__label">오늘 기사 수락</p>
+          </div>
+          <div className="agency-stat-card__icon agency-stat-card__icon--blue">
+            <ClipboardList size={40} strokeWidth={1} />
           </div>
         </div>
 
         <div className="agency-stat-card">
-          <div className="agency-stat-card__icon agency-stat-card__icon--green">
-            <CheckCircle size={20} />
-          </div>
-          <div>
-            <p className="agency-stat-card__label">오늘 신규 접수</p>
+          <div className="agency-stat-card__text">
             <p className="agency-stat-card__value">
               {summaryLoading ? "..." : statsCards.todayDone.value}<span>건</span>
             </p>
-            <p className="agency-stat-card__sub">{statsCards.todayDone.sub}</p>
+            <p className="agency-stat-card__label">오늘 신규 접수</p>
+          </div>
+          <div className="agency-stat-card__icon agency-stat-card__icon--green">
+            <CheckCircle size={40} strokeWidth={1} />
           </div>
         </div>
 
         <div className="agency-stat-card">
-          <div className="agency-stat-card__icon agency-stat-card__icon--purple">
-            <Users size={20} />
-          </div>
-          <div>
-            <p className="agency-stat-card__label">오늘 취소</p>
+          <div className="agency-stat-card__text">
             <p className="agency-stat-card__value">
               {summaryLoading ? "..." : (summary?.todayCancelledCount ?? "-")}<span>건</span>
             </p>
-            <p className="agency-stat-card__sub">
-              {summary ? `누적 ${summary.totalCount}건` : "로딩 중..."}
-            </p>
+            <p className="agency-stat-card__label">오늘 취소</p>
+          </div>
+          <div className="agency-stat-card__icon agency-stat-card__icon--purple">
+            <Users size={40} strokeWidth={1} />
           </div>
         </div>
 
         <div className="agency-stat-card">
-          <div className="agency-stat-card__icon agency-stat-card__icon--blue2">
-            <HandCoins size={20} />
-          </div>
-          <div>
-            <p className="agency-stat-card__label">이번 달 기사 지급액</p>
+          <div className="agency-stat-card__text">
             <p className="agency-stat-card__value agency-stat-card__value--lg">
               {settlementLoading ? "..." : statsCards.settlement.value}<span>원</span>
             </p>
-            <p className="agency-stat-card__sub">{statsCards.settlement.sub}</p>
+            <p className="agency-stat-card__label">이번 달 기사 지급액</p>
+          </div>
+          <div className="agency-stat-card__icon agency-stat-card__icon--blue2">
+            <HandCoins size={40} strokeWidth={1} />
           </div>
         </div>
 
         <div className="agency-stat-card">
-          <div className="agency-stat-card__icon agency-stat-card__icon--amber">
-            <Star size={20} />
-          </div>
-          <div>
-            <p className="agency-stat-card__label">평균 고객 만족도</p>
+          <div className="agency-stat-card__text">
             <p className="agency-stat-card__value">{statsCards.satisfaction.value}<span>/5.0</span></p>
-            <p className={`agency-stat-card__sub ${statsCards.satisfaction.up ? "agency-stat-card__sub--up" : "agency-stat-card__sub--down"}`}>
-              {statsCards.satisfaction.sub}
-            </p>
+            <p className="agency-stat-card__label">평균 고객 만족도</p>
+          </div>
+          <div className="agency-stat-card__icon agency-stat-card__icon--amber">
+            <Star size={40} strokeWidth={1} />
           </div>
         </div>
       </div>
