@@ -15,7 +15,6 @@ import ServicePage from "../src/pages/Landing/ServicePage.jsx"
 import FeaturePage from "../src/pages/Landing/FeaturePage.jsx";
 import GuidePage from "../src/pages/Landing/GuidePage.jsx";
 
-import ReassignAlertPage from "../src/pages/Agency/ReassignAlertPage.jsx";
 import AgencyDashboard from "../src/pages/Agency/AgencyDashboard";
 import AgencyWorkPage from "./pages/Agency/AgencyWorkPage";
 import AgencyEngineerPage from "../src/pages/Agency/AgencyEngineerPage.jsx"
@@ -46,6 +45,7 @@ import Engineernoticepage from "../src/pages/Engineer/EngineerNoticePage.jsx"
 import EngineerMySchedulePage from "../src/pages/Engineer/Engineermyschedulepage.jsx"
 import Engineerlmspage  from "../src/pages/Engineer/Engineerlmspage.jsx"
 import EngineerCustomerListPage from "../src/pages/Engineer/Engineercustomerlistpage.jsx"
+import EngineerReportSubmitPage from "../src/pages/Engineer/Engineerreportsubmitpage.jsx"
 
 import OAuth2Callback from "../src/pages/auth/OAuth2Callback.jsx"
 
@@ -144,6 +144,7 @@ export default function App() {
           <Route path="/engineer/customers" element={<EngineerCustomerListPage  title="기사 - 고객 정보 조회 목록" />} />
           <Route path="/engineer/customers/:customerId" element={<Engineercustomerpage title="기사 - 고객 정보 조회" />} />
           <Route path="/engineer/report" element={<EngineerReportPage   title="기사 - 작업 보고서" />} />
+          <Route path="/engineer/report/submit" element={<EngineerReportSubmitPage />} />
           <Route path="/engineer/my-schedule" element={<EngineerMySchedulePage title="기사 - 근무표" />} />
           <Route path="/engineer/reports/:reportId" element={<EngineerReportDetailPage />} />
           <Route path="/engineer/settlement" element={<EngineerSettlementPage  title="기사 - 실적/정산" />} />
@@ -155,7 +156,6 @@ export default function App() {
           {/* 대행사 */}
           <Route path="/agency/dashboard" element={<AgencyDashboard  title="대행사 - 대시보드" />} />
           <Route path="/agency/work" element={<AgencyWorkPage  title="대행사 - 작업 관리" />} />
-          <Route path="/agency/reassign-alerts" element={<ReassignAlertPage title="대행사 - 재배차알림"/>} />
           <Route path="/agency/engineers" element={<AgencyEngineerPage  title="대행사 - 기사 관리" />} />
           <Route path="/agency/settlement" element={<AgencySettlementPage  title="대행사 - 정산 관리" />} />
           <Route path="/agency/customers" element={<AgencyCustomerPage  title="대행사 - 고객 관리" />} />

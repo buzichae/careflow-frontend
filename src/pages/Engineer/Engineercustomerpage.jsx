@@ -1,16 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Search, Phone, Mail, MapPin, Clock, FileText,
   ChevronRight, SlidersHorizontal, ArrowLeft,
 } from "lucide-react";
+import { getEngineerCustomerDetail } from "../../apis/engineers"; // 실제 경로에 맞게 수정
 import "../../styles/Engineer/Engineercustomerpage.css";
-
-// ──────────────────────────────────────────
-// TODO: API 연동
-// GET /api/engineer/customers/{customerId}
-// useParams()로 customerId 꺼내서 API 호출
-// ──────────────────────────────────────────
 
 const APPLIANCE_STATUS_MAP = {
   NORMAL:      { label: "정상",     type: "normal"      },
@@ -31,46 +26,6 @@ const AS_STATUS_MAP = {
   CANCELLED:       { label: "취소",    type: "cancelled" },
 };
 
-const customerDetail = {
-  userId: 1001,
-  customerId: "CUST-2024-000123",
-  name: "홍길동",
-  grade: "일반 고객",
-  status: "ACTIVE",
-  phone: "010-1234-5678",
-  email: "honggildong@email.com",
-  address: "서울 강남구 테헤란로 123, 101동 1004호",
-  joinedAt: "2023.05.12",
-  preferredContactTime: "평일 09:00 ~ 18:00",
-  memo: "문 앞 주차 가능, 연락 후 방문 요청",
-  totalAs: 8, doneAs: 6, inProgressAs: 1, cancelledAs: 1,
-  totalPayment: 1248000,
-  appliances: [
-    { applianceId: 1, brand: "LG",   modelName: "디오스 냉장고", modelNo: "F875S10E",    purchaseDate: "2022.06.15", warrantyEndDate: "2025.06.14", status: "NORMAL",      imageUrl: null, registeredAt: "2024.05.20" },
-    { applianceId: 2, brand: "삼성", modelName: "그랑데 세탁기", modelNo: "WF21T6500KP", purchaseDate: "2021.11.03", warrantyEndDate: "2024.11.02", status: "NEED_REPAIR", imageUrl: null, registeredAt: "2024.05.20" },
-    { applianceId: 3, brand: "LG",   modelName: "휘센 에어컨",   modelNo: "FQ18HDWHRN",  purchaseDate: "2023.04.10", warrantyEndDate: "2026.04.09", status: "NORMAL",      imageUrl: null, registeredAt: "2024.05.20" },
-  ],
-  asHistory: [
-    { requestId: "AS-2024-0601-0001", createdAt: "2024.06.01", productName: "LG 디오스 냉장고",  symptom: "냉장실 냉각 약함",  status: "IN_PROGRESS", visitDate: "2024.06.02", finalAmount: 180000 },
-    { requestId: "AS-2024-0515-0003", createdAt: "2024.05.15", productName: "삼성 그랑데 세탁기", symptom: "탈수 시 소음 발생", status: "COMPLETED",   visitDate: "2024.05.16", finalAmount: 120000 },
-    { requestId: "AS-2024-0410-0012", createdAt: "2024.04.10", productName: "LG 휘센 에어컨",    symptom: "바람이 약해요",     status: "COMPLETED",   visitDate: "2024.04.11", finalAmount: 150000 },
-    { requestId: "AS-2024-0323-0007", createdAt: "2024.03.23", productName: "LG 디오스 냉장고",  symptom: "제빙 안됨",         status: "COMPLETED",   visitDate: "2024.03.24", finalAmount: 80000  },
-    { requestId: "AS-2024-0120-0002", createdAt: "2024.01.20", productName: "삼성 그랑데 세탁기", symptom: "문 잠김 오류",      status: "CANCELLED",   visitDate: "-",          finalAmount: null   },
-  ],
-  memos: [
-    { date: "2024.05.15", content: "고객 문의 전화\n세탁기 소음 관련 문의. 방문 후 부품 교체 진행." },
-    { date: "2024.04.10", content: "기사메모\n에어컨 바람 약함 증상. 필터 청소 및 점검 완료."      },
-  ],
-  inProgressWork: {
-    requestId: "AS-2024-0601-0001",
-    productName: "LG 디오스 냉장고",
-    symptom: "냉장실 냉각 약함",
-    visitDate: "2024.06.02 (일) 14:00 ~ 16:00",
-    progressStatus: "기사 배정 완료 → 방문 예정",
-    status: "ACCEPTED",
-  },
-};
-
 function Avatar({ name, size = 60 }) {
   return (
     <div className="ecp-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
@@ -89,22 +44,49 @@ function ApplianceImg({ imageUrl, size = 56 }) {
 
 export default function EngineerCustomerPage() {
   const navigate = useNavigate();
-  const { customerId } = useParams(); // 라우트 파라미터에서 고객 ID 추출
+  const { customerId } = useParams();
 
-  const [asTab, setAsTab]             = useState("전체");
+  const [asTab, setAsTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // TODO: customerId로 API 호출해서 데이터 가져오기
-  const c = customerDetail;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [c, setC] = useState(null);
 
-  const filteredAs = asTab === "전체"   ? c.asHistory
-    : asTab === "진행 중" ? c.asHistory.filter(a => ["ACCEPTED", "IN_PROGRESS", "ASSIGNED"].includes(a.status))
-    : asTab === "완료"    ? c.asHistory.filter(a => ["COMPLETED", "PAID"].includes(a.status))
-    : c.asHistory.filter(a => a.status === "CANCELLED");
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+
+    getEngineerCustomerDetail(customerId)
+      .then((res) => {
+        if (mounted) setC(res.data);
+      })
+      .catch((err) => {
+        console.error("고객 상세 조회 실패:", err);
+        if (mounted) setError("고객 정보를 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => { mounted = false; };
+  }, [customerId]);
+
+  if (loading) return <div className="ecp">불러오는 중...</div>;
+  if (error || !c) return <div className="ecp">{error ?? "고객 정보를 찾을 수 없습니다."}</div>;
+
+  const asHistory = c.asHistory ?? [];
+  const appliances = c.appliances ?? [];
+  const memos = c.memos ?? [];
+
+  const filteredAs = asTab === "전체"   ? asHistory
+    : asTab === "진행 중" ? asHistory.filter(a => ["ACCEPTED", "IN_PROGRESS", "ASSIGNED"].includes(a.status))
+    : asTab === "완료"    ? asHistory.filter(a => ["COMPLETED", "PAID"].includes(a.status))
+    : asHistory.filter(a => a.status === "CANCELLED");
 
   return (
     <div className="ecp">
-      {/* 뒤로가기 버튼 */}
       <button className="ecp-back-btn" onClick={() => navigate(-1)}>
         <ArrowLeft size={15} />
         목록으로 돌아가기
@@ -142,7 +124,7 @@ export default function EngineerCustomerPage() {
                 <div className="ecp-profile__name-row">
                   <span className="ecp-profile__name">{c.name} 고객님</span>
                   <span className="ecp-grade-badge">{c.grade}</span>
-                  <span className={`ecp-status-badge ecp-status-badge--${c.status.toLowerCase()}`}>
+                  <span className={`ecp-status-badge ecp-status-badge--${c.status?.toLowerCase()}`}>
                     {c.status === "ACTIVE" ? "활성" : "비활성"}
                   </span>
                 </div>
@@ -160,11 +142,11 @@ export default function EngineerCustomerPage() {
             </div>
 
             <div className="ecp-as-stats">
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 A/S 건수</p><p className="ecp-as-stat__value">{c.totalAs}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">완료 건수</p><p className="ecp-as-stat__value">{c.doneAs}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">진행 중</p><p className="ecp-as-stat__value">{c.inProgressAs}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">취소/거절</p><p className="ecp-as-stat__value">{c.cancelledAs}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 결제 금액</p><p className="ecp-as-stat__value ecp-as-stat__value--amount">{c.totalPayment.toLocaleString()}원</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 A/S 건수</p><p className="ecp-as-stat__value">{c.totalAs ?? 0}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">완료 건수</p><p className="ecp-as-stat__value">{c.doneAs ?? 0}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">진행 중</p><p className="ecp-as-stat__value">{c.inProgressAs ?? 0}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">취소/거절</p><p className="ecp-as-stat__value">{c.cancelledAs ?? 0}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 결제 금액</p><p className="ecp-as-stat__value ecp-as-stat__value--amount">{(c.totalPayment ?? 0).toLocaleString()}원</p></div>
             </div>
           </div>
 
@@ -178,7 +160,7 @@ export default function EngineerCustomerPage() {
                   onClick={() => setAsTab(tab)}
                 >
                   {tab}{" "}
-                  {tab === "전체" ? `(${c.totalAs})` : tab === "진행 중" ? `(${c.inProgressAs})` : tab === "완료" ? `(${c.doneAs})` : `(${c.cancelledAs})`}
+                  {tab === "전체" ? `(${c.totalAs ?? 0})` : tab === "진행 중" ? `(${c.inProgressAs ?? 0})` : tab === "완료" ? `(${c.doneAs ?? 0})` : `(${c.cancelledAs ?? 0})`}
                 </button>
               ))}
             </div>
@@ -211,12 +193,12 @@ export default function EngineerCustomerPage() {
         <aside className="ecp-right">
           <div className="ecp-panel">
             <div className="ecp-panel__header">
-              <h3 className="ecp-panel__title">보유 가전 목록 ({c.appliances.length})</h3>
+              <h3 className="ecp-panel__title">보유 가전 목록 ({appliances.length})</h3>
               <button className="ecp-panel__link">전체 보기</button>
             </div>
             <div className="ecp-appliance-list">
-              {c.appliances.map(a => {
-                const s = APPLIANCE_STATUS_MAP[a.status];
+              {appliances.map(a => {
+                const s = APPLIANCE_STATUS_MAP[a.status] ?? { label: a.status, type: "normal" };
                 return (
                   <div key={a.applianceId} className="ecp-appliance-item">
                     <ApplianceImg imageUrl={a.imageUrl} size={56} />
@@ -275,7 +257,7 @@ export default function EngineerCustomerPage() {
               <button className="ecp-panel__link">전체 보기 <ChevronRight size={12} /></button>
             </div>
             <div className="ecp-memo-list">
-              {c.memos.map((m, i) => (
+              {memos.map((m, i) => (
                 <div key={i} className="ecp-memo-item">
                   <p className="ecp-memo-item__date">{m.date}</p>
                   <p className="ecp-memo-item__content">{m.content}</p>

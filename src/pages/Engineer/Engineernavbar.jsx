@@ -1,15 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
 import { logout } from "../../apis/auth";
-import "../../styles/Engineer/EngineerNavbar.css";
 
-// TODO: API - GET /api/engineer/me → users + engineer_profiles JOIN
-const engineer = { name: "김철수", role: "수리 기사" };
+import "../../styles/Engineer/EngineerNavbar.css";
 
 export default function EngineerNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
+  const [engineer, setEngineer] = useState({ name: "", role: "수리 기사" });
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -23,16 +22,33 @@ export default function EngineerNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+
   const handleLogout = async () => {
     try {
       await logout();
     } catch (_) {}
     localStorage.removeItem("token");
     navigate("/auth/login");
-  };
+  }
+
+  useEffect(() => {
+    getUserInfo()
+      .then((res) => {
+        setEngineer({
+          name: res.data.name,
+          role: res.data.role ?? "수리 기사",
+        });
+      })
+      .catch((err) => {
+        console.error("유저 정보 조회 실패:", err);
+        // 토큰 만료 등으로 조회 실패 시 로그인 페이지로
+        navigate("/login");
+      });
+  }, [navigate]);
 
   return (
     <div className="enb">
+
       <div className="enb__actions"/>
         <div className="enb__profile-wrap" ref={dropdownRef}>
           <button className="enb__profile" onClick={() => setDropdownOpen(p => !p)}>
@@ -66,6 +82,8 @@ export default function EngineerNavbar() {
             </div>
           )}
         </div>
+
       </div>
+
   );
 }

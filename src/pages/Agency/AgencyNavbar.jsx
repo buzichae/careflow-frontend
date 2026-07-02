@@ -23,6 +23,7 @@ export default function AgencyNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -30,7 +31,6 @@ export default function AgencyNavbar() {
     localStorage.removeItem("token");
     navigate("/auth/login");
   };
-
   return (
     <div className="agency-navbar">
       <div className="agency-navbar__actions">

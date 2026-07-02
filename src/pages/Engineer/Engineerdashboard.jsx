@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar, CheckCircle, Star, Wallet,
@@ -7,26 +7,8 @@ import {
   Shield,
 } from "lucide-react";
 
+import { getEngineerDashboard, updateAssignmentStatus } from "../../apis/engineers";
 import "../../styles/Engineer/Engineerdashboard.css";
-
-// ──────────────────────────────────────────
-// TODO: API 연동
-// GET /api/engineer/dashboard
-// engineer_profiles + users + as_assignments + settlements + reviews JOIN
-//
-// DB 주요 필드:
-//   users.name → 기사 이름
-//   engineer_profiles.skill_level → BEGINNER/INTERMEDIATE/ADVANCED (LV.1~3)
-//   engineer_profiles.avg_rating → 평균 평점 (역정규화)
-//   engineer_profiles.total_reviews → 총 리뷰 수
-//   engineer_profiles.is_lms_completed → 배차 가능 여부
-//   as_assignments WHERE engineer_id = 로그인 기사, status=ACCEPTED → 오늘 예정 작업
-//   as_status_logs.to_status → 현재 작업 상태 (WAITING/ENGINEER_DEPARTED/ENGINEER_ARRIVED/IN_PROGRESS/COMPLETED)
-//   settlements.engineer_net_amount 합산 → 이번 달 수익
-//
-// as_status_logs.to_status ENUM:
-//   WAITING / ENGINEER_DEPARTED / ENGINEER_ARRIVED / IN_PROGRESS / COMPLETED
-// ──────────────────────────────────────────
 
 const WORK_STATUS_STEPS = [
   { key: "ENGINEER_DEPARTED", label: "출발",   sub: "작업지로 출발" },
@@ -43,73 +25,101 @@ const QUICK_ACTIONS = [
   { key: "REPORT",            label: "보고서 작성", color: "lavender", icon: FileText      },
 ];
 
-const todaySchedule = [
-  {
-    assignmentId: 1,
-    time: "10:00", status: "BOOKED",
-    productName: "LG 디오스 냉장고", modelNo: "F873S11E",
-    customerName: "김민지", customerPhone: "010-1234-5678",
-    address: "서울 강남구 테헤란로 123",
-    productImageUrl: null,
-    symptom: "냉장실 냉각 약함, 냉동실 성에 발생",
-    visitRequest: "빠른 방문 요청",
-    lastRepair: { date: "2024.01.15", desc: "수리 완료 — 냉장실 온도 이상" },
-  },
-  {
-    assignmentId: 2,
-    time: "14:00", status: "BOOKED",
-    productName: "삼성 그랑데 세탁기", modelNo: "WF21T6500KP",
-    customerName: "이영희", customerPhone: "010-9876-5432",
-    address: "경기 성남시 분당구 정자일로 45",
-    productImageUrl: null,
-    symptom: "세탁 중 소음 발생",
-    visitRequest: null,
-    lastRepair: null,
-  },
-  {
-    assignmentId: 3,
-    time: "16:30", status: "BOOKED",
-    productName: "LG 휘센 에어컨", modelNo: "FQ18HDWHRN",
-    customerName: "박준호", customerPhone: "010-5555-1111",
-    address: "경기 용인시 수지구 죽전로 152",
-    productImageUrl: null,
-    symptom: "냉방 약함",
-    visitRequest: null,
-    lastRepair: null,
-  },
-];
-
-const notices = [
-  { id: 1, text: "6월 정산 일정 안내",       date: "2024.06.01" },
-  { id: 2, text: "여름철 에어컨 점검 가이드", date: "2024.05.28" },
-  { id: 3, text: "서비스 품질 향상 캠페인",   date: "2024.05.20" },
-];
-
-const engineer = {
-  name: "김철수",
-  skillLevel: "ADVANCED",
-  isLmsCompleted: true,
-  avgRating: 4.9,
-  totalReviews: 128,
-  profileImageUrl: null,
-};
-
-const currentWorkStatus = "ENGINEER_DEPARTED";
-
 export default function EngineerDashboard() {
   const navigate = useNavigate();
 
-  const [workStatus, setWorkStatus] = useState(currentWorkStatus);
-  const currentStepIdx = WORK_STATUS_STEPS.findIndex(s => s.key === workStatus);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleQuickAction = (key) => {
-  if (key === "REPORT") {
-    navigate("/engineer/report");
-    return;
+  const [engineer, setEngineer] = useState({
+    name: "", skillLevel: "", isLmsCompleted: false,
+    avgRating: 0, totalReviews: 0, profileImageUrl: null,
+  });
+  const [stats, setStats] = useState({
+    todayCount: 0, completedTodayCount: 0, monthlyEarnings: 0,
+  });
+  const [workStatus, setWorkStatus] = useState(null);
+
+  // ⚠ 응답에 currentAssignmentId/currentRequestId가 없습니다.
+  // "빠른 액션" 버튼을 실제로 누를 수 있으려면 오늘 배정된 작업 중 진행 중인 건의 ID가 필요해요.
+  // 백엔드에 이 필드 추가를 요청하거나, todaySchedules 배열의 첫 항목 ID를 쓰는 임시 방편이 필요합니다.
+  const [currentRequestId, setCurrentRequestId] = useState(null);
+
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [notices, setNotices] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    getEngineerDashboard()
+      .then((res) => {
+        if (!mounted) return;
+        const d = res.data;
+
+        setEngineer({
+          name: d.engineerName ?? "",
+          skillLevel: d.skillLevel ?? "",
+          isLmsCompleted: d.lmsCompleted ?? false,
+          avgRating: d.avgRating ?? 0,
+          totalReviews: d.totalReviews ?? 0,
+          profileImageUrl: d.profileImageUrl ?? null,
+        });
+        setStats({
+          todayCount: d.todayExpectedCount ?? 0,
+          completedTodayCount: d.todayCompletedCount ?? 0,
+          monthlyEarnings: d.thisMonthExpectedEarning ?? 0,
+        });
+        setWorkStatus(d.currentWorkStatus ?? null);
+
+        const schedules = d.todaySchedules ?? [];
+        setTodaySchedule(schedules);
+        // 임시 방편: 오늘 일정 중 첫 번째 항목의 requestId를 현재 작업으로 사용
+        setCurrentRequestId(schedules[0]?.requestId ?? null);
+
+        setNotices(d.notices ?? []);
+      })
+      .catch((err) => {
+        console.error("대시보드 조회 실패:", err);
+        if (mounted) setError("대시보드 정보를 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => { mounted = false; };
+  }, []);
+
+  const currentStepIdx = WORK_STATUS_STEPS.findIndex((s) => s.key === workStatus);
+
+  const handleQuickAction = async (key) => {
+    if (key === "REPORT") {
+      navigate("/engineer/report/submit", { state: { requestId: currentRequestId } });
+      return;
+    }
+
+    if (!currentRequestId) return;
+
+    const prevStatus = workStatus;
+    setWorkStatus(key);
+
+    try {
+      await updateAssignmentStatus(currentRequestId, key);
+    } catch (err) {
+      console.error("작업 상태 변경 실패:", err);
+      setWorkStatus(prevStatus);
+      alert("작업 상태 변경에 실패했습니다. 다시 시도해주세요.");
+    }
+  };
+
+  if (loading) {
+    return <div className="ed">불러오는 중...</div>;
   }
 
-  setWorkStatus(key);
-};
+  if (error) {
+    return <div className="ed">{error}</div>;
+  }
+
+  const nextCustomer = todaySchedule[0];
 
   return (
     <div className="ed">
@@ -118,11 +128,10 @@ export default function EngineerDashboard() {
         <p className="ed-greeting__sub">오늘도 안전하고 정확한 서비스 부탁드립니다.</p>
       </div>
 
-      {/* ── 수정 1: 통계 카드 → 고객 AS cas-kpi 스타일 (아이콘 워터마크) ── */}
       <div className="ed-stats">
         <div className="ed-stat-card">
           <div className="ed-stat-card__text">
-            <p className="ed-stat-card__value">3<span>건</span></p>
+            <p className="ed-stat-card__value">{stats.todayCount}<span>건</span></p>
             <p className="ed-stat-card__label">오늘 예정 작업</p>
             <button className="ed-stat-card__link">전체 일정 보기 ›</button>
           </div>
@@ -130,7 +139,7 @@ export default function EngineerDashboard() {
         </div>
         <div className="ed-stat-card">
           <div className="ed-stat-card__text">
-            <p className="ed-stat-card__value">1<span>건</span></p>
+            <p className="ed-stat-card__value">{stats.completedTodayCount}<span>건</span></p>
             <p className="ed-stat-card__label">완료한 작업</p>
             <p className="ed-stat-card__sub">오늘 완료</p>
           </div>
@@ -140,13 +149,12 @@ export default function EngineerDashboard() {
           <div className="ed-stat-card__text">
             <p className="ed-stat-card__value">{engineer.avgRating}<span className="ed-stat-card__star"> ★</span></p>
             <p className="ed-stat-card__label">평균 고객 평점</p>
-            <p className="ed-stat-card__sub">최근 30일 기준</p>
           </div>
           <Star className="ed-stat-card__watermark" strokeWidth={1} />
         </div>
         <div className="ed-stat-card">
           <div className="ed-stat-card__text">
-            <p className="ed-stat-card__value ed-stat-card__value--lg">620,000<span>원</span></p>
+            <p className="ed-stat-card__value ed-stat-card__value--lg">{stats.monthlyEarnings.toLocaleString()}<span>원</span></p>
             <p className="ed-stat-card__label">이번 달 수익</p>
             <p className="ed-stat-card__sub">정산 예정 금액</p>
           </div>
@@ -160,7 +168,7 @@ export default function EngineerDashboard() {
             <h2 className="ed-section__title">현재 작업 상태</h2>
             <div className="ed-work-steps">
               {WORK_STATUS_STEPS.map((step, i) => {
-                const isDone    = i <= currentStepIdx;
+                const isDone = i <= currentStepIdx;
                 const isCurrent = i === currentStepIdx;
                 return (
                   <div key={step.key} className="ed-step">
@@ -181,61 +189,49 @@ export default function EngineerDashboard() {
           <div className="ed-section">
             <h2 className="ed-section__title">빠른 액션</h2>
             <div className="ed-quick-actions">
-  {QUICK_ACTIONS.map((a) => {
+              {QUICK_ACTIONS.map((a) => {
+                if (a.key === "REPORT") {
+                  return (
+                    <button
+                      key={a.key}
+                      className={`ed-quick-btn ${workStatus === "COMPLETED" ? "ed-quick-btn--active" : "ed-quick-btn--disabled"}`}
+                      disabled={workStatus !== "COMPLETED"}
+                      onClick={() => handleQuickAction(a.key)}
+                    >
+                      <a.icon size={16} />
+                      {a.label}
+                    </button>
+                  );
+                }
 
-    // 보고서 버튼
-    if (a.key === "REPORT") {
-      return (
-        <button
-          key={a.key}
-          className={`ed-quick-btn ${
-            workStatus === "COMPLETED"
-              ? "ed-quick-btn--active"
-              : "ed-quick-btn--disabled"
-          }`}
-          disabled={workStatus !== "COMPLETED"}
-          onClick={() => handleQuickAction(a.key)}
-        >
-          <a.icon size={16} />
-          {a.label}
-        </button>
-      );
-    }
+                const stepIdx = WORK_STATUS_STEPS.findIndex((step) => step.key === a.key);
+                const isDone = stepIdx < currentStepIdx;
+                const isCurrent = stepIdx === currentStepIdx;
+                const isNext = stepIdx === currentStepIdx + 1;
 
-    const stepIdx = WORK_STATUS_STEPS.findIndex(
-      (step) => step.key === a.key
-    );
-
-    const isDone = stepIdx < currentStepIdx;
-    const isCurrent = stepIdx === currentStepIdx;
-    const isNext = stepIdx === currentStepIdx + 1;
-
-    return (
-      <button
-        key={a.key}
-        className={`ed-quick-btn ${
-          isCurrent
-            ? "ed-quick-btn--active"
-            : isDone
-            ? "ed-quick-btn--done"
-            : "ed-quick-btn--disabled"
-        }`}
-        disabled={!(isCurrent || isNext)}
-        onClick={() => handleQuickAction(a.key)}
-      >
-        <a.icon size={16} />
-        {a.label}
-      </button>
-    );
-  })}
-</div>
+                return (
+                  <button
+                    key={a.key}
+                    className={`ed-quick-btn ${isCurrent ? "ed-quick-btn--active" : isDone ? "ed-quick-btn--done" : "ed-quick-btn--disabled"}`}
+                    disabled={!(isCurrent || isNext)}
+                    onClick={() => handleQuickAction(a.key)}
+                  >
+                    <a.icon size={16} />
+                    {a.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="ed-section">
             <h2 className="ed-section__title">오늘의 작업 일정</h2>
             <div className="ed-schedule-list">
+              {todaySchedule.length === 0 && (
+                <p style={{ padding: "16px", color: "#aaa", fontSize: 13 }}>오늘 예정된 작업이 없습니다.</p>
+              )}
               {todaySchedule.map((item) => (
-                <div key={item.assignmentId} className="ed-schedule-item">
+                <div key={item.requestId ?? item.assignmentId} className="ed-schedule-item">
                   <div className="ed-schedule-item__time">
                     <span className="ed-schedule-item__hour">{item.time}</span>
                     <span className="ed-schedule-item__badge">예정</span>
@@ -244,8 +240,7 @@ export default function EngineerDashboard() {
                   <div className="ed-schedule-item__product-img">
                     {item.productImageUrl
                       ? <img src={item.productImageUrl} alt={item.productName} />
-                      : <div className="ed-schedule-item__product-placeholder">📦</div>
-                    }
+                      : <div className="ed-schedule-item__product-placeholder">📦</div>}
                   </div>
                   <div className="ed-schedule-item__info">
                     <p className="ed-schedule-item__product">{item.productName}</p>
@@ -278,99 +273,65 @@ export default function EngineerDashboard() {
         </div>
 
         <aside className="ed-right">
-          <div className="ed-panel">
-            <div className="ed-panel__header">
-              <h3 className="ed-panel__title">다음 방문 고객 정보</h3>
-              <button 
-                className="ed-panel__link"
-                onClick={() => navigate("/engineer/customers")}
-                >
+          {nextCustomer && (
+            <div className="ed-panel">
+              <div className="ed-panel__header">
+                <h3 className="ed-panel__title">다음 방문 고객 정보</h3>
+                <button className="ed-panel__link" onClick={() => navigate("/engineer/customers")}>
                   고객 상세 정보 보기 ›
-              </button>
-            </div>
-            <div className="ed-customer-card">
-              <div className="ed-customer-card__product-img">📦</div>
-              <div className="ed-customer-card__info">
-                <p className="ed-customer-card__name">
-                  {todaySchedule[0].customerName} 고객
-                  <span className="ed-vip-badge">VIP</span>
-                </p>
-                <p className="ed-customer-card__phone"><Phone size={11} /> {todaySchedule[0].customerPhone}</p>
-                <p className="ed-customer-card__email"><Mail size={11} /> minji.kim@email.com</p>
-                <p className="ed-customer-card__address"><MapPinIcon size={11} /> 서울 강남구 테헤란로 123, 101동 1004호</p>
+                </button>
               </div>
-            </div>
-            <div className="ed-customer-detail">
-              <div className="ed-customer-detail__row">
-                <span className="ed-customer-detail__label">제품 정보</span>
-                <span>{todaySchedule[0].productName}<br/><span className="ed-customer-detail__sub">모델명: {todaySchedule[0].modelNo}</span></span>
+              <div className="ed-customer-card">
+                <div className="ed-customer-card__product-img">📦</div>
+                <div className="ed-customer-card__info">
+                  <p className="ed-customer-card__name">
+                    {nextCustomer.customerName} 고객
+                    {nextCustomer.isVip && <span className="ed-vip-badge">VIP</span>}
+                  </p>
+                  <p className="ed-customer-card__phone"><Phone size={11} /> {nextCustomer.customerPhone}</p>
+                  {nextCustomer.customerEmail && (
+                    <p className="ed-customer-card__email"><Mail size={11} /> {nextCustomer.customerEmail}</p>
+                  )}
+                  <p className="ed-customer-card__address"><MapPinIcon size={11} /> {nextCustomer.address}</p>
+                </div>
               </div>
-              <div className="ed-customer-detail__row">
-                <span className="ed-customer-detail__label">접수 내용(증상)</span>
-                <span>{todaySchedule[0].symptom}</span>
-              </div>
-              <div className="ed-customer-detail__row">
-                <span className="ed-customer-detail__label">요청 사항</span>
-                <span>{todaySchedule[0].visitRequest ?? "-"}</span>
-              </div>
-              {todaySchedule[0].lastRepair && (
+              <div className="ed-customer-detail">
                 <div className="ed-customer-detail__row">
-                  <span className="ed-customer-detail__label">과거 수리 이력</span>
-                  <span>{todaySchedule[0].lastRepair.date} {todaySchedule[0].lastRepair.desc}</span>
+                  <span className="ed-customer-detail__label">제품 정보</span>
+                  <span>{nextCustomer.productName}<br /><span className="ed-customer-detail__sub">모델명: {nextCustomer.modelNo}</span></span>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* 개인 실적 및 정산 */}
-          <div className="ed-panel">
-            <div className="ed-panel__header">
-              <h3 className="ed-panel__title">개인 실적 및 정산</h3>
-              <div className="ed-panel__period">2024.06.01 ~ 2024.06.30 <ChevronDown size={12} /></div>
-            </div>
-            <div className="ed-perf-grid">
-              {/* ── 수정 2: 차트 제거 → 숫자 + 상태 태그 ── */}
-              <div className="ed-perf-card">
-                <p className="ed-perf-card__label">작업 건수</p>
-                <p className="ed-perf-card__value-big">22<span>건</span></p>
-                <div className="ed-perf-card__counts">
-                  <span className="ed-perf-count ed-perf-count--done">완료 12</span>
-                  <span className="ed-perf-count ed-perf-count--ing">진행 22</span>
-                  <span className="ed-perf-count ed-perf-count--cancel">취소 8</span>
+                <div className="ed-customer-detail__row">
+                  <span className="ed-customer-detail__label">접수 내용(증상)</span>
+                  <span>{nextCustomer.symptom}</span>
                 </div>
-              </div>
-
-              <div className="ed-perf-card">
-                <p className="ed-perf-card__label">정산 금액</p>
-                <p className="ed-perf-card__amount">620,000원</p>
-                <p className="ed-perf-card__sub2">이번 달 예정 금액</p>
-                <p className="ed-perf-card__prev">지난 달 560,000원</p>
-              </div>
-
-              <div className="ed-perf-card">
-                <p className="ed-perf-card__label">고객 평점</p>
-                <p className="ed-perf-card__rating">{engineer.avgRating}</p>
-                <div className="ed-perf-stars">
-                  {[1,2,3,4,5].map(s => (
-                    <span key={s} className={`ed-star ${s <= Math.floor(engineer.avgRating) ? "ed-star--full" : ""}`}>★</span>
-                  ))}
+                <div className="ed-customer-detail__row">
+                  <span className="ed-customer-detail__label">요청 사항</span>
+                  <span>{nextCustomer.visitRequest ?? "-"}</span>
                 </div>
-                <p className="ed-perf-card__sub2">({engineer.totalReviews}건)</p>
-                <p className="ed-perf-card__prev">지난 달 4.8</p>
+                {nextCustomer.lastRepair && (
+                  <div className="ed-customer-detail__row">
+                    <span className="ed-customer-detail__label">과거 수리 이력</span>
+                    <span>{nextCustomer.lastRepair.date} {nextCustomer.lastRepair.desc}</span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
+
+          {/* ⚠ performance(작업건수/정산금액/평점 상세)는 대시보드 응답에 없어서 패널 자체를 제거했습니다.
+              필요하면 별도 API(예: 실적/정산 페이지의 getSettlementSummary)를 여기서도 호출하거나,
+              백엔드에 대시보드 응답에 필드 추가를 요청해야 합니다. */}
 
           <div className="ed-panel">
             <div className="ed-panel__header">
               <h3 className="ed-panel__title">알림</h3>
-              <button
-                className="ed-panel__link"
-                onClick={() => navigate("/engineer/notice")}
-              >
+              <button className="ed-panel__link" onClick={() => navigate("/engineer/notice")}>
                 전체 보기 ›
               </button>
             </div>
+            {notices.length === 0 && (
+              <p style={{ color: "#aaa", fontSize: 13 }}>새로운 알림이 없습니다.</p>
+            )}
             {notices.map((n) => (
               <div key={n.id} className="ed-notice-item">
                 <div className="ed-notice-item__dot" />
