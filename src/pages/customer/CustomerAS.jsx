@@ -35,8 +35,8 @@ import {
 } from "../../apis/as";
 import { getMyAppliances } from "../../apis/appliances";
 import { getAvailableEngineers, getEngineerAvailability } from "../../apis/engineers";
-import { getRegionByName } from "../../apis/regions";
 import { getUserInfo } from "../../apis/auth";
+import { REGIONS, findRegionById } from "../../constants/regions";
 
 /* ─────────────────────────────────
    A/S 신청 플로우 데이터
@@ -361,33 +361,6 @@ const SYMPTOMS = {
   ],
 };
 
-/* regions — depth=1(시·도) → depth=2(구·시), visit_region_id는 depth=2 ID */
-const REGIONS = {
-  서울특별시: [
-    "강남구",
-    "강서구",
-    "노원구",
-    "마포구",
-    "서초구",
-    "송파구",
-    "용산구",
-    "종로구",
-  ],
-  경기도: [
-    "부천시",
-    "성남시",
-    "수원시",
-    "시흥시",
-    "안양시",
-    "의정부시",
-    "화성시",
-  ],
-  인천광역시: ["남동구", "부평구", "서구", "연수구", "중구"],
-  부산광역시: ["동래구", "부산진구", "사상구", "수영구", "해운대구"],
-  대구광역시: ["달서구", "동구", "북구", "수성구", "중구"],
-  대전광역시: ["대덕구", "서구", "유성구", "중구"],
-};
-
 /* 방문 시간 슬롯 (scheduled_time = 시작 시각 HH:MM) */
 const TIME_SLOTS = [
   { value: "09:00", label: "오전 9시 ~ 11시" },
@@ -438,7 +411,7 @@ function ASSteps({ step }) {
 }
 
 /* ── A/S 신청 플로우 ── */
-function ASRequestFlow({ onClose }) {
+function ASRequestFlow({ onClose, onSuccess }) {
   const [step, setStep] = useState(1);
   const [myAppliances, setMyAppliances] = useState([]);
   const [appliance, setAppliance] = useState(null);
@@ -477,14 +450,23 @@ function ASRequestFlow({ onClose }) {
       .then((res) => {
         const data = res.data ?? res;
         if (data.addressDetail) setAddressDetail(data.addressDetail);
-        if (data.regionName) {
-          for (const [parent, subs] of Object.entries(REGIONS)) {
-            if (subs.includes(data.regionName)) {
-              setRegionParent(parent);
-              setRegionSub(data.regionName);
-              break;
-            }
-          }
+
+        // regionId(정수)가 있으면 ID로 정확히 찾고, 없으면 이름으로 폴백
+        const found = data.regionId
+          ? findRegionById(data.regionId)
+          : (() => {
+              if (!data.regionName) return null;
+              for (const [parent, subs] of Object.entries(REGIONS)) {
+                const sub = subs.find((r) => r.name === data.regionName);
+                if (sub) return { parent, sub };
+              }
+              return null;
+            })();
+
+        if (found) {
+          setRegionParent(found.parent);
+          setRegionSub(found.sub.name);
+          setRegionId(found.sub.id);
         }
       })
       .catch(() => {});
@@ -509,19 +491,6 @@ function ASRequestFlow({ onClose }) {
       .catch((e) => console.error("가전 목록 로드 실패", e));
   }, []);
 
-  /* 방문 지역(구·시) 선택 시 region_id 조회 — 후보 기사 조회/최종 접수 모두에 필요 */
-  useEffect(() => {
-    if (!regionSub) {
-      setRegionId(null);
-      return;
-    }
-    getRegionByName(regionSub)
-      .then((res) => setRegionId((res.data ?? res).id))
-      .catch((e) => {
-        console.error("지역 조회 실패", e);
-        setRegionId(null);
-      });
-  }, [regionSub]);
 
   /* 수동 배정: 조건(지역/브랜드/보유기술) 필터링된 후보 기사 조회 */
   useEffect(() => {
@@ -591,6 +560,11 @@ function ASRequestFlow({ onClose }) {
   function handleRegionParent(v) {
     setRegionParent(v);
     setRegionSub("");
+    setRegionId(null);
+  }
+  function handleRegionSub(r) {
+    setRegionSub(r.name);
+    setRegionId(r.id);
   }
   function handleSelectEng(eng) {
     setSelectedEng(eng === selectedEng ? null : eng);
@@ -620,6 +594,7 @@ function ASRequestFlow({ onClose }) {
           : {}),
       });
       setStep(4);
+      onSuccess?.();
     } catch (e) {
       console.error("A/S 접수 실패", e);
       setSubmitError(
@@ -880,14 +855,17 @@ function ASRequestFlow({ onClose }) {
                 </select>
                 <select
                   className="cas-region-select"
-                  value={regionSub}
-                  onChange={(e) => setRegionSub(e.target.value)}
+                  value={regionId ?? ""}
+                  onChange={(e) => {
+                    const found = subRegions.find((r) => String(r.id) === e.target.value);
+                    if (found) handleRegionSub(found);
+                  }}
                   disabled={!regionParent}
                 >
                   <option value="">구·시 선택</option>
                   {subRegions.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
+                    <option key={r.id} value={r.id}>
+                      {r.name}
                     </option>
                   ))}
                 </select>
@@ -1693,11 +1671,16 @@ export default function CustomerAS() {
     }
   }, [searchParams, setSearchParams]);
 
-  useEffect(() => {
+  function loadAsList() {
+    setLoading(true);
     getMyAS()
       .then((res) => setAsList(res.data))
       .catch((err) => console.error("A/S 목록 조회 실패:", err))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadAsList();
   }, []);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
@@ -1791,7 +1774,7 @@ export default function CustomerAS() {
             <ArrowLeft size={18} /> 뒤로
           </button>
         </div>
-        <ASRequestFlow onClose={() => setShowReserve(false)} />
+        <ASRequestFlow onClose={() => setShowReserve(false)} onSuccess={loadAsList} />
       </div>
     );
   }

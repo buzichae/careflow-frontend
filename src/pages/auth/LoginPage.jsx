@@ -1,30 +1,11 @@
 import { useState } from "react";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import mainImg from "../../assets/main.png";
-import { ROLES } from "./authConstants";
 import { parseJwt, ROLE_DASH } from "../../utils/auth";
 import "../../styles/Auth/Auth.css";
 import { login } from "../../apis/auth";
-
-function TopNav({ showBack, onBack }) {
-  return (
-    <div className="auth-nav">
-      <div className="auth-nav__logo">
-        <img src={logoImg} alt="CareFlow" className="auth-nav__logo-img" />
-        CareFlow
-      </div>
-      <div className="auth-nav__right">
-        {showBack && (
-          <button className="auth-nav__back" onClick={onBack}>
-            <ArrowLeft size={15} /> 역할 선택으로 돌아가기
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function AuthInput({ label, type = "text", placeholder, value, onChange, rightEl }) {
   return (
@@ -44,11 +25,42 @@ function AuthInput({ label, type = "text", placeholder, value, onChange, rightEl
   );
 }
 
-function RoleSelect({ onSelect }) {
+export default function LoginPage() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setFormError("");
+    try {
+      const res = await login({ email, password: pw });
+      const { accessToken } = res.data;
+      localStorage.setItem("token", accessToken);
+      const payload = parseJwt(accessToken);
+      const dashPath = ROLE_DASH[payload?.role] ?? "/customer/home";
+      navigate(dashPath);
+    } catch (error) {
+      setFormError(error.response?.data?.message || "로그인에 실패했습니다.");
+    }
+  }
+
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+  };
+
   return (
     <div className="auth-page">
-      <TopNav showBack={false} />
+      <div className="auth-nav">
+        <div className="auth-nav__logo">
+          <img src={logoImg} alt="CareFlow" className="auth-nav__logo-img" />
+          CareFlow
+        </div>
+      </div>
+
       <div className="auth-landing">
         <div className="auth-landing__inner">
           <div className="auth-landing__hero">
@@ -69,96 +81,6 @@ function RoleSelect({ onSelect }) {
           <div className="auth-landing__panel">
             <div className="auth-card">
               <h2 className="auth-card__title">로그인</h2>
-              <p className="auth-card__sub">계정 유형을 선택해 주세요.</p>
-              <div className="auth-role-grid">
-                {ROLES.map((r) => (
-                  <div key={r.key} className="auth-role-card">
-                    <div className="auth-role-card__img-wrap" style={{ background: r.bg }}>
-                      <img src={r.img} alt={r.title} className="auth-role-card__img" />
-                    </div>
-                    <p className="auth-role-card__title">{r.title}</p>
-                    <p className="auth-role-card__desc">{r.desc}</p>
-                    <button
-                      className="auth-role-card__btn"
-                      style={{ borderColor: r.color, color: r.color }}
-                      onClick={() => onSelect(r.key)}
-                    >
-                      선택하기
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <p className="auth-card__foot">
-                아직 계정이 없으신가요?{" "}
-                <button className="auth-link" onClick={() => navigate("/auth/signup")}>회원가입</button>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <footer className="auth-footer">
-        <span>© 2026 CareFlow. All rights reserved.</span>
-        <div className="auth-footer__links">
-          <button>이용약관</button>
-          <button>개인정보처리방침</button>
-          <button>고객센터</button>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function LoginForm({ roleKey, onBack }) {
-  const navigate = useNavigate();
-  const role = ROLES.find((r) => r.key === roleKey) || ROLES[0];
-  const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [remember, setRemember] = useState(false);
-  const [formError, setFormError] = useState("");
-
-  async function handleLogin(e) {
-    e.preventDefault();
-    setFormError("");
-    try {
-      const res = await login({ email, password: pw });
-      const { accessToken } = res.data;
-
-      // console.log(res.data);
-      localStorage.setItem("token", accessToken);
-      const payload = parseJwt(accessToken);
-      const dashPath = ROLE_DASH[payload?.role] ?? "/customer/home";
-      navigate(dashPath);
-
-    } catch (error) {
-      setFormError(error.response?.data?.message || "로그인에 실패했습니다.");
-    }
-  }
-
-  const handleGoogleLogin = () => {
-    // console.log("로그인 전");
-    window.location.href = "http://localhost:8080/oauth2/authorization/google";
-    // console.log("로그인 후");
-  };
-
-  return (
-    <div className="auth-page">
-      <TopNav showBack onBack={onBack} />
-      <div className="auth-login">
-        <div className="auth-login__inner">
-          <div className="auth-login__left">
-            <div className="auth-login__avatar" style={{ background: role.bg }}>
-              <img src={role.img} alt={role.title} className="auth-login__avatar-img" />
-            </div>
-            <h2 className="auth-login__title">{role.loginTitle}</h2>
-            <p className="auth-login__sub">CareFlow에 오신 것을 환영합니다!</p>
-            <div className="auth-login__img-wrap">
-              <img src={mainImg} alt="가전제품" className="auth-login__main-img" />
-            </div>
-          </div>
-
-          <div className="auth-login__right">
-            <div className="auth-card">
               <form onSubmit={handleLogin} className="auth-form">
                 {formError && (
                   <div className="auth-error-banner">{formError}</div>
@@ -190,22 +112,18 @@ function LoginForm({ roleKey, onBack }) {
                   </label>
                   <button type="button" className="auth-link">비밀번호 찾기</button>
                 </div>
-                <button type="submit" className="auth-submit-btn" style={{ background: role.color }}>
+                <button type="submit" className="auth-submit-btn">
                   로그인
                 </button>
               </form>
 
-              {roleKey === "customer" && (
-                <>
-                  <div className="auth-divider"><span>또는</span></div>
-                  <div className="auth-social-btns">
-                    <button className="auth-social-btn" onClick={handleGoogleLogin}>
-                      <img src="https://www.google.com/favicon.ico" alt="Google" className="auth-social-btn__icon" />
-                      Google 계정으로 로그인
-                    </button>
-                  </div>
-                </>
-              )}
+              <div className="auth-divider"><span>또는</span></div>
+              <div className="auth-social-btns">
+                <button className="auth-social-btn" onClick={handleGoogleLogin}>
+                  <img src="https://www.google.com/favicon.ico" alt="Google" className="auth-social-btn__icon" />
+                  Google 계정으로 로그인
+                </button>
+              </div>
 
               <p className="auth-card__foot">
                 아직 계정이 없으신가요?{" "}
@@ -215,13 +133,15 @@ function LoginForm({ roleKey, onBack }) {
           </div>
         </div>
       </div>
+
+      <footer className="auth-footer">
+        <span>© 2026 CareFlow. All rights reserved.</span>
+        <div className="auth-footer__links">
+          <button>이용약관</button>
+          <button>개인정보처리방침</button>
+          <button>고객센터</button>
+        </div>
+      </footer>
     </div>
   );
-}
-
-export default function LoginPage() {
-  const [roleKey, setRoleKey] = useState(null);
-
-  if (roleKey) return <LoginForm roleKey={roleKey} onBack={() => setRoleKey(null)} />;
-  return <RoleSelect onSelect={setRoleKey} />;
 }

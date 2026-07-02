@@ -749,7 +749,7 @@ export default function CustomerHome() {
                 </tr>
               </thead>
               <tbody>
-                {appliances.slice(0, 5).map((a) => (
+                {appliances.slice(0, 3).map((a) => (
                   <tr key={a.id}>
                     <td>
                       <div className="ch-appliance-table__product">

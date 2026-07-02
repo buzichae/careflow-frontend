@@ -8,3 +8,12 @@ export const approveAgencyRequest = (accountId) =>
 
 export const rejectAgencyRequest = (accountId, rejectReson) =>
     api.post('/api/account-requests/agency/rejection', { rejectReson }, { params: { accountId } });
+
+// 관리자 회원 KPI (총원/상태별/오늘 신규가입)
+// role: 'CUSTOMER' | 'AGENCY' | 'ENGINEER' | undefined(전체)
+export const getAdminUserKpi = (role) =>
+    api.get('/api/admin/users/kpi', { params: role ? { role } : {} });
+
+// 최근 7일 신규 가입자 추이
+export const getAdminMemberTrend = (role) =>
+    api.get('/api/admin/users/member-trend', { params: role ? { role } : {} });
