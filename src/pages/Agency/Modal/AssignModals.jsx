@@ -467,7 +467,8 @@ export function ReassignModal({ onClose, item, onSuccess }) {
 
   const assignmentId = item?.assignmentId ?? null;
 
-  // ── 수동 배정 ── 선택한 기사로 POST reassign
+  // ── 수동 배정 ── 선택한 기사로 POST change (newEngineerId를 명시적으로 전달)
+  // /reassign은 파라미터를 받지 않는 자동 배정 전용 API라 선택한 기사를 반영할 수 없음 — /change를 사용해야 함
   const handleManualAssign = async () => {
     if (!selected) return;
     if (!assignmentId) {
@@ -476,9 +477,11 @@ export function ReassignModal({ onClose, item, onSuccess }) {
     }
     setSubmitting(true);
     try {
-      const res  = await api.post(`/api/agency/as-assignments/${assignmentId}/reassign`);
-      const data = res.data;
-      alert(data.message ?? "재배정이 완료되었습니다.");
+      await api.post("/api/agency/as-assignments/change", {
+        assignmentId,
+        newEngineerId: selected,
+      });
+      alert("재배정이 완료되었습니다.");
       onSuccess?.();
       onClose();
     } catch (e) {
