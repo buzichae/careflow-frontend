@@ -13,8 +13,9 @@ import {
   getMyLmsStatus,
   completeContent,
 } from "../../apis/lms";
-import api from "../../apis/axiosInstance";
 import YoutubePlayer from "../../components/YoutubePlayer";
+import { getEngineerProfile } from "../../apis/engineers";
+
 
 const CATEGORIES = [
   { id: 11, name: "냉장고" },
@@ -61,7 +62,7 @@ export default function EngineerLmsPage() {
       setError(null);
 
       const [profileRes, contentsRes, statusRes] = await Promise.all([
-        api.get("/api/engineer/profile"),
+        getEngineerProfile(),
         getMyLmsContents(),
         getMyLmsStatus(),
       ]);
@@ -290,6 +291,104 @@ export default function EngineerLmsPage() {
               </div>
           )}
         </div>
+
+        {/* 상세 뷰어 */}
+        {selectedContent && (
+          <div className="elp-viewer">
+            <div className="elp-viewer__header">
+              <div>
+                <p className="elp-viewer__title">
+                  {selectedContent.content.title}
+                </p>
+                <div className="elp-viewer__meta">
+                  <span
+                    className={`elp-level-badge elp-level-badge--${selectedContent.content.requiredLevel.toLowerCase()}`}
+                  >
+                    {selectedContent.content.requiredLevel === "ALL"
+                      ? "전 등급"
+                      : selectedContent.content.requiredLevel}
+                  </span>
+                  <span className="elp-type-badge">
+                    {selectedContent.content.contentType}
+                  </span>
+                  <span className="elp-version">
+                    v{selectedContent.content.version}
+                  </span>
+                </div>
+              </div>
+              <button
+                className="elp-viewer__close"
+                onClick={() => setSelectedContent(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* 본문 */}
+<div className="elp-viewer__body">
+  {selectedContent.content.body
+    ? selectedContent.content.body.split("\n").map((line, i) => {
+        if (line.startsWith("# "))
+          return (
+            <h2 key={i} className="elp-md-h1">
+              {line.slice(2)}
+            </h2>
+          );
+        if (line.startsWith("## "))
+          return (
+            <h3 key={i} className="elp-md-h2">
+              {line.slice(3)}
+            </h3>
+          );
+        if (line.startsWith("- "))
+          return (
+            <p key={i} className="elp-md-li">
+              • {line.slice(2).replace(/\*\*(.*?)\*\*/g, "$1")}
+            </p>
+          );
+        if (/^\d+\./.test(line))
+          return (
+            <p key={i} className="elp-md-ol">
+              {line}
+            </p>
+          );
+        if (line.trim() === "")
+          return <div key={i} className="elp-md-br" />;
+        return (
+          <p key={i} className="elp-md-p">
+            {line.replace(/\*\*(.*?)\*\*/g, "$1")}
+          </p>
+        );
+      })
+    : <p style={{ color: "#aaa", padding: 20 }}>이 콘텐츠는 아직 본문이 등록되지 않았습니다.</p>
+  }
+</div>
+
+            {/* 이수 버튼 */}
+            <div className="elp-viewer__footer">
+              {selectedContent.completed ? (
+                <div className="elp-viewer__done">
+                  <CheckCircle size={16} color="#16a34a" />
+                  이수 완료 · {selectedContent.confirmedAt?.slice(0, 10)}
+                </div>
+              ) : (
+                <>
+                  <p className="elp-viewer__hint">
+                    콘텐츠를 끝까지 읽은 후 이수 완료 처리하세요.
+                  </p>
+                  <button
+                    className="elp-confirm-btn"
+                    onClick={() =>
+                      handleConfirm(selectedContent.content.contentId)
+                    }
+                  >
+                    <CheckCircle size={14} /> 이수 완료 처리
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
   );
 }

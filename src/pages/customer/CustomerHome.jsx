@@ -18,6 +18,7 @@ import "../../styles/Customer/CustomerHome.css";
 import ApplianceIcon from "./ApplianceIcon";
 import { getMyAppliances, getHealthCertificate } from "../../apis/appliances";
 import { getUserInfo } from "../../apis/auth";
+import { getMyAS } from "../../apis/as";
 
 /* ── 목 데이터 ── */
 const mockAppliances = [
@@ -91,30 +92,6 @@ const mockAlerts = [
     tagBg: "#eff6ff",
     appliance: "에어컨",
     dday: 2,
-  },
-];
-
-const mockSchedules = [
-  {
-    date: "18",
-    month: "6월",
-    day: "수",
-    title: "세탁기 필터 교체",
-    sub: "예정일 2024.06.18",
-  },
-  {
-    date: "25",
-    month: "6월",
-    day: "화",
-    title: "냉장고 보증기간 만료 예정",
-    sub: "예정일 2024.06.25",
-  },
-  {
-    date: "02",
-    month: "7월",
-    day: "화",
-    title: "에어컨 정기 점검",
-    sub: "예정일 2024.07.02",
   },
 ];
 
@@ -466,6 +443,8 @@ export default function CustomerHome() {
   const [modalDiag, setModalDiag] = useState(null);
   const [appliances, setAppliances] = useState([]);
   const [latestCert, setLatestCert] = useState(null);
+  const [asSchedules, setAsSchedules] = useState([]);
+  const [warrantySchedules, setWarrantySchedules] = useState([]);
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
 
@@ -481,6 +460,28 @@ export default function CustomerHome() {
             status: STATUS_MAP[a.status] ?? a.status,
           })),
         );
+
+        /* 보증기간 만료 일정 */
+        const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const warrantyItems = raw
+          .filter(
+            (a) => a.warrantyEndDate && new Date(a.warrantyEndDate) >= today,
+          )
+          .map((a) => {
+            const dt = new Date(a.warrantyEndDate);
+            return {
+              month: `${dt.getMonth() + 1}월`,
+              date: String(dt.getDate()).padStart(2, "0"),
+              day: WEEKDAYS[dt.getDay()],
+              title: `${a.brand} ${a.modelName} 보증기간 만료`,
+              sub: `만료일 ${a.warrantyEndDate.replace(/-/g, ".")}`,
+              type: "warranty",
+              _date: dt,
+            };
+          });
+        setWarrantySchedules(warrantyItems);
 
         const results = await Promise.all(
           raw.map((a) =>
@@ -512,6 +513,38 @@ export default function CustomerHome() {
       .then((res) => {
         const data = res.data ?? res;
         setUserName(data.name);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+    const EXCLUDED = ["CANCELLED", "PAID"];
+    getMyAS()
+      .then((res) => {
+        const list = res.data ?? [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const items = list
+          .filter(
+            (item) => item.scheduledDate && !EXCLUDED.includes(item.status),
+          )
+          .filter((item) => new Date(item.scheduledDate) >= today)
+          .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))
+          .slice(0, 5)
+          .map((item) => {
+            const dt = new Date(item.scheduledDate);
+            return {
+              month: `${dt.getMonth() + 1}월`,
+              date: String(dt.getDate()).padStart(2, "0"),
+              day: WEEKDAYS[dt.getDay()],
+              title: `${item.brand} ${item.modelName} A/S 방문`,
+              sub: `예정일 ${item.scheduledDate?.replace(/-/g, ".")}`,
+              type: "as",
+              _date: dt,
+            };
+          });
+        setAsSchedules(items);
       })
       .catch(() => {});
   }, []);
@@ -820,20 +853,33 @@ export default function CustomerHome() {
             </button>
           </div>
           <div className="ch-schedule__list">
-            {mockSchedules.map((s, i) => (
-              <div key={i} className="ch-schedule__item">
-                <div className="ch-schedule__date">
-                  <span className="ch-schedule__month">{s.month}</span>
-                  <span className="ch-schedule__day-num">{s.date}</span>
-                  <span className="ch-schedule__day">{s.day}</span>
-                </div>
-                <div className="ch-schedule__info">
-                  <p className="ch-schedule__title">{s.title}</p>
-                  <p className="ch-schedule__sub">{s.sub}</p>
-                </div>
-                <span className="ch-tag ch-tag--blue">예정</span>
-              </div>
-            ))}
+            {(() => {
+              const schedules = [...asSchedules, ...warrantySchedules]
+                .sort((a, b) => a._date - b._date)
+                .slice(0, 3);
+              return schedules.length === 0 ? (
+                <p className="ch-schedule__empty">예정된 일정이 없습니다.</p>
+              ) : (
+                schedules.map((s, i) => (
+                  <div key={i} className="ch-schedule__item">
+                    <div className="ch-schedule__date">
+                      <span className="ch-schedule__month">{s.month}</span>
+                      <span className="ch-schedule__day-num">{s.date}</span>
+                      <span className="ch-schedule__day">{s.day}</span>
+                    </div>
+                    <div className="ch-schedule__info">
+                      <p className="ch-schedule__title">{s.title}</p>
+                      <p className="ch-schedule__sub">{s.sub}</p>
+                    </div>
+                    <span
+                      className={`ch-tag ${s.type === "warranty" ? "ch-tag--orange" : "ch-tag--blue"}`}
+                    >
+                      {s.type === "warranty" ? "보증만료" : "A/S 예정"}
+                    </span>
+                  </div>
+                ))
+              );
+            })()}
           </div>
         </div>
 

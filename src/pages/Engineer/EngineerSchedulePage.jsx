@@ -1,80 +1,20 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   ChevronLeft, ChevronRight, Calendar, Download,
   ChevronDown, MapPin, Flag, Coffee, ClipboardList,
 } from "lucide-react";
+import { getEngineerTaskSchedule, getDailyWorkSchedule } from "../../apis/engineers"; 
 import "../../styles/Engineer/EngineerSchedulePage.css";
-
-// ──────────────────────────────────────────
-// TODO: API 연동
-// GET /api/engineer/schedule?date=2024-06-01
-//
-// DB 연동 포인트:
-//   engineer_schedules.work_date, status (AVAILABLE/BOOKED/OFF)
-//   engineer_schedule_slots.start_time, end_time
-//   as_assignments WHERE engineer_id=로그인기사 AND status='ACCEPTED'
-//   + as_requests.scheduled_date, scheduled_time
-//   + as_requests.symptom_id → symptoms.name
-//   + appliances.name, model_no
-//   + users.name(고객), users.phone
-//   as_status_logs 최신 to_status → 작업 상태
-//
-// as_assignments.status ENUM: WAITING/ACCEPTED/REJECTED/COMPLETED
-// as_status_logs.to_status ENUM: WAITING/ENGINEER_DEPARTED/ENGINEER_ARRIVED/IN_PROGRESS/COMPLETED
-// ──────────────────────────────────────────
 
 const VIEWS = ["일간", "주간", "월간"];
 
 const STATUS_MAP = {
-  WAITING:            { label: "방문 예정", color: "purple", bg: "#eeeaff" },
-  ENGINEER_DEPARTED:  { label: "이동 중",   color: "blue",   bg: "#e6f1fb" },
-  ENGINEER_ARRIVED:   { label: "도착",     color: "teal",   bg: "#d0f4f0" },
-  IN_PROGRESS:        { label: "진행 중",   color: "green",  bg: "#eaf3de" },
-  COMPLETED:          { label: "완료",     color: "gray",   bg: "#f5f5f5" },
+  WAITING:   { label: "방문 예정", color: "purple", bg: "#eeeaff" },
+  ACCEPTED:  { label: "진행 중",   color: "green",  bg: "#eaf3de" },
+  COMPLETED: { label: "완료",     color: "gray",   bg: "#f5f5f5" },
 };
 
-// 오늘의 작업 일정 - as_assignments + as_requests + appliances + users JOIN
-const todaySchedule = [
-  {
-    assignmentId: 1,
-    requestId: "AS-20240601-0105",
-    startTime: "10:00", endTime: "11:30",
-    statusKey: "WAITING",
-    productName: "LG 디오스 냉장고", modelNo: "F873S11E",
-    productImageUrl: null,
-    customerName: "김민지", customerPhone: "010-1234-5678",
-    address: "서울 강남구 테헤란로 123",
-    symptom: "냉각 불량",
-    number: 1,
-  },
-  {
-    assignmentId: 2,
-    requestId: "AS-20240601-0106",
-    startTime: "14:00", endTime: "15:30",
-    statusKey: "WAITING",
-    productName: "삼성 그랑데 세탁기", modelNo: "WF21T6500KP",
-    productImageUrl: null,
-    customerName: "이영희", customerPhone: "010-9876-5432",
-    address: "경기 성남시 분당구 정자일로 45",
-    symptom: "소음 발생",
-    number: 2,
-  },
-  {
-    assignmentId: 3,
-    requestId: "AS-20240601-0107",
-    startTime: "16:30", endTime: "18:00",
-    statusKey: "WAITING",
-    productName: "LG 휘센 에어컨", modelNo: "FQ18HDWHRN",
-    productImageUrl: null,
-    customerName: "박준호", customerPhone: "010-5555-1111",
-    address: "경기 용인시 수지구 죽전로 152",
-    symptom: "냉방 약함",
-    number: 3,
-  },
-];
-
-// 미니 달력 데이터
 const CALENDAR_DAYS = ["일","월","화","수","목","금","토"];
 function getCalendarDays(year, month) {
   const first = new Date(year, month, 1).getDay();
@@ -87,14 +27,12 @@ function getCalendarDays(year, month) {
   return days;
 }
 
-// 타임라인 시간대 (08:00 ~ 18:30)
 const TIMELINE_HOURS = Array.from({ length: 22 }, (_, i) => {
   const h = 8 + Math.floor(i / 2);
   const m = i % 2 === 0 ? "00" : "30";
   return `${String(h).padStart(2, "0")}:${m}`;
 });
 
-// 고정 블록 (일일 준비, 점심, 마무리)
 const FIXED_BLOCKS = [
   { startTime: "08:00", endTime: "09:00", label: "일일 준비",  sub: "장비 점검 및 이동 준비", type: "prepare", icon: Flag   },
   { startTime: "12:00", endTime: "13:00", label: "점심 시간",  sub: null,                     type: "lunch",   icon: Coffee },
@@ -108,52 +46,146 @@ function timeToMinutes(t) {
 
 const DAY_START = timeToMinutes("08:00");
 const DAY_END   = timeToMinutes("18:30");
-const DAY_TOTAL = DAY_END - DAY_START; // 630분
+const DAY_TOTAL = DAY_END - DAY_START;
 
 function calcTop(time)   { return ((timeToMinutes(time) - DAY_START) / DAY_TOTAL) * 100; }
 function calcHeight(s, e){ return ((timeToMinutes(e) - timeToMinutes(s)) / DAY_TOTAL) * 100; }
 
+function toDateParam(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// 근무표의 timeSlots 중 가장 이른 시작 ~ 가장 늦은 종료
+function mergeWorkHours(timeSlots) {
+  if (!timeSlots || timeSlots.length === 0) return null;
+  let start = timeSlots[0].start;
+  let end = timeSlots[0].end;
+  timeSlots.forEach((slot) => {
+    if (timeToMinutes(slot.start) < timeToMinutes(start)) start = slot.start;
+    if (timeToMinutes(slot.end) > timeToMinutes(end)) end = slot.end;
+  });
+  return { start, end };
+}
+
 export default function EngineerSchedulePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [currentDate, setCurrentDate] = useState(
+    location.state?.date ? new Date(location.state.date) : new Date()
+  );
   const [view, setView] = useState("일간");
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 5, 1)); // 2024.06.01
-  const [calYear,  setCalYear]  = useState(2024);
-  const [calMonth, setCalMonth] = useState(5); // 6월
-  const [selectedDate, setSelectedDate] = useState(1);
+  const [calYear, setCalYear] = useState(currentDate.getFullYear());
+  const [calMonth, setCalMonth] = useState(currentDate.getMonth());
+  const [selectedDate, setSelectedDate] = useState(currentDate.getDate());
   const [filterStatus, setFilterStatus] = useState({ 방문예정: true, 진행중: true, 완료: false, 취소: false });
 
-  const calDays = getCalendarDays(calYear, calMonth);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [summary, setSummary] = useState({ tasks: 0, doneCount: 0 });
 
+  // 근무표(가용 시간) 상태
+  const [workHours, setWorkHours] = useState(null); // { start, end } | null
+  const [isOff, setIsOff] = useState(false);
+
+  const calDays = getCalendarDays(calYear, calMonth);
   const dateStr = `${currentDate.getFullYear()}.${String(currentDate.getMonth()+1).padStart(2,"0")}.${String(currentDate.getDate()).padStart(2,"0")} (${["일","월","화","수","목","금","토"][currentDate.getDay()]})`;
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+    setWorkHours(null);
+    setIsOff(false);
+
+    const dateParam = toDateParam(currentDate);
+
+    // 실제 배정된 작업 목록
+    const taskPromise = getEngineerTaskSchedule(dateParam)
+      .then((res) => {
+        const list = res.data ?? [];
+        const mapped = list.map((item, idx) => {
+          const [h, m] = item.scheduledTime.split(":").map(Number);
+          const endH = h + 1;
+          const endTime = `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+          return {
+            assignmentId: item.requestId,
+            startTime: item.scheduledTime,
+            endTime,
+            statusKey: item.assignmentStatus,
+            productName: `${item.applianceBrand} ${item.applianceModelName}`,
+            productImageUrl: null,
+            customerName: item.customerName,
+            customerPhone: item.customerPhone,
+            address: `${item.visitRegionName} ${item.visitAddressDetail}`,
+            symptom: item.symptomName,
+            number: idx + 1,
+          };
+        });
+        if (mounted) {
+          setTodaySchedule(mapped);
+          setSummary({
+            tasks: mapped.length,
+            doneCount: mapped.filter((m) => m.statusKey === "COMPLETED").length,
+          });
+        }
+      });
+
+    // 그 날의 근무표(가용 시간) — 없으면 400 에러 → 휴무/미등록으로 처리
+    const workPromise = getDailyWorkSchedule(dateParam)
+      .then((res) => {
+        if (!mounted) return;
+        const d = res.data;
+        if (d.status === "OFF") {
+          setIsOff(true);
+          setWorkHours(null);
+        } else {
+          setIsOff(false);
+          setWorkHours(mergeWorkHours(d.timeSlots));
+        }
+      })
+      .catch(() => {
+        // 근무표 자체가 없는 날 → 휴무로 취급
+        if (mounted) {
+          setIsOff(true);
+          setWorkHours(null);
+        }
+      });
+
+    Promise.all([taskPromise, workPromise])
+      .catch((err) => {
+        console.error("일정 조회 실패:", err);
+        if (mounted) setError("일정을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => { mounted = false; };
+  }, [currentDate]);
 
   const goNext = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
   const goPrev = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
-  const goToday = () => setCurrentDate(new Date(2024, 5, 1));
-
-  // 오늘 요약 통계
-  const summary = { tasks: 3, distance: 42, estimatedTime: "6시간 30분", doneCount: 3 };
+  const goToday = () => setCurrentDate(new Date());
 
   const handleDetail = (item) => {
-  navigate("/engineer/work", {
-    state: {
-      assignmentId: item.assignmentId,
-    },
-  });
-};
+    navigate("/engineer/work", { state: { assignmentId: item.assignmentId } });
+  };
 
   return (
     <div className="esp">
-      {/* 페이지 타이틀 + 컨트롤 */}
       <div className="esp-topbar">
         <h1 className="esp-title">작업 일정</h1>
         <div className="esp-controls">
-          {/* 일간/주간/월간 */}
           <div className="esp-view-tabs">
             {VIEWS.map(v => (
               <button key={v} className={`esp-view-tab ${view === v ? "esp-view-tab--active" : ""}`} onClick={() => setView(v)}>{v}</button>
             ))}
           </div>
-          {/* 날짜 네비 */}
           <div className="esp-date-nav">
             <button className="esp-nav-btn" onClick={goPrev}><ChevronLeft size={15} /></button>
             <span className="esp-date-label">{dateStr}</span>
@@ -166,169 +198,188 @@ export default function EngineerSchedulePage() {
         </div>
       </div>
 
-      <div className="esp-body">
-        {/* 타임라인 */}
-        <div className="esp-timeline-wrap">
-          <div className="esp-timeline">
-            {/* 시간 레이블 */}
-            <div className="esp-time-labels">
-              {TIMELINE_HOURS.map(t => (
-                <div key={t} className="esp-time-label">{t.endsWith(":00") ? t : ""}</div>
-              ))}
-            </div>
+      {loading && <p style={{ padding: "16px" }}>불러오는 중...</p>}
+      {error && <p style={{ padding: "16px", color: "red" }}>{error}</p>}
 
-            {/* 이벤트 영역 */}
-            <div className="esp-events">
-              {/* 그리드 라인 */}
-              {TIMELINE_HOURS.map(t => (
-                <div key={t} className={`esp-grid-line ${t.endsWith(":00") ? "esp-grid-line--hour" : ""}`}
-                  style={{ top: `${calcTop(t)}%` }} />
-              ))}
-
-              {/* 고정 블록 */}
-              {FIXED_BLOCKS.map((b) => (
-                <div
-                  key={b.type}
-                  className={`esp-block esp-block--${b.type}`}
-                  style={{ top: `${calcTop(b.startTime)}%`, height: `${calcHeight(b.startTime, b.endTime)}%` }}
-                >
-                  <b.icon size={13} />
-                  <span className="esp-block__label">{b.label}</span>
-                  {b.sub && <span className="esp-block__sub">{b.sub}</span>}
-                  <span className="esp-block__time">{b.startTime} - {b.endTime}</span>
-                </div>
-              ))}
-
-              {/* 작업 카드 */}
-              {todaySchedule.map((item) => {
-                const s = STATUS_MAP[item.statusKey];
-                return (
-                  <div
-                    key={item.assignmentId}
-                    className="esp-task-card"
-                    style={{ top: `${calcTop(item.startTime)}%`, height: `${calcHeight(item.startTime, item.endTime)}%` }}
-                  >
-                    <div className="esp-task-card__num">{item.number}</div>
-                    <div className="esp-task-card__img">
-                      {item.productImageUrl
-                        ? <img src={item.productImageUrl} alt={item.productName} />
-                        : <span>📦</span>
-                      }
-                    </div>
-                    <div className="esp-task-card__info">
-                      <span className={`esp-status-badge esp-status-badge--${s.color}`}>{s.label}</span>
-                      <p className="esp-task-card__product">{item.productName}</p>
-                      <p className="esp-task-card__customer">
-                        {item.customerName} 고객 &nbsp;·&nbsp;
-                        <MapPin size={10} /> {item.address}
-                      </p>
-                    </div>
-                    <div className="esp-task-card__right">
-                      <span className="esp-task-card__time">{item.startTime} - {item.endTime}</span>
-                      <button 
-                      className="esp-task-detail-btn"
-                      onClick={() => handleDetail(item)}
-                      >
-                        상세보기 <ChevronRight size={12} /></button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <p className="esp-drag-hint">ⓘ 작업 시간을 드래그하여 일정을 조절할 수 있습니다.</p>
+      {!loading && !error && isOff && (
+        <div style={{ padding: "48px 16px", textAlign: "center", color: "#888" }}>
+          <p style={{ fontSize: 16, fontWeight: 600 }}>😴 휴무일입니다</p>
+          <p style={{ marginTop: 8, fontSize: 13 }}>이 날짜는 근무표에 등록되지 않았거나 휴무로 설정되어 있어요.</p>
         </div>
+      )}
 
-        {/* 우측 패널 */}
-        <aside className="esp-aside">
-          {/* 미니 달력 */}
-          <div className="esp-panel">
-            <div className="esp-cal-header">
-              <button className="esp-cal-nav" onClick={() => { if(calMonth === 0) { setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }}><ChevronLeft size={14} /></button>
-              <span className="esp-cal-title">{calYear}년 {calMonth+1}월</span>
-              <button className="esp-cal-nav" onClick={() => { if(calMonth === 11) { setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }}><ChevronRight size={14} /></button>
+      {!loading && !error && !isOff && (
+        <div className="esp-body">
+          <div className="esp-timeline-wrap">
+            <div className="esp-timeline">
+              <div className="esp-time-labels">
+                {TIMELINE_HOURS.map(t => (
+                  <div key={t} className="esp-time-label">{t.endsWith(":00") ? t : ""}</div>
+                ))}
+              </div>
+
+              <div className="esp-events">
+                {TIMELINE_HOURS.map(t => (
+                  <div key={t} className={`esp-grid-line ${t.endsWith(":00") ? "esp-grid-line--hour" : ""}`}
+                    style={{ top: `${calcTop(t)}%` }} />
+                ))}
+
+                {/* 근무 시간 외 구간 회색 처리 */}
+                {workHours && (
+                  <>
+                    {timeToMinutes(workHours.start) > DAY_START && (
+                      <div
+                        style={{
+                          position: "absolute", left: 0, right: 0, top: 0,
+                          height: `${calcTop(workHours.start)}%`,
+                          background: "rgba(0,0,0,0.04)", pointerEvents: "none", zIndex: 1,
+                        }}
+                      />
+                    )}
+                    {timeToMinutes(workHours.end) < DAY_END && (
+                      <div
+                        style={{
+                          position: "absolute", left: 0, right: 0,
+                          top: `${calcTop(workHours.end)}%`, bottom: 0,
+                          background: "rgba(0,0,0,0.04)", pointerEvents: "none", zIndex: 1,
+                        }}
+                      />
+                    )}
+                  </>
+                )}
+
+                {FIXED_BLOCKS.map((b) => (
+                  <div
+                    key={b.type}
+                    className={`esp-block esp-block--${b.type}`}
+                    style={{ top: `${calcTop(b.startTime)}%`, height: `${calcHeight(b.startTime, b.endTime)}%` }}
+                  >
+                    <b.icon size={13} />
+                    <span className="esp-block__label">{b.label}</span>
+                    {b.sub && <span className="esp-block__sub">{b.sub}</span>}
+                    <span className="esp-block__time">{b.startTime} - {b.endTime}</span>
+                  </div>
+                ))}
+
+                {todaySchedule.map((item) => {
+                  const s = STATUS_MAP[item.statusKey] ?? STATUS_MAP.WAITING;
+                  return (
+                    <div
+                      key={item.assignmentId}
+                      className="esp-task-card"
+                      style={{ top: `${calcTop(item.startTime)}%`, height: `${calcHeight(item.startTime, item.endTime)}%` }}
+                    >
+                      <div className="esp-task-card__num">{item.number}</div>
+                      <div className="esp-task-card__img">
+                        {item.productImageUrl
+                          ? <img src={item.productImageUrl} alt={item.productName} />
+                          : <span>📦</span>}
+                      </div>
+                      <div className="esp-task-card__info">
+                        <span className={`esp-status-badge esp-status-badge--${s.color}`}>{s.label}</span>
+                        <p className="esp-task-card__product">{item.productName}</p>
+                        <p className="esp-task-card__customer">
+                          {item.customerName} 고객 &nbsp;·&nbsp;
+                          <MapPin size={10} /> {item.address}
+                        </p>
+                      </div>
+                      <div className="esp-task-card__right">
+                        <span className="esp-task-card__time">{item.startTime} - {item.endTime}</span>
+                        <button className="esp-task-detail-btn" onClick={() => handleDetail(item)}>
+                          상세보기 <ChevronRight size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="esp-cal-grid">
-              {CALENDAR_DAYS.map(d => <div key={d} className="esp-cal-day-label">{d}</div>)}
-              {calDays.map((d, i) => (
-                <button
-                  key={i}
-                  className={`esp-cal-day ${!d.cur ? "esp-cal-day--other" : ""} ${d.cur && d.day === selectedDate && calMonth === 5 ? "esp-cal-day--selected" : ""} ${d.cur && d.day === 1 && calMonth === 5 ? "esp-cal-day--today" : ""}`}
-                  onClick={() => { if(d.cur) setSelectedDate(d.day); }}
-                >
-                  {d.day}
-                </button>
-              ))}
-            </div>
+            <p className="esp-drag-hint">ⓘ 작업 시간을 드래그하여 일정을 조절할 수 있습니다.</p>
           </div>
 
-          {/* 오늘 일정 요약 */}
-          <div className="esp-panel">
-            <h3 className="esp-panel__title">오늘 일정 요약</h3>
-            <div className="esp-summary-grid">
-              <div className="esp-summary-item esp-summary-item--purple">
-                <Calendar size={16} color="#5B4FF5" />
-                <div>
-                  <p className="esp-summary-item__label">예정된 작업</p>
-                  <p className="esp-summary-item__value">{summary.tasks}건</p>
-                </div>
+          <aside className="esp-aside">
+            <div className="esp-panel">
+              <div className="esp-cal-header">
+                <button className="esp-cal-nav" onClick={() => { if(calMonth === 0) { setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }}><ChevronLeft size={14} /></button>
+                <span className="esp-cal-title">{calYear}년 {calMonth+1}월</span>
+                <button className="esp-cal-nav" onClick={() => { if(calMonth === 11) { setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }}><ChevronRight size={14} /></button>
               </div>
-              <div className="esp-summary-item esp-summary-item--blue">
-                <ChevronRight size={16} color="#2563eb" />
-                <div>
-                  <p className="esp-summary-item__label">이동 거리</p>
-                  <p className="esp-summary-item__value">{summary.distance}km</p>
-                </div>
-              </div>
-              <div className="esp-summary-item esp-summary-item--orange">
-                <ChevronDown size={16} color="#d97706" />
-                <div>
-                  <p className="esp-summary-item__label">예상 소요 시간</p>
-                  <p className="esp-summary-item__value">{summary.estimatedTime}</p>
-                </div>
-              </div>
-              <div className="esp-summary-item esp-summary-item--green">
-                <ChevronRight size={16} color="#16a34a" />
-                <div>
-                  <p className="esp-summary-item__label">완료 예정</p>
-                  <p className="esp-summary-item__value">{summary.doneCount}건</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 일정 필터 */}
-          <div className="esp-panel">
-            <h3 className="esp-panel__title">일정 필터</h3>
-            <div className="esp-filter-list">
-              {[
-                { key: "전체",    color: "#5B4FF5" },
-                { key: "방문예정", color: "#5B4FF5" },
-                { key: "진행중",  color: "#16a34a" },
-                { key: "완료",   color: "#aaa"    },
-                { key: "취소",   color: "#ddd"    },
-              ].map(f => (
-                <label key={f.key} className="esp-filter-item">
-                  <input
-                    type="checkbox"
-                    checked={f.key === "전체" ? Object.values(filterStatus).every(Boolean) : filterStatus[f.key] ?? false}
-                    onChange={() => {
-                      if (f.key === "전체") {
-                        const all = Object.values(filterStatus).every(Boolean);
-                        setFilterStatus(Object.fromEntries(Object.keys(filterStatus).map(k => [k, !all])));
-                      } else {
-                        setFilterStatus(p => ({ ...p, [f.key]: !p[f.key] }));
+              <div className="esp-cal-grid">
+                {CALENDAR_DAYS.map(d => <div key={d} className="esp-cal-day-label">{d}</div>)}
+                {calDays.map((d, i) => (
+                  <button
+                    key={i}
+                    className={`esp-cal-day ${!d.cur ? "esp-cal-day--other" : ""} ${d.cur && d.day === selectedDate && calMonth === currentDate.getMonth() ? "esp-cal-day--selected" : ""} ${d.cur && d.day === new Date().getDate() && calMonth === new Date().getMonth() ? "esp-cal-day--today" : ""}`}
+                    onClick={() => {
+                      if (d.cur) {
+                        setSelectedDate(d.day);
+                        setCurrentDate(new Date(calYear, calMonth, d.day));
                       }
                     }}
-                    style={{ accentColor: f.color }}
-                  />
-                  <span>{f.key}</span>
-                </label>
-              ))}
+                  >
+                    {d.day}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </aside>
-      </div>
+
+            <div className="esp-panel">
+              <h3 className="esp-panel__title">오늘 일정 요약</h3>
+              <div className="esp-summary-grid">
+                <div className="esp-summary-item esp-summary-item--purple">
+                  <Calendar size={16} color="#5B4FF5" />
+                  <div>
+                    <p className="esp-summary-item__label">예정된 작업</p>
+                    <p className="esp-summary-item__value">{summary.tasks}건</p>
+                  </div>
+                </div>
+                <div className="esp-summary-item esp-summary-item--green">
+                  <ChevronRight size={16} color="#16a34a" />
+                  <div>
+                    <p className="esp-summary-item__label">완료</p>
+                    <p className="esp-summary-item__value">{summary.doneCount}건</p>
+                  </div>
+                </div>
+              </div>
+              {workHours && (
+                <p style={{ marginTop: 12, fontSize: 12, color: "#888" }}>
+                  근무 시간 {workHours.start} - {workHours.end}
+                </p>
+              )}
+            </div>
+
+            <div className="esp-panel">
+              <h3 className="esp-panel__title">일정 필터</h3>
+              <div className="esp-filter-list">
+                {[
+                  { key: "전체",    color: "#5B4FF5" },
+                  { key: "방문예정", color: "#5B4FF5" },
+                  { key: "진행중",  color: "#16a34a" },
+                  { key: "완료",   color: "#aaa"    },
+                  { key: "취소",   color: "#ddd"    },
+                ].map(f => (
+                  <label key={f.key} className="esp-filter-item">
+                    <input
+                      type="checkbox"
+                      checked={f.key === "전체" ? Object.values(filterStatus).every(Boolean) : filterStatus[f.key] ?? false}
+                      onChange={() => {
+                        if (f.key === "전체") {
+                          const all = Object.values(filterStatus).every(Boolean);
+                          setFilterStatus(Object.fromEntries(Object.keys(filterStatus).map(k => [k, !all])));
+                        } else {
+                          setFilterStatus(p => ({ ...p, [f.key]: !p[f.key] }));
+                        }
+                      }}
+                      style={{ accentColor: f.color }}
+                    />
+                    <span>{f.key}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

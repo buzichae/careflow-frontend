@@ -7,7 +7,14 @@ import { parseJwt, ROLE_DASH } from "../../utils/auth";
 import "../../styles/Auth/Auth.css";
 import { login } from "../../apis/auth";
 
-function AuthInput({ label, type = "text", placeholder, value, onChange, rightEl }) {
+function AuthInput({
+  label,
+  type = "text",
+  placeholder,
+  value,
+  onChange,
+  rightEl,
+}) {
   return (
     <div className="auth-input-wrap">
       {label && <label className="auth-label">{label}</label>}
@@ -55,7 +62,11 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-nav">
-        <div className="auth-nav__logo">
+        <div
+          className="auth-nav__logo"
+          onClick={() => navigate("/")}
+          style={{ cursor: "pointer" }}
+        >
           <img src={logoImg} alt="CareFlow" className="auth-nav__logo-img" />
           CareFlow
         </div>
@@ -65,16 +76,22 @@ export default function LoginPage() {
         <div className="auth-landing__inner">
           <div className="auth-landing__hero">
             <h1 className="auth-landing__title">
-              더 스마트한 가전 관리,<br />
+              더 스마트한 가전 관리,
+              <br />
               <span>CareFlow</span>
             </h1>
             <p className="auth-landing__desc">
-              가전의 모든 정보를 한 곳에 모아<br />
-              체계적으로 관리하고, 알림과 케어까지<br />
-              한 번에 경험하세요.
+              가전의 모든 정보를 한 곳에 모아
+              <br />
+              체계적으로 관리하고, 알림과 케어까지
+              <br />한 번에 경험하세요.
             </p>
             <div className="auth-landing__img-wrap">
-              <img src={mainImg} alt="가전제품" className="auth-landing__main-img" />
+              <img
+                src={mainImg}
+                alt="가전제품"
+                className="auth-landing__main-img"
+              />
             </div>
           </div>
 
@@ -100,34 +117,55 @@ export default function LoginPage() {
                   value={pw}
                   onChange={setPw}
                   rightEl={
-                    <button type="button" className="auth-eye-btn" onClick={() => setShowPw(!showPw)}>
+                    <button
+                      type="button"
+                      className="auth-eye-btn"
+                      onClick={() => setShowPw(!showPw)}
+                    >
                       {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   }
                 />
                 <div className="auth-row">
                   <label className="auth-checkbox-label">
-                    <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                    />
                     로그인 상태 유지
                   </label>
-                  <button type="button" className="auth-link">비밀번호 찾기</button>
+                  <button type="button" className="auth-link">
+                    비밀번호 찾기
+                  </button>
                 </div>
                 <button type="submit" className="auth-submit-btn">
                   로그인
                 </button>
               </form>
 
-              <div className="auth-divider"><span>또는</span></div>
+              <div className="auth-divider">
+                <span>또는</span>
+              </div>
               <div className="auth-social-btns">
                 <button className="auth-social-btn" onClick={handleGoogleLogin}>
-                  <img src="https://www.google.com/favicon.ico" alt="Google" className="auth-social-btn__icon" />
+                  <img
+                    src="https://www.google.com/favicon.ico"
+                    alt="Google"
+                    className="auth-social-btn__icon"
+                  />
                   Google 계정으로 로그인
                 </button>
               </div>
 
               <p className="auth-card__foot">
                 아직 계정이 없으신가요?{" "}
-                <button className="auth-link" onClick={() => navigate("/auth/signup")}>회원가입</button>
+                <button
+                  className="auth-link"
+                  onClick={() => navigate("/auth/signup")}
+                >
+                  회원가입
+                </button>
               </p>
             </div>
           </div>

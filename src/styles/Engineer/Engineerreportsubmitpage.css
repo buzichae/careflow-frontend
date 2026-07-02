@@ -1,0 +1,221 @@
+/* ============================================
+   Engineer Report Submit Page
+   작업 완료 보고서 작성 페이지
+============================================ */
+
+.ersp {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+/* 뒤로가기 */
+.ersp-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  padding: 4px 0;
+}
+
+.ersp-back-btn:hover {
+  color: #333;
+}
+
+/* 헤더 */
+.ersp-header__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.ersp-header__sub {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 24px;
+}
+
+.ersp-header__sub--warn {
+  color: #d97706;
+}
+
+/* 에러 배너 */
+.ersp-error {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* 폼 필드 공통 */
+.ersp-field {
+  margin-bottom: 20px;
+}
+
+.ersp-field__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.ersp-field__row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ersp-field__row > .ersp-field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.ersp-select,
+.ersp-input,
+.ersp-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.ersp-select:focus,
+.ersp-input:focus,
+.ersp-textarea:focus {
+  outline: none;
+  border-color: #5B4FF5;
+  box-shadow: 0 0 0 2px rgba(91, 79, 245, 0.12);
+}
+
+.ersp-textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* 부품 섹션 */
+.ersp-parts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ersp-parts-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #5B4FF5;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.ersp-parts-add-btn:hover {
+  text-decoration: underline;
+}
+
+.ersp-parts-empty {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.ersp-parts-note {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 6px;
+}
+
+.ersp-part-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ersp-part-row__id {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+}
+
+.ersp-part-row__qty {
+  width: 70px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+}
+
+.ersp-part-row__price {
+  flex: 1.5;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+}
+
+.ersp-part-row__remove {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.ersp-part-row__remove:hover {
+  color: #b91c1c;
+}
+
+/* 제출 버튼 */
+.ersp-submit-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #5B4FF5;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ersp-submit-btn:hover:not(:disabled) {
+  background: #4a3fe0;
+}
+
+.ersp-submit-btn:disabled {
+  background: #c7c2f9;
+  cursor: not-allowed;
+}
+
+/* 반응형 */
+@media (max-width: 480px) {
+  .ersp-field__row {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .ersp-field__row > .ersp-field {
+    margin-bottom: 0;
+  }
+}
