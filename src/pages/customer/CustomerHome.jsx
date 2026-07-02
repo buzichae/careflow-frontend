@@ -13,6 +13,10 @@ import {
   WashingMachine,
   Bell,
   HandCoins,
+  Hand,
+  Calendar,
+  Settings,
+  Clock,
 } from "lucide-react";
 import "../../styles/Customer/CustomerHome.css";
 import ApplianceIcon from "./ApplianceIcon";
@@ -60,9 +64,10 @@ const mockAlerts = [
 ];
 
 function buildDiagModal(certData) {
-  const { cert, applianceName, applianceBrand } = certData;
+  const { cert, applianceId, applianceName, applianceBrand } = certData;
   return {
     certId: cert.certId,
+    applianceId,
     applianceName,
     applianceBrand,
     grade: cert.grade,
@@ -76,28 +81,28 @@ function buildDiagModal(certData) {
         score: cert.repairCountScore,
         max: 25,
         condition: cert.repairCountCondition,
-        icon: "🔧",
+        icon: <Wrench size={15} />,
       },
       {
         label: "사용 기간",
         score: cert.usagePeriodScore,
         max: 25,
         condition: cert.usagePeriodCondition,
-        icon: "📅",
+        icon: <Calendar size={15} />,
       },
       {
         label: "교체 부품 중요도",
         score: cert.partImportanceScore,
         max: 25,
         condition: cert.partImportanceCondition,
-        icon: "⚙️",
+        icon: <Settings size={15} />,
       },
       {
         label: "최근 수리 일시",
         score: cert.lastRepairedScore,
         max: 25,
         condition: cert.lastRepairedCondition,
-        icon: "🕐",
+        icon: <Clock size={15} />,
       },
     ],
   };
@@ -184,9 +189,74 @@ function ScoreGauge({
 /* ── 진단서 상세 모달 ── */
 function DiagnosticModal({ diag, onClose }) {
   if (!diag) return null;
+  const navigate = useNavigate();
   const gm = GRADE_META[diag.grade] || GRADE_META.E;
   function fmt(dt) {
     return dt ? dt.replace("T", " ").slice(0, 16) : "—";
+  }
+
+  function handleDownload() {
+    const printWindow = window.open("", "_blank", "width=800,height=900");
+
+    // Lucide 스타일 SVG 아이콘 (stroke 2px, round linecap)
+    const iconHouse = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>`;
+    const iconWrench = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;
+    const iconCalendar = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+    const iconSettings = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+    const iconClock = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+    const SCORE_ICONS = [iconWrench, iconCalendar, iconSettings, iconClock];
+
+    const scoreRows = diag.scoreItems
+      .map(
+        (item, i) => `
+        <tr>
+          <td><span class="row-icon">${SCORE_ICONS[i]}</span>${item.label}</td>
+          <td>${item.score} / ${item.max}</td>
+          <td>${item.condition ?? "—"}</td>
+        </tr>`,
+      )
+      .join("");
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head>
+        <meta charset="UTF-8" />
+        <title>제품 건강 진단서 #${diag.certId}</title>
+        <style>
+          body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; padding: 40px; color: #1a1a2e; }
+          h1 { font-size: 22px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+          .sub { color: #888; font-size: 13px; margin-bottom: 24px; margin-left: 30px; }
+          .grade-box { display: inline-block; background: ${gm.bg}; color: ${gm.color}; border-radius: 8px; padding: 8px 20px; font-size: 28px; font-weight: 900; margin-bottom: 24px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+          th { background: #f5f5fb; text-align: left; padding: 8px 12px; font-size: 13px; color: #555; }
+          td { padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 13px; vertical-align: middle; }
+          .row-icon { display: inline-flex; align-items: center; margin-right: 6px; vertical-align: middle; }
+          .footer { margin-top: 32px; font-size: 12px; color: #aaa; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <h1>${iconHouse} 제품 건강 진단서 <span style="color:#888;font-size:14px;font-weight:400">#${diag.certId}</span></h1>
+        <p class="sub">${diag.applianceBrand} ${diag.applianceName ?? ""}</p>
+        <div class="grade-box">${diag.grade}등급 · ${diag.score}점</div>
+        <table>
+          <thead><tr><th>항목</th><th>점수</th><th>상태</th></tr></thead>
+          <tbody>${scoreRows}</tbody>
+        </table>
+        <table>
+          <thead><tr><th colspan="2">진단서 정보</th></tr></thead>
+          <tbody>
+            <tr><td>최초 발급일</td><td>${fmt(diag.issuedAt)}</td></tr>
+            <tr><td>최근 갱신일</td><td>${fmt(diag.updatedAt)}</td></tr>
+          </tbody>
+        </table>
+        <p class="footer">본 진단서는 CareFlow에서 자동 발급된 문서입니다.</p>
+        <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 
   return (
@@ -365,10 +435,19 @@ function DiagnosticModal({ diag, onClose }) {
           >
             닫기
           </button>
-          <button className="ch-modal__footer-btn ch-modal__footer-btn--download">
+          <button
+            className="ch-modal__footer-btn ch-modal__footer-btn--download"
+            onClick={handleDownload}
+          >
             <Download size={14} /> 진단서 다운로드
           </button>
-          <button className="ch-modal__footer-btn ch-modal__footer-btn--primary">
+          <button
+            className="ch-modal__footer-btn ch-modal__footer-btn--primary"
+            onClick={() => {
+              onClose();
+              navigate(`/customer/appliances?applianceId=${diag.applianceId}`);
+            }}
+          >
             <CalendarCheck size={14} /> A/S 이력 보기
           </button>
         </div>
@@ -452,6 +531,7 @@ export default function CustomerHome() {
             getHealthCertificate(a.applianceId)
               .then((r) => ({
                 cert: r.data,
+                applianceId: a.applianceId,
                 applianceName: getCategoryName(a.categoryId),
                 applianceBrand: `${a.brand} ${a.modelName}`,
               }))
@@ -522,7 +602,8 @@ export default function CustomerHome() {
         <div className="ch-hero__left">
           <div className="ch-hero__text">
             <h1 className="ch-hero__title">
-              안녕하세요, {userName} 고객님! 👋
+              안녕하세요, {userName} 고객님!{" "}
+              <Hand className="ch-hero__greeting-icon" size={26} />
             </h1>
             <p className="ch-hero__sub">
               CareFlow가 우리집 가전의 건강을 관리해드릴게요.

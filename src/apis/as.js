@@ -40,3 +40,6 @@ export const createAsRequest = (payload) =>
 
 export const processPayment = (requestId) =>
     api.post(`/api/customer/as-requests/${requestId}/payment`);
+
+export const getPaymentSummary = () =>
+    api.get('/api/customer/payments/summary');

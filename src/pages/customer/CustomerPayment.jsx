@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { CreditCard, Wallet, AlertTriangle, CheckCircle, ClipboardList } from "lucide-react";
 import "../../styles/Customer/CustomerPayment.css";
-import { getMyAS, getReport, processPayment } from "../../apis/as";
+import { getMyAS, getReport, processPayment, getPaymentSummary } from "../../apis/as";
 
 function fmt(dateStr) {
   return dateStr ? String(dateStr).slice(0, 10).replace(/-/g, ".") : "—";
@@ -69,18 +69,24 @@ function PaymentActionCard({ req, report, onPaid }) {
 
 export default function CustomerPayment() {
   const [asList,   setAsList]   = useState([]);
-  const [reports,  setReports]  = useState({}); // { reportId: WorkReportDetailResponse }
+  const [reports,  setReports]  = useState({});
+  const [summary,  setSummary]  = useState(null);
   const [loading,  setLoading]  = useState(true);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const res  = await getMyAS();
-      const list = res.data?.content ?? res.data ?? [];
+      const [asRes, summaryRes] = await Promise.all([
+        getMyAS(),
+        getPaymentSummary().catch(() => ({ data: null })),
+      ]);
+
+      const list = asRes.data?.content ?? asRes.data ?? [];
       const arr  = Array.isArray(list) ? list : [];
       setAsList(arr);
+      setSummary(summaryRes.data);
 
-      // reportId 있는 건 병렬 fetch
+      // reportId 있는 건 병렬 fetch (결제 내역 테이블용 기사명/금액)
       const withReport = arr.filter((r) => r.reportId);
       const fetched = await Promise.all(
         withReport.map((r) =>
@@ -102,17 +108,12 @@ export default function CustomerPayment() {
   useEffect(() => { fetchAll(); }, []);
 
   const pending = asList.filter((r) => r.status === "COMPLETED" && r.reportId);
-  const paid    = asList.filter((r) => r.status === "PAID");
-  const totalPaid = paid.reduce((s, r) => {
-    const rpt = reports[r.reportId];
-    return s + (rpt?.finalAmount ?? 0);
-  }, 0);
 
   const KPI = [
-    { label: "총 지출",      value: fmtWon(totalPaid),      sub: "결제 완료 누적",  Icon: Wallet,        highlight: false },
-    { label: "미결제 건수",  value: `${pending.length} 건`, sub: "결제 대기 중",    Icon: AlertTriangle, highlight: pending.length > 0 },
-    { label: "결제 완료",    value: `${paid.length} 건`,    sub: "완료",            Icon: CheckCircle,   highlight: false },
-    { label: "전체 A/S",     value: `${asList.length} 건`,  sub: "전체 기준",       Icon: ClipboardList, highlight: false },
+    { label: "총 지출",        value: fmtWon(summary?.totalAmount),      sub: "결제 완료 누적",    Icon: Wallet,        highlight: false },
+    { label: "이번 달 지출",   value: fmtWon(summary?.thisMonthAmount),  sub: "이번 달 결제 합계", Icon: CheckCircle,   highlight: false },
+    { label: "미결제 건수",    value: summary != null ? `${summary.unpaidCount} 건` : "—", sub: "결제 대기 중", Icon: AlertTriangle, highlight: (summary?.unpaidCount ?? 0) > 0 },
+    { label: "부품비",         value: fmtWon(summary?.partsAmount),      sub: `기타 ${fmtWon(summary?.otherAmount)}`, Icon: ClipboardList, highlight: false },
   ];
 
   const STATUS_META = {

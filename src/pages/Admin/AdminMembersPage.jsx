@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, X, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import "../../styles/Admin/Admin.css";
 import {
@@ -151,7 +152,8 @@ function RejectModal({ agency, onClose, onDone }) {
 }
 
 export default function AdminMembersPage() {
-  const [tab, setTab] = useState("members");
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get("tab") === "agencies" ? "agencies" : "members");
 
   // 전체 회원 조회 상태
   const [members, setMembers] = useState([]);
