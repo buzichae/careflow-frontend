@@ -37,3 +37,6 @@ export const review = async(requestId, rating, content) => {
 
 export const createAsRequest = (payload) =>
     api.post("/api/as-requests", payload);
+
+export const processPayment = (requestId) =>
+    api.post(`/api/customer/as-requests/${requestId}/payment`);

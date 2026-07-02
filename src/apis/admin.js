@@ -18,6 +18,10 @@ export const getAdminUserKpi = (role) =>
 export const getAdminMemberTrend = (role) =>
     api.get('/api/admin/users/member-trend', { params: role ? { role } : {} });
 
+// 회원 상태 변경 (status: 'ACTIVE'|'INACTIVE'|'SUSPENDED')
+export const updateAdminUserStatus = (userId, status) =>
+    api.patch(`/api/admin/users/${userId}/status`, { status });
+
 // 전체 회원 조회 (role: 'CUSTOMER'|'ENGINEER'|'AGENCY'|undefined, status, keyword)
 export const getAdminUsers = ({ role, status, keyword, page = 0 } = {}) => {
     const params = { page };

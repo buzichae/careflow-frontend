@@ -6,10 +6,46 @@ import {
   approveAgencyRequest,
   rejectAgencyRequest,
   getAdminUsers,
+  updateAdminUserStatus,
 } from "../../apis/admin";
 
 const ROLE_BADGE = { CUSTOMER: "blue", ENGINEER: "purple", AGENCY: "orange" };
 const APPR_BADGE = { PENDING: "orange", APPROVED: "green", REJECTED: "red" };
+const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "SUSPENDED"];
+
+function StatusSelect({ member, onChanged }) {
+  const [value, setValue] = useState(member.status);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = async (e) => {
+    const next = e.target.value;
+    if (next === value) return;
+    setLoading(true);
+    try {
+      await updateAdminUserStatus(member.userId ?? member.id, next);
+      setValue(next);
+      onChanged();
+    } catch {
+      alert("상태 변경에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <select
+      className="admin-select"
+      style={{ fontSize: 12, padding: "2px 6px", minWidth: 110 }}
+      value={value}
+      onChange={handleChange}
+      disabled={loading}
+    >
+      {STATUS_OPTIONS.map((s) => (
+        <option key={s} value={s}>{s}</option>
+      ))}
+    </select>
+  );
+}
 
 function AgencyApproveModal({ agency, onClose, onDone }) {
   const [loading, setLoading] = useState(false);
@@ -264,18 +300,19 @@ export default function AdminMembersPage() {
                   <th>역할</th>
                   <th>상태</th>
                   <th>가입일</th>
+                  <th>상태 변경</th>
                 </tr>
               </thead>
               <tbody>
                 {membersLoading ? (
                   <tr>
-                    <td colSpan={6} className="admin-empty">
+                    <td colSpan={7} className="admin-empty">
                       불러오는 중...
                     </td>
                   </tr>
                 ) : members.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="admin-empty">
+                    <td colSpan={7} className="admin-empty">
                       회원 데이터가 없습니다.
                     </td>
                   </tr>
@@ -294,15 +331,18 @@ export default function AdminMembersPage() {
                       </td>
                       <td>
                         <span
-                          className={`admin-badge admin-badge--${m.status === "ACTIVE" ? "green" : "gray"}`}
+                          className={`admin-badge admin-badge--${m.status === "ACTIVE" ? "green" : m.status === "SUSPENDED" ? "red" : "gray"}`}
                         >
                           {m.status}
                         </span>
                       </td>
                       <td style={{ color: "#888", fontSize: 12 }}>
-                        {m.createdAt
-                          ? m.createdAt.slice(0, 10).replace(/-/g, ".")
+                        {m.joinedAt
+                          ? m.joinedAt.slice(0, 10).replace(/-/g, ".")
                           : "—"}
+                      </td>
+                      <td>
+                        <StatusSelect member={m} onChanged={fetchMembers} />
                       </td>
                     </tr>
                   ))

@@ -33,15 +33,39 @@ export default function AdminDashboard() {
   const [pendingAgencies, setPendingAgencies] = useState([]);
 
   useEffect(() => {
-    getAdminUserKpi()
-      .then((res) => setKpi(res.data))
-      .catch(() => {});
+    // customer + agency + engineer 합산
+    Promise.all([
+      getAdminUserKpi("CUSTOMER").catch(() => ({ data: null })),
+      getAdminUserKpi("AGENCY").catch(() => ({ data: null })),
+      getAdminUserKpi("ENGINEER").catch(() => ({ data: null })),
+    ]).then(([c, a, e]) => {
+      const parts = [c.data, a.data, e.data].filter(Boolean);
+      if (parts.length === 0) return;
+      const sum = (key) => parts.reduce((acc, p) => acc + (p[key] ?? 0), 0);
+      setKpi({
+        totalCount:     sum("totalCount"),
+        activeCount:    sum("activeCount"),
+        inactiveCount:  sum("inactiveCount"),
+        suspendedCount: sum("suspendedCount"),
+        todayNewCount:  sum("todayNewCount"),
+      });
+    });
 
-    getAdminMemberTrend()
-      .then((res) => setMemberTrend(
-        (res.data ?? []).map((d) => ({ day: d.date?.slice(5), count: d.newCount }))
-      ))
-      .catch(() => {});
+    // 추이는 role 없이(전체) 또는 합산 — 백엔드가 전체를 지원하면 그대로, 아니면 각각 호출해 합산
+    Promise.all([
+      getAdminMemberTrend("CUSTOMER").catch(() => ({ data: [] })),
+      getAdminMemberTrend("AGENCY").catch(() => ({ data: [] })),
+      getAdminMemberTrend("ENGINEER").catch(() => ({ data: [] })),
+    ]).then(([c, a, e]) => {
+      const merge = {};
+      for (const part of [c.data ?? [], a.data ?? [], e.data ?? []]) {
+        for (const d of part) {
+          const day = d.date?.slice(5) ?? d.day;
+          merge[day] = (merge[day] ?? 0) + (d.newCount ?? d.count ?? 0);
+        }
+      }
+      setMemberTrend(Object.entries(merge).sort().map(([day, count]) => ({ day, count })));
+    });
 
     getAgencyRequests()
       .then((res) => {
