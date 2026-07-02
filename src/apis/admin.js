@@ -17,3 +17,12 @@ export const getAdminUserKpi = (role) =>
 // 최근 7일 신규 가입자 추이
 export const getAdminMemberTrend = (role) =>
     api.get('/api/admin/users/member-trend', { params: role ? { role } : {} });
+
+// 전체 회원 조회 (role: 'CUSTOMER'|'ENGINEER'|'AGENCY'|undefined, status, keyword)
+export const getAdminUsers = ({ role, status, keyword, page = 0 } = {}) => {
+    const params = { page };
+    if (role) params.role = role;
+    if (status) params.status = status;
+    if (keyword) params.keyword = keyword;
+    return api.get('/api/admin/users', { params });
+};

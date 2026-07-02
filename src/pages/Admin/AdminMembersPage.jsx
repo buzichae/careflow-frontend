@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import "../../styles/Admin/Admin.css";
-import { getAgencyRequests, approveAgencyRequest, rejectAgencyRequest } from "../../apis/admin";
+import {
+  getAgencyRequests,
+  approveAgencyRequest,
+  rejectAgencyRequest,
+  getAdminUsers,
+} from "../../apis/admin";
 
 const ROLE_BADGE = { CUSTOMER: "blue", ENGINEER: "purple", AGENCY: "orange" };
 const APPR_BADGE = { PENDING: "orange", APPROVED: "green", REJECTED: "red" };
@@ -27,7 +32,9 @@ function AgencyApproveModal({ agency, onClose, onDone }) {
       <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
         <div className="admin-modal__header">
           <h2 className="admin-modal__title">대행사 승인</h2>
-          <button className="admin-modal__close" onClick={onClose}><X size={18} /></button>
+          <button className="admin-modal__close" onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
         <p style={{ fontSize: 13, color: "#555", marginBottom: 8 }}>
           <strong>{agency.agencyName}</strong> 대행사를 승인하시겠습니까?
@@ -36,8 +43,14 @@ function AgencyApproveModal({ agency, onClose, onDone }) {
           신청자: {agency.name} ({agency.email})
         </p>
         <div className="admin-modal__footer">
-          <button className="admin-btn admin-btn--outline" onClick={onClose}>취소</button>
-          <button className="admin-btn admin-btn--primary" onClick={handleApprove} disabled={loading}>
+          <button className="admin-btn admin-btn--outline" onClick={onClose}>
+            취소
+          </button>
+          <button
+            className="admin-btn admin-btn--primary"
+            onClick={handleApprove}
+            disabled={loading}
+          >
             {loading ? "처리 중..." : "승인"}
           </button>
         </div>
@@ -68,7 +81,9 @@ function RejectModal({ agency, onClose, onDone }) {
       <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
         <div className="admin-modal__header">
           <h2 className="admin-modal__title">대행사 반려</h2>
-          <button className="admin-modal__close" onClick={onClose}><X size={18} /></button>
+          <button className="admin-modal__close" onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
         <p style={{ fontSize: 13, color: "#555", marginBottom: 16 }}>
           <strong>{agency.agencyName}</strong> 대행사 신청을 반려합니다.
@@ -83,8 +98,14 @@ function RejectModal({ agency, onClose, onDone }) {
           />
         </div>
         <div className="admin-modal__footer">
-          <button className="admin-btn admin-btn--outline" onClick={onClose}>취소</button>
-          <button className="admin-btn admin-btn--danger" onClick={handleReject} disabled={loading}>
+          <button className="admin-btn admin-btn--outline" onClick={onClose}>
+            취소
+          </button>
+          <button
+            className="admin-btn admin-btn--danger"
+            onClick={handleReject}
+            disabled={loading}
+          >
             {loading ? "처리 중..." : "반려"}
           </button>
         </div>
@@ -95,11 +116,42 @@ function RejectModal({ agency, onClose, onDone }) {
 
 export default function AdminMembersPage() {
   const [tab, setTab] = useState("members");
+
+  // 전체 회원 조회 상태
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [roleFilter, setRoleFilter] = useState("");
+  const [memberStatusFilter, setMemberStatusFilter] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+
+  // 대행사 승인 관리 상태
   const [agencyRequests, setAgencyRequests] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [approveModal, setApproveModal] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
+
+  const fetchMembers = (page = currentPage) => {
+    setMembersLoading(true);
+    getAdminUsers({
+      role: roleFilter || undefined,
+      status: memberStatusFilter || undefined,
+      keyword: memberSearch || undefined,
+      page,
+    })
+      .then((res) => {
+        const data = res.data;
+        setMembers(Array.isArray(data?.content) ? data.content : []);
+        setTotalPages(data?.totalPages ?? 0);
+        setTotalElements(data?.totalElements ?? 0);
+        setCurrentPage(data?.currentPage ?? page);
+      })
+      .catch(() => setMembers([]))
+      .finally(() => setMembersLoading(false));
+  };
 
   const fetchAgencyRequests = () => {
     getAgencyRequests()
@@ -110,6 +162,22 @@ export default function AdminMembersPage() {
   useEffect(() => {
     fetchAgencyRequests();
   }, []);
+
+  useEffect(() => {
+    if (tab === "members") fetchMembers(0);
+    setCurrentPage(0);
+  }, [tab, roleFilter, memberStatusFilter]);
+
+  const handleMemberSearch = (e) => {
+    e.preventDefault();
+    setCurrentPage(0);
+    fetchMembers(0);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    fetchMembers(page);
+  };
 
   const filtered = agencyRequests.filter((r) => {
     const matchStatus = statusFilter === "ALL" || r.status === statusFilter;
@@ -123,11 +191,10 @@ export default function AdminMembersPage() {
 
   return (
     <div className="admin-page">
-
       <div className="admin-section" style={{ marginBottom: 24 }}>
         <div className="admin-tabs">
           {[
-            { key: "members",  label: "전체 회원 조회" },
+            { key: "members", label: "전체 회원 조회" },
             { key: "agencies", label: "대행사 승인 관리" },
           ].map((t) => (
             <button
@@ -142,23 +209,52 @@ export default function AdminMembersPage() {
 
         {tab === "members" && (
           <div className="admin-section__body">
-            <div className="admin-filter-bar">
+            <form className="admin-filter-bar" onSubmit={handleMemberSearch}>
               <div style={{ position: "relative", flex: 1 }}>
-                <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#aaa" }} />
+                <Search
+                  size={14}
+                  style={{
+                    position: "absolute",
+                    left: 10,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#aaa",
+                  }}
+                />
                 <input
                   className="admin-search-input"
                   style={{ paddingLeft: 32 }}
                   placeholder="이름 또는 이메일 검색"
-                  disabled
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
                 />
               </div>
-              <select className="admin-select" disabled>
-                <option>역할 전체</option>
+              <select
+                className="admin-select"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <option value="">역할 전체</option>
+                <option value="CUSTOMER">CUSTOMER</option>
+                <option value="ENGINEER">ENGINEER</option>
+                <option value="AGENCY">AGENCY</option>
               </select>
-              <select className="admin-select" disabled>
-                <option>상태 전체</option>
+              <select
+                className="admin-select"
+                value={memberStatusFilter}
+                onChange={(e) => setMemberStatusFilter(e.target.value)}
+              >
+                <option value="">상태 전체</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
               </select>
-            </div>
+              <button
+                type="submit"
+                className="admin-btn admin-btn--primary admin-btn--sm"
+              >
+                검색
+              </button>
+            </form>
             <table className="admin-table">
               <thead>
                 <tr>
@@ -168,17 +264,82 @@ export default function AdminMembersPage() {
                   <th>역할</th>
                   <th>상태</th>
                   <th>가입일</th>
-                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan={7} className="admin-empty">
-                    전체 회원 조회 API가 준비되지 않았습니다.
-                  </td>
-                </tr>
+                {membersLoading ? (
+                  <tr>
+                    <td colSpan={6} className="admin-empty">
+                      불러오는 중...
+                    </td>
+                  </tr>
+                ) : members.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="admin-empty">
+                      회원 데이터가 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  members.map((m, i) => (
+                    <tr key={m.userId ?? m.id ?? i}>
+                      <td style={{ color: "#aaa", fontSize: 12 }}>{i + 1}</td>
+                      <td>{m.name}</td>
+                      <td style={{ color: "#666" }}>{m.email}</td>
+                      <td>
+                        <span
+                          className={`admin-badge admin-badge--${ROLE_BADGE[m.role] ?? "gray"}`}
+                        >
+                          {m.role}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={`admin-badge admin-badge--${m.status === "ACTIVE" ? "green" : "gray"}`}
+                        >
+                          {m.status}
+                        </span>
+                      </td>
+                      <td style={{ color: "#888", fontSize: 12 }}>
+                        {m.createdAt
+                          ? m.createdAt.slice(0, 10).replace(/-/g, ".")
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="aep-pagination" style={{ justifyContent: "center", gap: 12, position: "relative" }}>
+                <div className="aep-pagination__left">
+                  <button onClick={() => handlePageChange(0)} disabled={currentPage === 0}><ChevronsLeft size={14} /></button>
+                  <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}><ChevronLeft size={14} /></button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i).map((i) => (
+                    <button
+                      key={i}
+                      className={currentPage === i ? "aep-pagination__active" : ""}
+                      onClick={() => handlePageChange(i)}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  {totalPages > 5 && (
+                    <>
+                      <span className="aep-pagination__ellipsis">...</span>
+                      <button
+                        className={currentPage === totalPages - 1 ? "aep-pagination__active" : ""}
+                        onClick={() => handlePageChange(totalPages - 1)}
+                      >
+                        {totalPages}
+                      </button>
+                    </>
+                  )}
+                  <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages - 1}><ChevronRight size={14} /></button>
+                  <button onClick={() => handlePageChange(totalPages - 1)} disabled={currentPage === totalPages - 1}><ChevronsRight size={14} /></button>
+                </div>
+                <span style={{ fontSize: 13, color: "#888", position: "absolute", right: 0 }}>총 {totalElements}명</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -186,7 +347,16 @@ export default function AdminMembersPage() {
           <div className="admin-section__body">
             <div className="admin-filter-bar">
               <div style={{ position: "relative", flex: 1 }}>
-                <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#aaa" }} />
+                <Search
+                  size={14}
+                  style={{
+                    position: "absolute",
+                    left: 10,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#aaa",
+                  }}
+                />
                 <input
                   className="admin-search-input"
                   style={{ paddingLeft: 32 }}
@@ -195,7 +365,11 @@ export default function AdminMembersPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <select className="admin-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <select
+                className="admin-select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
                 <option value="ALL">상태 전체</option>
                 <option value="PENDING">PENDING</option>
                 <option value="APPROVED">APPROVED</option>
@@ -221,12 +395,18 @@ export default function AdminMembersPage() {
                     <td style={{ fontWeight: 600 }}>{r.agencyName ?? "—"}</td>
                     <td>{r.name}</td>
                     <td style={{ color: "#666" }}>{r.email}</td>
-                    <td style={{ color: "#888", fontSize: 12 }}>{r.phone ?? "—"}</td>
                     <td style={{ color: "#888", fontSize: 12 }}>
-                      {r.createdAt ? r.createdAt.slice(0, 10).replace(/-/g, ".") : "—"}
+                      {r.phone ?? "—"}
+                    </td>
+                    <td style={{ color: "#888", fontSize: 12 }}>
+                      {r.createdAt
+                        ? r.createdAt.slice(0, 10).replace(/-/g, ".")
+                        : "—"}
                     </td>
                     <td>
-                      <span className={`admin-badge admin-badge--${APPR_BADGE[r.status] ?? "gray"}`}>
+                      <span
+                        className={`admin-badge admin-badge--${APPR_BADGE[r.status] ?? "gray"}`}
+                      >
                         {r.status}
                       </span>
                     </td>
@@ -247,13 +427,19 @@ export default function AdminMembersPage() {
                           </button>
                         </div>
                       ) : (
-                        <span style={{ fontSize: 12, color: "#aaa" }}>처리 완료</span>
+                        <span style={{ fontSize: 12, color: "#aaa" }}>
+                          처리 완료
+                        </span>
                       )}
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={7} className="admin-empty">신청 내역이 없습니다.</td></tr>
+                  <tr>
+                    <td colSpan={7} className="admin-empty">
+                      신청 내역이 없습니다.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>

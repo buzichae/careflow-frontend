@@ -44,7 +44,10 @@ export default function AdminDashboard() {
       .catch(() => {});
 
     getAgencyRequests()
-      .then((res) => setPendingAgencies(res.data ?? []))
+      .then((res) => {
+        const list = res.data?.requests ?? res.data ?? [];
+        setPendingAgencies(Array.isArray(list) ? list.filter(r => r.status === "PENDING") : []);
+      })
       .catch(() => {});
   }, []);
 
