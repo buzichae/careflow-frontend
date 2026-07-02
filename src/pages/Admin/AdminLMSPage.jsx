@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, X, Search, CheckCircle, Circle } from "lucide-react";
+import { Plus, X, Search, Play } from "lucide-react";
 import "../../styles/Admin/Admin.css";
 import {
   getAdminLmsContents,
@@ -30,12 +30,11 @@ const CATEGORIES = [
   { id: 43, name: "스피커" },
 ];
 
-// 매트릭스 컬럼: 공통(ALL) + 3개 등급
 const REQUIRED_LEVELS = [
-  { key: "ALL",           label: "공통" },
-  { key: "BEGINNER",      label: "1~5년" },
-  { key: "INTERMEDIATE",  label: "6~10년" },
-  { key: "ADVANCED",      label: "11년 이상" },
+  { key: "ALL",          label: "공통" },
+  { key: "BEGINNER",     label: "1~5년" },
+  { key: "INTERMEDIATE", label: "6~10년" },
+  { key: "ADVANCED",     label: "11년 이상" },
 ];
 
 /* ── 콘텐츠 등록/수정 모달 ── */
@@ -47,6 +46,8 @@ function ContentModal({ item, onClose, onSave }) {
             categoryId:    item.categoryId || CATEGORIES[0].id,
             title:         "",
             body:          "",
+            videoUrl:      "",
+            contentType:   "TEXT",
             requiredLevel: item.requiredLevel || "BEGINNER",
             version:       "1.0",
           }
@@ -54,7 +55,9 @@ function ContentModal({ item, onClose, onSave }) {
             contentId:     item.contentId,
             categoryId:    item.categoryId,
             title:         item.title,
-            body:          item.body,
+            body:          item.body   || "",
+            videoUrl:      item.videoUrl || "",
+            contentType:   item.contentType,
             requiredLevel: item.requiredLevel,
             version:       item.version,
           }
@@ -96,6 +99,35 @@ function ContentModal({ item, onClose, onSave }) {
               </select>
             </div>
             <div className="admin-modal__field" style={{ flex: 1 }}>
+              <label className="admin-modal__label">콘텐츠 유형</label>
+              <select
+                  className="admin-select"
+                  style={{ width: "100%" }}
+                  value={form.contentType}
+                  onChange={(e) => setForm((p) => ({
+                    ...p,
+                    contentType: e.target.value,
+                    body:     "",
+                    videoUrl: "",
+                  }))}
+              >
+                <option value="TEXT">TEXT</option>
+                <option value="VIDEO">VIDEO</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 12 }}>
+            <div className="admin-modal__field" style={{ flex: 2 }}>
+              <label className="admin-modal__label">제목</label>
+              <input
+                  className="admin-modal__input"
+                  value={form.title}
+                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="콘텐츠 제목"
+              />
+            </div>
+            <div className="admin-modal__field" style={{ flex: 1 }}>
               <label className="admin-modal__label">버전</label>
               <input
                   className="admin-modal__input"
@@ -106,24 +138,36 @@ function ContentModal({ item, onClose, onSave }) {
             </div>
           </div>
 
+          {/* 콘텐츠 유형별 입력 분기 */}
           <div className="admin-modal__field">
-            <label className="admin-modal__label">제목</label>
-            <input
-                className="admin-modal__input"
-                value={form.title}
-                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="콘텐츠 제목"
-            />
-          </div>
-          <div className="admin-modal__field">
-            <label className="admin-modal__label">본문</label>
-            <textarea
-                className="admin-modal__textarea"
-                style={{ minHeight: 120 }}
-                value={form.body || ""}
-                onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
-                placeholder="교육 내용을 입력하세요."
-            />
+            <label className="admin-modal__label">
+              {form.contentType === "TEXT" ? "본문" : "YouTube URL"}
+            </label>
+            {form.contentType === "TEXT" ? (
+                <textarea
+                    className="admin-modal__textarea"
+                    style={{ minHeight: 120 }}
+                    value={form.body}
+                    onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
+                    placeholder="교육 내용을 입력하세요."
+                />
+            ) : (
+                <>
+                  <input
+                      className="admin-modal__input"
+                      value={form.videoUrl}
+                      onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                  {/* URL 미리보기 */}
+                  {form.videoUrl && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#666", display: "flex", alignItems: "center", gap: 4 }}>
+                        <Play size={12} color="#734bcf" />
+                        <span>입력된 URL: {form.videoUrl}</span>
+                      </div>
+                  )}
+                </>
+            )}
           </div>
 
           {!isNew && (
@@ -142,13 +186,17 @@ function ContentModal({ item, onClose, onSave }) {
   );
 }
 
-/* ── 매트릭스 칸 안의 콘텐츠 카드 (등록 버튼 없음, 수정/활성화만) ── */
+/* ── 매트릭스 칸 안의 콘텐츠 카드 ── */
 function CourseCard({ course, onEdit, onToggle }) {
   return (
       <div className={`lms-course-card${!course.isActive ? " lms-course-card--inactive" : ""}`}>
         <div className="lms-course__title">{course.title}</div>
         <div className="lms-course__meta">
           <span className="lms-course__version">v{course.version}</span>
+          {/* 콘텐츠 타입 배지 추가 */}
+          <span className={`admin-badge ${course.contentType === "VIDEO" ? "admin-badge--blue" : "admin-badge--gray"}`}>
+          {course.contentType}
+        </span>
           {course.isActive
               ? <span className="admin-badge admin-badge--green">활성</span>
               : <span className="admin-badge admin-badge--gray">비활성</span>}
@@ -179,9 +227,7 @@ export default function AdminLMSPage() {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  useEffect(() => { fetchCourses(); }, []);
 
   async function fetchCourses() {
     try {
@@ -196,7 +242,6 @@ export default function AdminLMSPage() {
     }
   }
 
-  // 칸 안 콘텐츠 전부 반환 (ALL 포함 4개 컬럼 공용)
   function getCourses(categoryId, requiredLevel) {
     return courses.filter(
         (c) => c.categoryId === categoryId && c.requiredLevel === requiredLevel
@@ -208,7 +253,8 @@ export default function AdminLMSPage() {
       if (form.contentId) {
         await updateLmsContent(form.contentId, {
           title:         form.title,
-          body:          form.body,
+          body:          form.contentType === "TEXT"  ? form.body     : null,
+          videoUrl:      form.contentType === "VIDEO" ? form.videoUrl : null,
           requiredLevel: form.requiredLevel,
           version:       form.version,
         });
@@ -216,8 +262,10 @@ export default function AdminLMSPage() {
         await createLmsContent({
           categoryId:    form.categoryId,
           title:         form.title,
-          body:          form.body,
+          body:          form.contentType === "TEXT"  ? form.body     : null,
+          videoUrl:      form.contentType === "VIDEO" ? form.videoUrl : null,
           requiredLevel: form.requiredLevel,
+          contentType:   form.contentType,
           version:       form.version,
         });
       }
@@ -261,11 +309,8 @@ export default function AdminLMSPage() {
     return true;
   });
 
-  const careerLabel = (key) =>
-      REQUIRED_LEVELS.find((cl) => cl.key === key)?.label ?? key;
-
-  const categoryName = (id) =>
-      CATEGORIES.find((c) => c.id === id)?.name ?? "-";
+  const careerLabel  = (key) => REQUIRED_LEVELS.find((cl) => cl.key === key)?.label ?? key;
+  const categoryName = (id)  => CATEGORIES.find((c) => c.id === id)?.name ?? "-";
 
   return (
       <div className="admin-page">
@@ -306,7 +351,6 @@ export default function AdminLMSPage() {
                         </button>
                       </div>
 
-                      {/* 공통 + 3개 등급 통합 매트릭스 (4컬럼) */}
                       <div className="lms-matrix">
                         <div className="lms-matrix__row lms-matrix__row--header">
                           <div className="lms-matrix__cell lms-matrix__cell--label" />
@@ -365,10 +409,7 @@ export default function AdminLMSPage() {
                         onKeyDown={(e) => { if (e.key === "Enter") handleEngineerSearch(); }}
                     />
                   </div>
-                  <button
-                      className="admin-btn admin-btn--primary"
-                      onClick={handleEngineerSearch}
-                  >
+                  <button className="admin-btn admin-btn--primary" onClick={handleEngineerSearch}>
                     조회
                   </button>
                   <select
