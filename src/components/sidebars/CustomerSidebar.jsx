@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "../../styles/Sidebars.css";
 // import {House, WashingMachine, Wrench, ShieldCheck, HandCoins, RefreshCw, Bell} from "lucide-react"
 import {House, WashingMachine, ShieldCheck, HandCoins, Bell} from "lucide-react"
@@ -14,9 +14,10 @@ const MENU = [
 ];
 
 export default function CustomerSidebar() {
+  const navigate = useNavigate();
   return (
     <aside className="sidebar">
-      <div className="sidebar__logo">
+      <div className="sidebar__logo" onClick={() => navigate("/customer/home")} style={{ cursor: "pointer" }}>
         <img src="/src/assets/logo.png" alt="CareFlow" className="sidebar__logo-img" />
         CareFlow
       </div>
