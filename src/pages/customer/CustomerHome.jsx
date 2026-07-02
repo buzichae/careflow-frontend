@@ -20,42 +20,6 @@ import { getMyAppliances, getHealthCertificate } from "../../apis/appliances";
 import { getUserInfo } from "../../apis/auth";
 import { getMyAS } from "../../apis/as";
 
-/* ── 목 데이터 ── */
-const mockAppliances = [
-  {
-    id: 1,
-    name: "냉장고",
-    brand: "LG 디오스 냉장고",
-    score: 95,
-    status: "양호",
-    statusColor: "green",
-  },
-  {
-    id: 2,
-    name: "세탁기",
-    brand: "삼성 그랑데 세탁기",
-    score: 72,
-    status: "주의",
-    statusColor: "orange",
-  },
-  {
-    id: 3,
-    name: "에어컨",
-    brand: "LG 휘센 에어컨",
-    score: 88,
-    status: "양호",
-    statusColor: "green",
-  },
-  {
-    id: 4,
-    name: "TV",
-    brand: "삼성 QLED TV",
-    score: 90,
-    status: "양호",
-    statusColor: "green",
-  },
-];
-
 const mockAlerts = [
   {
     id: 1,

@@ -781,20 +781,32 @@ function SignupForm({ roleKey, onBack }) {
                 </div>
               )}
 
-              <button
-                type="submit"
-                className="auth-submit-btn"
-                style={{ background: role.color }}
-                disabled={
-                  step === 1
-                    ? step1Disabled
-                    : step === 2
-                      ? step2Disabled
-                      : false
-                }
-              >
-                {step === 3 ? "로그인하러 가기" : "다음"}
-              </button>
+              <div style={{ display: "flex", gap: 10 }}>
+                {step === 2 && (
+                  <button
+                    type="button"
+                    className="auth-submit-btn"
+                    style={{ background: "#e0e0e0", color: "#555", flex: 1 }}
+                    onClick={() => { setFormError(""); setStep(1); }}
+                  >
+                    이전
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="auth-submit-btn"
+                  style={{ background: role.color, flex: step === 2 ? 1 : undefined }}
+                  disabled={
+                    step === 1
+                      ? step1Disabled
+                      : step === 2
+                        ? step2Disabled
+                        : false
+                  }
+                >
+                  {step === 3 ? "로그인하러 가기" : "다음"}
+                </button>
+              </div>
             </form>
 
             <p className="auth-card__foot">
