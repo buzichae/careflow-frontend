@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { CheckCircle, Circle, ChevronRight, X, Search } from "lucide-react";
-import { getAgencyEngineersLmsStatus, getEngineerConfirmations } from "../../apis/lms";
+import { getAgencyEngineersLmsStatus, getEngineerConfirmations, sendLmsNotification } from "../../apis/lms";
 import "../../styles/Agency/AgencyLmsPage.css";
 
 const CATEGORIES = [
@@ -104,6 +104,18 @@ export default function AgencyLmsPage() {
         }
     }
 
+    // LMS 이수 확인 알림
+    async function handleSendNotification(e, engineer) {
+        e.stopPropagation(); // 행 클릭 이벤트 전파 방지
+        try {
+            await sendLmsNotification(agencyId, engineer.userId);
+            alert(`${engineer.name} 기사에게 LMS 이수 독려 알림을 발송했습니다.`);
+        } catch (err) {
+            const msg = err.response?.data?.message;
+            alert(msg || "알림 발송에 실패했습니다.");
+        }
+    }
+
     // 연도 변경 시 상세 재조회
     async function handleYearChange(year) {
         setYearFilter(year);
@@ -184,6 +196,7 @@ export default function AgencyLmsPage() {
                                 <th>기술 등급</th>
                                 <th>이수 현황</th>
                                 <th>이수 상태</th>
+                                <th>미이수 알림</th>
                                 <th></th>
                             </tr>
                             </thead>
@@ -214,6 +227,17 @@ export default function AgencyLmsPage() {
                               <Circle size={13} /> 미이수
                             </span>
                                             }
+                                        </td>
+                                        <td>
+                                            {/* 미이수 기사에게만 알림 버튼 표시 */}
+                                            {!engineer.isCompleted && (
+                                                <button
+                                                    className="agency-lms__notify-btn"
+                                                    onClick={(e) => handleSendNotification(e, engineer)}
+                                                >
+                                                    알림 발송
+                                                </button>
+                                            )}
                                         </td>
                                         <td><ChevronRight size={14} color="#aaa" /></td>
                                     </tr>
@@ -260,18 +284,6 @@ export default function AgencyLmsPage() {
                                 </div>
                             </div>
 
-                            {/* 이수 요약 */}
-                            <div className="agency-lms__detail-summary">
-                                <span>{yearFilter}년 이수 현황</span>
-                                <span>
-                  <strong>{selectedEngineer.completedCount}</strong> / {selectedEngineer.totalCount}개 완료
-                </span>
-                                {selectedEngineer.isCompleted
-                                    ? <span className="agency-lms__status-badge agency-lms__status-badge--done"><CheckCircle size={13} /> 이수 완료</span>
-                                    : <span className="agency-lms__status-badge agency-lms__status-badge--pending"><Circle size={13} /> 미이수</span>
-                                }
-                            </div>
-
                             {/* 콘텐츠별 이수 상세 */}
                             {detailLoading
                                 ? <p style={{ padding: 20, color: "#aaa" }}>불러오는 중...</p>
@@ -281,7 +293,7 @@ export default function AgencyLmsPage() {
                                             <thead>
                                             <tr>
                                                 <th>콘텐츠 제목</th>
-                                                <th>이수 버전</th>
+                                                <th>버전</th>
                                                 <th>이수 일시</th>
                                             </tr>
                                             </thead>
