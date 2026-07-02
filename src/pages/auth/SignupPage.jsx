@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Eye, EyeOff, ChevronDown, Check, ArrowLeft, MapPin, Info } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ChevronDown,
+  Check,
+  ArrowLeft,
+  MapPin,
+  Info,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import { ROLES } from "./authConstants";
@@ -9,9 +17,14 @@ import { signupAgency, signupCustomer, signupEngineer } from "../../apis/auth";
 import { REGIONS } from "../../constants/regions";
 
 function TopNav({ showBack, onBack }) {
+  const navigate = useNavigate();
   return (
     <div className="auth-nav">
-      <div className="auth-nav__logo">
+      <div
+        className="auth-nav__logo"
+        onClick={() => navigate("/")}
+        style={{ cursor: "pointer" }}
+      >
         <img src={logoImg} alt="CareFlow" className="auth-nav__logo-img" />
         CareFlow
       </div>
@@ -26,7 +39,14 @@ function TopNav({ showBack, onBack }) {
   );
 }
 
-function AuthInput({ label, type = "text", placeholder, value, onChange, rightEl }) {
+function AuthInput({
+  label,
+  type = "text",
+  placeholder,
+  value,
+  onChange,
+  rightEl,
+}) {
   return (
     <div className="auth-input-wrap">
       {label && <label className="auth-label">{label}</label>}
@@ -54,11 +74,19 @@ function StepBar({ current }) {
         const active = current === n;
         return (
           <div key={n} className="auth-stepper__item">
-            <div className={`auth-stepper__circle ${active ? "active" : ""} ${done ? "done" : ""}`}>
+            <div
+              className={`auth-stepper__circle ${active ? "active" : ""} ${done ? "done" : ""}`}
+            >
               {done ? <Check size={11} /> : n}
             </div>
-            <span className={`auth-stepper__label ${active ? "active" : ""} ${done ? "done" : ""}`}>{label}</span>
-            {i < steps.length - 1 && <div className={`auth-stepper__line ${done ? "done" : ""}`} />}
+            <span
+              className={`auth-stepper__label ${active ? "active" : ""} ${done ? "done" : ""}`}
+            >
+              {label}
+            </span>
+            {i < steps.length - 1 && (
+              <div className={`auth-stepper__line ${done ? "done" : ""}`} />
+            )}
           </div>
         );
       })}
@@ -78,12 +106,21 @@ function RoleSelect({ onSelect }) {
           <div className="auth-role-list">
             {ROLES.filter((r) => r.canSignup).map((r) => (
               <div key={r.key} className="auth-role-row">
-                <div className="auth-role-row__img-wrap" style={{ background: r.bg }}>
-                  <img src={r.img} alt={r.title} className="auth-role-row__img" />
+                <div
+                  className="auth-role-row__img-wrap"
+                  style={{ background: r.bg }}
+                >
+                  <img
+                    src={r.img}
+                    alt={r.title}
+                    className="auth-role-row__img"
+                  />
                 </div>
                 <div className="auth-role-row__body">
                   <p className="auth-role-row__title">{r.title}</p>
-                  <p className="auth-role-row__desc">{r.desc.replace("\n", " ")}</p>
+                  <p className="auth-role-row__desc">
+                    {r.desc.replace("\n", " ")}
+                  </p>
                 </div>
                 <button
                   className="auth-role-card__btn"
@@ -97,7 +134,12 @@ function RoleSelect({ onSelect }) {
           </div>
           <p className="auth-card__foot">
             이미 계정이 있으신가요?{" "}
-            <button className="auth-link" onClick={() => navigate("/auth/login")}>로그인</button>
+            <button
+              className="auth-link"
+              onClick={() => navigate("/auth/login")}
+            >
+              로그인
+            </button>
           </p>
         </div>
       </div>
@@ -118,10 +160,10 @@ function SignupForm({ roleKey, onBack }) {
   const role = ROLES.find((r) => r.key === roleKey) || ROLES[0];
   const isCustomer = roleKey === "customer";
 
-  const [step, setStep]     = useState(1);
-  const [showPw, setShowPw]   = useState(false);
+  const [step, setStep] = useState(1);
+  const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
-  const [agree, setAgree]     = useState(false);
+  const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -133,8 +175,8 @@ function SignupForm({ roleKey, onBack }) {
     phone: "",
     /* 주소 */
     regionParent: "",
-    regionId: "",      // customer: DB region id (integer)
-    regionName: "",    // agency/engineer: region name string
+    regionId: "", // customer: DB region id (integer)
+    regionName: "", // agency/engineer: region name string
     addressDetail: "",
     /* 대행사 전용 */
     agencyName: "",
@@ -151,24 +193,56 @@ function SignupForm({ roleKey, onBack }) {
   };
 
   const handleRegionParent = (v) =>
-    setFormData((prev) => ({ ...prev, regionParent: v, regionId: "", regionName: "" }));
+    setFormData((prev) => ({
+      ...prev,
+      regionParent: v,
+      regionId: "",
+      regionName: "",
+    }));
 
-  const subRegions = formData.regionParent ? REGIONS[formData.regionParent] : [];
+  const subRegions = formData.regionParent
+    ? REGIONS[formData.regionParent]
+    : [];
 
   /* 비밀번호 확인 일치 여부 */
-  const pwMatch = !formData.passwordConfirm || formData.password === formData.passwordConfirm;
+  const pwMatch =
+    !formData.passwordConfirm || formData.password === formData.passwordConfirm;
 
   /* 스텝별 제출 버튼 활성화 조건 */
   const step1Disabled = (() => {
     if (!agree) return true;
-    if (isCustomer) return !formData.email || !formData.name || !formData.password || !formData.passwordConfirm || !pwMatch;
-    if (roleKey === "agency") return !formData.email || !formData.password || !formData.name || !formData.phone || !formData.businessNumber || !formData.agencyName;
-    if (roleKey === "engineer") return !formData.email || !formData.password || !formData.name || !formData.businessNumber;
+    if (isCustomer)
+      return (
+        !formData.email ||
+        !formData.name ||
+        !formData.password ||
+        !formData.passwordConfirm ||
+        !pwMatch
+      );
+    if (roleKey === "agency")
+      return (
+        !formData.email ||
+        !formData.password ||
+        !formData.name ||
+        !formData.phone ||
+        !formData.businessNumber ||
+        !formData.agencyName
+      );
+    if (roleKey === "engineer")
+      return (
+        !formData.email ||
+        !formData.password ||
+        !formData.name ||
+        !formData.businessNumber
+      );
     return !formData.email || !formData.password;
   })();
 
   const step2Disabled = (() => {
-    if (isCustomer) return !formData.regionParent || !formData.regionId || !formData.addressDetail;
+    if (isCustomer)
+      return (
+        !formData.regionParent || !formData.regionId || !formData.addressDetail
+      );
     if (roleKey === "agency") {
       return (
         !formData.regionParent ||
@@ -251,10 +325,18 @@ function SignupForm({ roleKey, onBack }) {
       } catch (error) {
         console.error(error);
         const data = error.response?.data;
-        if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
-          setFormError(data.errors.map((e) => `• ${e.message || e}`).join("\n"));
+        if (
+          data?.errors &&
+          Array.isArray(data.errors) &&
+          data.errors.length > 0
+        ) {
+          setFormError(
+            data.errors.map((e) => `• ${e.message || e}`).join("\n"),
+          );
         } else {
-          setFormError(data?.message || "회원가입에 실패했습니다. 다시 시도해주세요.");
+          setFormError(
+            data?.message || "회원가입에 실패했습니다. 다시 시도해주세요.",
+          );
         }
       }
     }
@@ -275,7 +357,12 @@ function SignupForm({ roleKey, onBack }) {
           <div className="auth-card auth-card--form">
             <form onSubmit={handleSubmit} className="auth-form">
               {formError && (
-                <div className="auth-error-banner" style={{ whiteSpace: "pre-line" }}>{formError}</div>
+                <div
+                  className="auth-error-banner"
+                  style={{ whiteSpace: "pre-line" }}
+                >
+                  {formError}
+                </div>
               )}
 
               {/* ── Step 1: 필수 계정 정보 ── */}
@@ -306,7 +393,11 @@ function SignupForm({ roleKey, onBack }) {
                     value={formData.password}
                     onChange={handleChange("password")}
                     rightEl={
-                      <button type="button" className="auth-eye-btn" onClick={() => setShowPw(!showPw)}>
+                      <button
+                        type="button"
+                        className="auth-eye-btn"
+                        onClick={() => setShowPw(!showPw)}
+                      >
                         {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     }
@@ -320,51 +411,104 @@ function SignupForm({ roleKey, onBack }) {
                         value={formData.passwordConfirm}
                         onChange={handleChange("passwordConfirm")}
                         rightEl={
-                          <button type="button" className="auth-eye-btn" onClick={() => setShowPw2(!showPw2)}>
+                          <button
+                            type="button"
+                            className="auth-eye-btn"
+                            onClick={() => setShowPw2(!showPw2)}
+                          >
                             {showPw2 ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         }
                       />
                       {formData.passwordConfirm && !pwMatch && (
-                        <p className="auth-field-error">비밀번호가 일치하지 않습니다.</p>
+                        <p className="auth-field-error">
+                          비밀번호가 일치하지 않습니다.
+                        </p>
                       )}
                     </>
                   )}
 
                   {roleKey === "agency" && (
                     <>
-                      <AuthInput label="대표자명" placeholder="대표자 이름을 입력해주세요" value={formData.name} onChange={handleChange("name")} />
-                      <AuthInput label="연락처" placeholder="010 - 없이 숫자만 입력해주세요" value={formData.phone} onChange={handleChange("phone")} />
-                      <AuthInput label="사업자등록번호" placeholder="- 없이 숫자만 입력해주세요" value={formData.businessNumber} onChange={handleChange("businessNumber")} />
-                      <AuthInput label="대행사명" placeholder="대행사명을 입력해주세요" value={formData.agencyName} onChange={handleChange("agencyName")} />
+                      <AuthInput
+                        label="대표자명"
+                        placeholder="대표자 이름을 입력해주세요"
+                        value={formData.name}
+                        onChange={handleChange("name")}
+                      />
+                      <AuthInput
+                        label="연락처"
+                        placeholder="010 - 없이 숫자만 입력해주세요"
+                        value={formData.phone}
+                        onChange={handleChange("phone")}
+                      />
+                      <AuthInput
+                        label="사업자등록번호"
+                        placeholder="- 없이 숫자만 입력해주세요"
+                        value={formData.businessNumber}
+                        onChange={handleChange("businessNumber")}
+                      />
+                      <AuthInput
+                        label="대행사명"
+                        placeholder="대행사명을 입력해주세요"
+                        value={formData.agencyName}
+                        onChange={handleChange("agencyName")}
+                      />
                     </>
                   )}
                   {roleKey === "engineer" && (
                     <>
-                      <AuthInput label="이름" placeholder="이름을 입력해주세요" value={formData.name} onChange={handleChange("name")} />
-                      <AuthInput label="사업자등록번호" placeholder="- 없이 숫자만 입력해주세요" value={formData.businessNumber} onChange={handleChange("businessNumber")} />
+                      <AuthInput
+                        label="이름"
+                        placeholder="이름을 입력해주세요"
+                        value={formData.name}
+                        onChange={handleChange("name")}
+                      />
+                      <AuthInput
+                        label="사업자등록번호"
+                        placeholder="- 없이 숫자만 입력해주세요"
+                        value={formData.businessNumber}
+                        onChange={handleChange("businessNumber")}
+                      />
                       <div className="auth-input-wrap">
                         <label className="auth-label">소속 대행사 (선택)</label>
                         <div className="auth-input-box auth-input-box--select">
-                          <select className="auth-select" value={formData.agencyId} onChange={(e) => handleChange("agencyId")(e.target.value)}>
+                          <select
+                            className="auth-select"
+                            value={formData.agencyId}
+                            onChange={(e) =>
+                              handleChange("agencyId")(e.target.value)
+                            }
+                          >
                             <option value="">소속 대행사를 선택해주세요</option>
                             <option value="1">케어플로 서울점</option>
                             <option value="2">케어플로 경기점</option>
                             <option value="3">케어플로 부산점</option>
                           </select>
-                          <ChevronDown size={15} className="auth-select-arrow" />
+                          <ChevronDown
+                            size={15}
+                            className="auth-select-arrow"
+                          />
                         </div>
                       </div>
                     </>
                   )}
 
                   <label className="auth-checkbox-label auth-checkbox-label--block">
-                    <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={agree}
+                      onChange={(e) => setAgree(e.target.checked)}
+                    />
                     <span>
                       CareFlow{" "}
-                      <button type="button" className="auth-link">이용약관</button>
-                      {" "}및{" "}
-                      <button type="button" className="auth-link">개인정보처리방침</button>
+                      <button type="button" className="auth-link">
+                        이용약관
+                      </button>{" "}
+                      및{" "}
+                      <button type="button" className="auth-link">
+                        개인정보처리방침
+                      </button>
                       에 동의합니다.
                     </span>
                   </label>
@@ -388,42 +532,56 @@ function SignupForm({ roleKey, onBack }) {
                       <div className="auth-addr-banner">
                         <MapPin size={14} className="auth-addr-banner__icon" />
                         <p>
-                          거주 지역을 입력하면 <strong>A/S 신청 시 방문 지역이 자동으로 설정</strong>됩니다.
+                          거주 지역을 입력하면{" "}
+                          <strong>A/S 신청 시 방문 지역이 자동으로 설정</strong>
+                          됩니다.
                         </p>
                       </div>
 
                       {/* 거주 지역 */}
                       <div className="auth-input-wrap">
-                        <label className="auth-label">
-                          거주 지역
-                        </label>
+                        <label className="auth-label">거주 지역</label>
                         <div className="auth-region-row">
                           <div className="auth-input-box auth-input-box--select">
                             <select
                               className="auth-select"
                               value={formData.regionParent}
-                              onChange={(e) => handleRegionParent(e.target.value)}
+                              onChange={(e) =>
+                                handleRegionParent(e.target.value)
+                              }
                             >
                               <option value="">시·도 선택</option>
-                              {Object.keys(REGIONS).map(r => (
-                                <option key={r} value={r}>{r}</option>
+                              {Object.keys(REGIONS).map((r) => (
+                                <option key={r} value={r}>
+                                  {r}
+                                </option>
                               ))}
                             </select>
-                            <ChevronDown size={15} className="auth-select-arrow" />
+                            <ChevronDown
+                              size={15}
+                              className="auth-select-arrow"
+                            />
                           </div>
                           <div className="auth-input-box auth-input-box--select">
                             <select
                               className="auth-select"
                               value={formData.regionId}
-                              onChange={(e) => handleChange("regionId")(e.target.value)}
+                              onChange={(e) =>
+                                handleChange("regionId")(e.target.value)
+                              }
                               disabled={!formData.regionParent}
                             >
                               <option value="">구·시 선택</option>
-                              {subRegions.map(r => (
-                                <option key={r.id} value={r.id}>{r.name}</option>
+                              {subRegions.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.name}
+                                </option>
                               ))}
                             </select>
-                            <ChevronDown size={15} className="auth-select-arrow" />
+                            <ChevronDown
+                              size={15}
+                              className="auth-select-arrow"
+                            />
                           </div>
                         </div>
                       </div>
@@ -445,10 +603,16 @@ function SignupForm({ roleKey, onBack }) {
                               {[
                                 formData.regionParent,
                                 formData.regionId
-                                  ? subRegions.find(r => String(r.id) === String(formData.regionId))?.name
+                                  ? subRegions.find(
+                                      (r) =>
+                                        String(r.id) ===
+                                        String(formData.regionId),
+                                    )?.name
                                   : "",
                                 formData.addressDetail,
-                              ].filter(Boolean).join(" ")}
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
                             </strong>
                           </span>
                         </div>
@@ -466,39 +630,76 @@ function SignupForm({ roleKey, onBack }) {
                             <select
                               className="auth-select"
                               value={formData.regionParent}
-                              onChange={(e) => handleRegionParent(e.target.value)}
+                              onChange={(e) =>
+                                handleRegionParent(e.target.value)
+                              }
                             >
                               <option value="">시·도 선택</option>
-                              {Object.keys(REGIONS).map(r => (
-                                <option key={r} value={r}>{r}</option>
+                              {Object.keys(REGIONS).map((r) => (
+                                <option key={r} value={r}>
+                                  {r}
+                                </option>
                               ))}
                             </select>
-                            <ChevronDown size={15} className="auth-select-arrow" />
+                            <ChevronDown
+                              size={15}
+                              className="auth-select-arrow"
+                            />
                           </div>
                           <div className="auth-input-box auth-input-box--select">
                             <select
                               className="auth-select"
                               value={formData.regionName}
-                              onChange={(e) => handleChange("regionName")(e.target.value)}
+                              onChange={(e) =>
+                                handleChange("regionName")(e.target.value)
+                              }
                               disabled={!formData.regionParent}
                             >
                               <option value="">구·시 선택</option>
-                              {subRegions.map(r => (
-                                <option key={r.id} value={r.name}>{r.name}</option>
+                              {subRegions.map((r) => (
+                                <option key={r.id} value={r.name}>
+                                  {r.name}
+                                </option>
                               ))}
                             </select>
-                            <ChevronDown size={15} className="auth-select-arrow" />
+                            <ChevronDown
+                              size={15}
+                              className="auth-select-arrow"
+                            />
                           </div>
                         </div>
                       </div>
-                      <AuthInput label="상세 주소" placeholder="동·호수·번지 등을 입력해주세요" value={formData.addressDetail} onChange={handleChange("addressDetail")} />
-                      <AuthInput label="대행사 소재지" placeholder="대행사 주소를 입력해주세요" value={formData.agencyAddress} onChange={handleChange("agencyAddress")} />
-                      <AuthInput label="수수료율 (%)" type="number" placeholder="예: 10.5" value={formData.agencyFeeRate || ""} onChange={(v) => handleChange("agencyFeeRate")(parseFloat(v) || 0)} />
+                      <AuthInput
+                        label="상세 주소"
+                        placeholder="동·호수·번지 등을 입력해주세요"
+                        value={formData.addressDetail}
+                        onChange={handleChange("addressDetail")}
+                      />
+                      <AuthInput
+                        label="대행사 소재지"
+                        placeholder="대행사 주소를 입력해주세요"
+                        value={formData.agencyAddress}
+                        onChange={handleChange("agencyAddress")}
+                      />
+                      <AuthInput
+                        label="수수료율 (%)"
+                        type="number"
+                        placeholder="예: 10.5"
+                        value={formData.agencyFeeRate || ""}
+                        onChange={(v) =>
+                          handleChange("agencyFeeRate")(parseFloat(v) || 0)
+                        }
+                      />
                     </>
                   )}
                   {roleKey === "engineer" && (
                     <>
-                      <AuthInput label="휴대폰 번호" placeholder="- 없이 숫자만 입력해주세요" value={formData.phone} onChange={handleChange("phone")} />
+                      <AuthInput
+                        label="휴대폰 번호"
+                        placeholder="- 없이 숫자만 입력해주세요"
+                        value={formData.phone}
+                        onChange={handleChange("phone")}
+                      />
                     </>
                   )}
                 </>
@@ -507,39 +708,72 @@ function SignupForm({ roleKey, onBack }) {
               {/* ── Step 3: 가입 완료 ── */}
               {step === 3 && (
                 <div className="auth-complete">
-                  <div className="auth-complete__avatar" style={{ background: role.bg }}>
-                    <img src={role.img} alt={role.title} className="auth-complete__avatar-img" />
+                  <div
+                    className="auth-complete__avatar"
+                    style={{ background: role.bg }}
+                  >
+                    <img
+                      src={role.img}
+                      alt={role.title}
+                      className="auth-complete__avatar-img"
+                    />
                   </div>
                   <h3 className="auth-complete__title">가입이 완료되었어요!</h3>
                   <p className="auth-complete__desc">
-                    CareFlow {role.title} 계정이 생성되었습니다.<br />
+                    CareFlow {role.title} 계정이 생성되었습니다.
+                    <br />
                     로그인하여 서비스를 이용해보세요.
                   </p>
                   <div className="auth-complete__info">
                     <div className="auth-complete__info-row">
-                      <span>이메일</span><span>{formData.email}</span>
+                      <span>이메일</span>
+                      <span>{formData.email}</span>
                     </div>
                     {formData.name && (
                       <div className="auth-complete__info-row">
-                        <span>이름</span><span>{formData.name}</span>
+                        <span>이름</span>
+                        <span>{formData.name}</span>
                       </div>
                     )}
-                    {isCustomer && (formData.regionParent || formData.addressDetail) && (
-                      <div className="auth-complete__info-row">
-                        <span>거주지</span>
-                        <span>{[
-                          formData.regionParent,
-                          formData.regionId
-                            ? subRegions.find(r => String(r.id) === String(formData.regionId))?.name
-                            : formData.regionName,
-                          formData.addressDetail,
-                        ].filter(Boolean).join(" ") || "—"}</span>
-                      </div>
-                    )}
+                    {isCustomer &&
+                      (formData.regionParent || formData.addressDetail) && (
+                        <div className="auth-complete__info-row">
+                          <span>거주지</span>
+                          <span>
+                            {[
+                              formData.regionParent,
+                              formData.regionId
+                                ? subRegions.find(
+                                    (r) =>
+                                      String(r.id) ===
+                                      String(formData.regionId),
+                                  )?.name
+                                : formData.regionName,
+                              formData.addressDetail,
+                            ]
+                              .filter(Boolean)
+                              .join(" ") || "—"}
+                          </span>
+                        </div>
+                      )}
                     <div className="auth-complete__info-row">
                       <span>계정 유형</span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <img src={role.img} alt="" style={{ width: 18, height: 18, objectFit: "contain" }} />
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <img
+                          src={role.img}
+                          alt=""
+                          style={{
+                            width: 18,
+                            height: 18,
+                            objectFit: "contain",
+                          }}
+                        />
                         {role.title}
                       </span>
                     </div>
@@ -551,7 +785,13 @@ function SignupForm({ roleKey, onBack }) {
                 type="submit"
                 className="auth-submit-btn"
                 style={{ background: role.color }}
-                disabled={step === 1 ? step1Disabled : step === 2 ? step2Disabled : false}
+                disabled={
+                  step === 1
+                    ? step1Disabled
+                    : step === 2
+                      ? step2Disabled
+                      : false
+                }
               >
                 {step === 3 ? "로그인하러 가기" : "다음"}
               </button>
@@ -559,7 +799,12 @@ function SignupForm({ roleKey, onBack }) {
 
             <p className="auth-card__foot">
               이미 계정이 있으신가요?{" "}
-              <button className="auth-link" onClick={() => navigate("/auth/login")}>로그인</button>
+              <button
+                className="auth-link"
+                onClick={() => navigate("/auth/login")}
+              >
+                로그인
+              </button>
             </p>
           </div>
         </div>
@@ -580,6 +825,7 @@ function SignupForm({ roleKey, onBack }) {
 export default function SignupPage() {
   const [roleKey, setRoleKey] = useState(null);
 
-  if (roleKey) return <SignupForm roleKey={roleKey} onBack={() => setRoleKey(null)} />;
+  if (roleKey)
+    return <SignupForm roleKey={roleKey} onBack={() => setRoleKey(null)} />;
   return <RoleSelect onSelect={setRoleKey} />;
 }

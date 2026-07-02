@@ -188,8 +188,9 @@
   padding: 3px 9px;
   border-radius: 6px;
 }
-.ch-tag--blue { background: #eff6ff; color: #2563eb; }
-.ch-tag--red  { background: #fee2e2; color: #dc2626; }
+.ch-tag--blue   { background: #eff6ff; color: #2563eb; }
+.ch-tag--red    { background: #fee2e2; color: #dc2626; }
+.ch-tag--orange { background: #fff7ed; color: #ea580c; }
 
 /* ══════════════════════════
    1. 진단서 카드
@@ -646,6 +647,7 @@
   border-bottom: 1px solid #f5f5fa;
 }
 .ch-schedule__item:last-child { border-bottom: none; }
+.ch-schedule__empty { padding: 20px 0; text-align: center; color: #9ca3af; font-size: 13px; }
 
 .ch-schedule__date {
   display: flex;
