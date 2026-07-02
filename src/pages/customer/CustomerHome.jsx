@@ -524,7 +524,9 @@ export default function CustomerHome() {
       <div className="ch-hero">
         <div className="ch-hero__left">
           <div className="ch-hero__text">
-            <h1 className="ch-hero__title">안녕하세요, {userName}님! 👋</h1>
+            <h1 className="ch-hero__title">
+              안녕하세요, {userName} 고객님! 👋
+            </h1>
             <p className="ch-hero__sub">
               CareFlow가 우리집 가전의 건강을 관리해드릴게요.
             </p>
@@ -722,8 +724,12 @@ export default function CustomerHome() {
             <div className="ch-appliance-empty__left">
               <WashingMachine size={36} className="ch-appliance-empty__icon" />
               <div>
-                <p className="ch-appliance-empty__title">아직 등록된 가전이 없어요</p>
-                <p className="ch-appliance-empty__sub">가전을 등록하면 상태와 A/S 이력을 한눈에 확인할 수 있어요.</p>
+                <p className="ch-appliance-empty__title">
+                  아직 등록된 가전이 없어요
+                </p>
+                <p className="ch-appliance-empty__sub">
+                  가전을 등록하면 상태와 A/S 이력을 한눈에 확인할 수 있어요.
+                </p>
               </div>
             </div>
             <button
@@ -743,7 +749,7 @@ export default function CustomerHome() {
                 </tr>
               </thead>
               <tbody>
-                {appliances.slice(0, 5).map((a) => (
+                {appliances.slice(0, 3).map((a) => (
                   <tr key={a.id}>
                     <td>
                       <div className="ch-appliance-table__product">

@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import MainLayout from "./components/MainLayout.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import SignupPage from "./pages/auth/SignupPage.jsx";
@@ -52,9 +53,61 @@ function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
 }
 
+function SessionExpiredModal() {
+  const [visible, setVisible] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = () => setVisible(true);
+    window.addEventListener("session-expired", handler);
+    return () => window.removeEventListener("session-expired", handler);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "rgba(0,0,0,0.45)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <div style={{
+        background: "#fff", borderRadius: "16px",
+        padding: "36px 32px", width: "320px",
+        textAlign: "center", boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+      }}>
+        <div style={{
+          width: "52px", height: "52px", borderRadius: "50%",
+          background: "#fff5f5", margin: "0 auto 16px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "24px",
+        }}>⏱</div>
+        <p style={{ fontSize: "16px", fontWeight: 700, color: "#1a1a2e", marginBottom: "8px" }}>
+          세션이 만료되었습니다
+        </p>
+        <p style={{ fontSize: "13px", color: "#888", lineHeight: 1.6, marginBottom: "24px" }}>
+          일정 시간이 지나 자동으로 로그아웃되었습니다.<br />
+          다시 로그인해 주세요.
+        </p>
+        <button
+          onClick={() => { setVisible(false); navigate("/auth/login"); }}
+          style={{
+            width: "100%", padding: "12px", borderRadius: "10px",
+            border: "none", background: "#5B4FF5", color: "#fff",
+            fontSize: "14px", fontWeight: 700, cursor: "pointer",
+          }}
+        >
+          확인
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <SessionExpiredModal />
       <Routes>
         <Route path="/" element={<LandingPage title="메인페이지"/>} />
         <Route path="/service" element={<ServicePage title="메인페이지-서비스소개"/>} />

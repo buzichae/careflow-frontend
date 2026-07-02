@@ -6,91 +6,7 @@ import { ROLES } from "./authConstants";
 import "../../styles/Auth/Auth.css";
 import { signupAgency, signupCustomer, signupEngineer } from "../../apis/auth";
 
-/* 지역 데이터 — regions 테이블 (depth=1 → depth=2)   지역 API로 변경  */
-const REGIONS = {
-  서울특별시: [
-    "강남구", "강동구", "강북구", "강서구", "관악구",
-    "광진구", "구로구", "금천구", "노원구", "도봉구",
-    "동대문구", "동작구", "마포구", "서대문구", "서초구",
-    "성동구", "성북구", "송파구", "양천구", "영등포구",
-    "용산구", "은평구", "종로구", "중구", "중랑구"
-  ],
-
-  부산광역시: [
-    "강서구", "금정구", "기장군", "남구", "동구",
-    "동래구", "부산진구", "북구", "사상구", "사하구",
-    "서구", "수영구", "연제구", "영도구", "중구", "해운대구"
-  ],
-
-  대구광역시: [
-    "남구", "달서구", "달성군", "동구",
-    "북구", "서구", "수성구", "중구"
-  ],
-
-  인천광역시: [
-    "강화군", "계양구", "남동구", "동구",
-    "미추홀구", "부평구", "서구", "연수구", "중구"
-  ],
-
-  광주광역시: [
-    "광산구", "남구", "동구", "북구", "서구"
-  ],
-
-  대전광역시: [
-    "대덕구", "동구", "서구", "유성구", "중구"
-  ],
-
-  울산광역시: [
-    "남구", "동구", "북구", "울주군", "중구"
-  ],
-
-  세종특별자치시: [
-    "세종시"
-  ],
-
-  경기도: [
-    "고양시", "과천시", "광명시", "광주시", "구리시",
-    "군포시", "김포시", "남양주시", "동두천시", "부천시",
-    "성남시", "수원시", "시흥시", "안산시", "안성시",
-    "안양시", "양주시", "여주시", "오산시", "용인시",
-    "의왕시", "의정부시", "이천시", "파주시", "평택시",
-    "포천시", "하남시", "화성시"
-  ],
-
-  강원특별자치도: [
-    "강릉시", "동해시", "삼척시",
-    "속초시", "원주시", "춘천시"
-  ],
-
-  충청북도: [
-    "청주시", "충주시", "제천시"
-  ],
-
-  충청남도: [
-    "천안시", "공주시", "보령시",
-    "아산시", "서산시"
-  ],
-
-  전라북도: [
-    "전주시", "군산시", "익산시"
-  ],
-
-  전라남도: [
-    "목포시", "여수시", "순천시"
-  ],
-
-  경상북도: [
-    "포항시", "경주시", "구미시", "안동시"
-  ],
-
-  경상남도: [
-    "창원시", "진주시", "통영시", "거제시"
-  ],
-
-  제주특별자치도: [
-    "제주시", "서귀포시"
-  ]
-};
+import { REGIONS } from "../../constants/regions";
 
 function TopNav({ showBack, onBack }) {
   return (
@@ -154,13 +70,13 @@ function RoleSelect({ onSelect }) {
   const navigate = useNavigate();
   return (
     <div className="auth-page">
-      <TopNav showBack onBack={() => navigate("/auth/login")} />
+      <TopNav showBack={false} />
       <div className="auth-signup-role">
         <div className="auth-card">
           <h2 className="auth-card__title">회원가입</h2>
           <p className="auth-card__sub">계정 유형을 선택해 주세요.</p>
           <div className="auth-role-list">
-            {ROLES.map((r) => (
+            {ROLES.filter((r) => r.canSignup).map((r) => (
               <div key={r.key} className="auth-role-row">
                 <div className="auth-role-row__img-wrap" style={{ background: r.bg }}>
                   <img src={r.img} alt={r.title} className="auth-role-row__img" />
@@ -217,7 +133,8 @@ function SignupForm({ roleKey, onBack }) {
     phone: "",
     /* 주소 */
     regionParent: "",
-    regionName: "",
+    regionId: "",      // customer: DB region id (integer)
+    regionName: "",    // agency/engineer: region name string
     addressDetail: "",
     /* 대행사 전용 */
     agencyName: "",
@@ -234,7 +151,7 @@ function SignupForm({ roleKey, onBack }) {
   };
 
   const handleRegionParent = (v) =>
-    setFormData((prev) => ({ ...prev, regionParent: v, regionName: "" }));
+    setFormData((prev) => ({ ...prev, regionParent: v, regionId: "", regionName: "" }));
 
   const subRegions = formData.regionParent ? REGIONS[formData.regionParent] : [];
 
@@ -251,7 +168,7 @@ function SignupForm({ roleKey, onBack }) {
   })();
 
   const step2Disabled = (() => {
-    if (isCustomer) return !formData.regionParent || !formData.regionName || !formData.addressDetail;
+    if (isCustomer) return !formData.regionParent || !formData.regionId || !formData.addressDetail;
     if (roleKey === "agency") {
       return (
         !formData.regionParent ||
@@ -273,7 +190,7 @@ function SignupForm({ roleKey, onBack }) {
           password: formData.password,
           name: formData.name,
           phone: formData.phone,
-          regionName: formData.regionName,
+          regionId: Number(formData.regionId),
           addressDetail: formData.addressDetail,
         };
       case "agency":
@@ -497,13 +414,13 @@ function SignupForm({ roleKey, onBack }) {
                           <div className="auth-input-box auth-input-box--select">
                             <select
                               className="auth-select"
-                              value={formData.regionName}
-                              onChange={(e) => handleChange("regionName")(e.target.value)}
+                              value={formData.regionId}
+                              onChange={(e) => handleChange("regionId")(e.target.value)}
                               disabled={!formData.regionParent}
                             >
                               <option value="">구·시 선택</option>
                               {subRegions.map(r => (
-                                <option key={r} value={r}>{r}</option>
+                                <option key={r.id} value={r.id}>{r.name}</option>
                               ))}
                             </select>
                             <ChevronDown size={15} className="auth-select-arrow" />
@@ -525,7 +442,13 @@ function SignupForm({ roleKey, onBack }) {
                           <span>
                             입력한 주소 —{" "}
                             <strong>
-                              {[formData.regionParent, formData.regionName, formData.addressDetail].filter(Boolean).join(" ")}
+                              {[
+                                formData.regionParent,
+                                formData.regionId
+                                  ? subRegions.find(r => String(r.id) === String(formData.regionId))?.name
+                                  : "",
+                                formData.addressDetail,
+                              ].filter(Boolean).join(" ")}
                             </strong>
                           </span>
                         </div>
@@ -561,7 +484,7 @@ function SignupForm({ roleKey, onBack }) {
                             >
                               <option value="">구·시 선택</option>
                               {subRegions.map(r => (
-                                <option key={r} value={r}>{r}</option>
+                                <option key={r.id} value={r.name}>{r.name}</option>
                               ))}
                             </select>
                             <ChevronDown size={15} className="auth-select-arrow" />
@@ -604,7 +527,13 @@ function SignupForm({ roleKey, onBack }) {
                     {isCustomer && (formData.regionParent || formData.addressDetail) && (
                       <div className="auth-complete__info-row">
                         <span>거주지</span>
-                        <span>{[formData.regionParent, formData.regionName, formData.addressDetail].filter(Boolean).join(" ") || "—"}</span>
+                        <span>{[
+                          formData.regionParent,
+                          formData.regionId
+                            ? subRegions.find(r => String(r.id) === String(formData.regionId))?.name
+                            : formData.regionName,
+                          formData.addressDetail,
+                        ].filter(Boolean).join(" ") || "—"}</span>
                       </div>
                     )}
                     <div className="auth-complete__info-row">

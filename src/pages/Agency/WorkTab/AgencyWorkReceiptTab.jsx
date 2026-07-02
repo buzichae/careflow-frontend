@@ -8,20 +8,44 @@ import {
 import "../../../styles/Agency/WorkTab/AgencyWorkReceiptTab.css";
 import WorkDetailModal from "../../Agency/Modal/WorkDetailModal";
 import { AssignDetailModal, ReassignModal } from "../../../pages/Agency/Modal/AssignModals";
+import api from "../../../apis/axiosInstance";
 
+// 통계 API (as_status_log 기반)는 기존 fetch 패턴 유지
 const BASE_URL = "http://localhost:8080";
 
 async function apiFetch(path) {
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
     },
   });
-  if (res.status === 204) return [];
+  if (res.status === 204) return null;
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
+}
+
+// API 응답 AgencyAsRequestListResponse → 컴포넌트 내부 형식으로 매핑
+function mapReceiptItem(r) {
+  return {
+    requestId:   r.requestId,
+    createdAt:   r.createdAt,
+    customer:    r.customerName,
+    phone:       r.customerPhone,
+    productName: "-",                         // 목록 API 미포함 → 상세 API에서 확인
+    modelNo:     "-",
+    symptomDesc: r.symptomDesc,
+    visitDate:   r.scheduledDate,
+    startTime:   r.scheduledTime ?? "-",
+    endTime:     "-",
+    type:        r.assignType === "AUTO" ? "자동 A/S" : r.assignType === "MANUAL" ? "수동 A/S" : "-",
+    status:      r.status,
+    assignStatus: null,   // 배정 데이터 별도 — 재배정 로직 비활성 (assignmentId 조회는 모달 내부에서 처리)
+    engineerName: null,
+    assignedAt:   null,
+    overtimeMin:  0,
+  };
 }
 
 // ── 상태 맵 ───────────────────────────────────
@@ -45,7 +69,7 @@ const DUMMY_STATS = {
   completedCount: 47,
 };
 
-// ── 더미: 실시간 기사 현황 (API 없음) ────────
+// ── 실시간 기사 현황 (백엔드 미구현 — 임시 빈 배열 유지) ────────
 const realtimeEngineers = [
   { id: 1, name: "김철수", specialty: "LG 전문",   region: "강남·서초", product: "디오스 냉장고 수리", timeRange: "10:00 ~ 12:30", progress: 60,   isLmsCompleted: true,  profileImageUrl: null, asStatus: "IN_PROGRESS" },
   { id: 2, name: "박민수", specialty: "삼성 전문", region: "송파·강동", product: "그랑데 세탁기 수리", timeRange: "13:30 ~ 16:00", progress: 30,   isLmsCompleted: true,  profileImageUrl: null, asStatus: "ASSIGNED"    },
@@ -53,25 +77,6 @@ const realtimeEngineers = [
   { id: 4, name: "최지현", specialty: "삼성 전문", region: "서초·관악", product: null,                timeRange: null,            progress: null, isLmsCompleted: true,  profileImageUrl: null, asStatus: null          },
 ];
 
-// ── 기존 접수 목록 더미 ───────────────────────
-const receiptList = [
-  { requestId: 1, createdAt: "2024-06-18 09:20", customer: "김민지", phone: "010-1234-5678", productName: "LG 디오스 냉장고",   modelNo: "M874GBB231",    symptomDesc: "냉장이 잘 되지 않아요",  visitDate: "2024-06-20", startTime: "10:00", endTime: "12:00", type: "출장 A/S",  status: "AGENCY_RECEIVED", assignStatus: null,       overtimeMin: 0,  engineerName: null,          assignedAt: null },
-  { requestId: 2, createdAt: "2024-06-18 09:45", customer: "이영희", phone: "010-2345-6789", productName: "삼성 그랑데 세탁기", modelNo: "WF21T6500KP",   symptomDesc: "세탁기 배수가 안 돼요", visitDate: "2024-06-19", startTime: "14:00", endTime: "16:00", type: "출장 A/S",  status: "ASSIGNED",        assignStatus: "WAITING",  overtimeMin: 18, engineerName: "김철수 기사", assignedAt: "2024-06-18 09:35" },
-  { requestId: 3, createdAt: "2024-06-18 10:10", customer: "박준호", phone: "010-3456-7890", productName: "LG 휘센 에어컨",     modelNo: "FQ18HDWHRN",   symptomDesc: "에어컨에서 냄새가 나요", visitDate: "2024-06-19", startTime: "16:00", endTime: "18:00", type: "출장 A/S",  status: "ACCEPTED",        assignStatus: "ACCEPTED", overtimeMin: 0,  engineerName: "박민수 기사", assignedAt: "2024-06-18 10:00" },
-  { requestId: 4, createdAt: "2024-06-18 10:30", customer: "최서연", phone: "010-4567-8901", productName: "삼성 QLED TV",       modelNo: "KQ55QC674FXKR", symptomDesc: "화면이 나오지 않아요",  visitDate: "2024-06-20", startTime: "11:00", endTime: "13:00", type: "설치/점검", status: "AGENCY_RECEIVED", assignStatus: null,       overtimeMin: 0,  engineerName: null,          assignedAt: null },
-  { requestId: 5, createdAt: "2024-06-18 11:05", customer: "정유진", phone: "010-5678-9012", productName: "LG 식기세척기",      modelNo: "DFB22S",        symptomDesc: "물이 새요",            visitDate: "2024-06-21", startTime: "09:00", endTime: "11:00", type: "출장 A/S",  status: "ASSIGNED",        assignStatus: "WAITING",  overtimeMin: 32, engineerName: "이영호 기사", assignedAt: "2024-06-18 11:00" },
-  { requestId: 6, createdAt: "2024-06-18 11:30", customer: "이태훈", phone: "010-6789-0123", productName: "위니아 김치냉장고",  modelNo: "WQ57DGK",       symptomDesc: "김치가 너무 시원해요",  visitDate: "2024-06-21", startTime: "13:00", endTime: "15:00", type: "출장 A/S",  status: "CANCELLED",       assignStatus: "REJECTED", overtimeMin: 0,  engineerName: "홍길동 기사", assignedAt: "2024-06-18 11:20" },
-  { requestId: 7, createdAt: "2024-06-18 12:15", customer: "홍길동", phone: "010-7890-1234", productName: "LG 오브제 냉장고",   modelNo: "M872MEE312",   symptomDesc: "소음이 심해요",         visitDate: "2024-06-22", startTime: "10:00", endTime: "12:00", type: "출장 A/S",  status: "AGENCY_RECEIVED", assignStatus: null,       overtimeMin: 0,  engineerName: null,          assignedAt: null },
-  { requestId: 8, createdAt: "2024-06-18 13:20", customer: "김수현", phone: "010-8901-2345", productName: "삼성 에어드레서",    modelNo: "DF60A8500KG",  symptomDesc: "전원이 안 켜져요",      visitDate: "2024-06-22", startTime: "15:00", endTime: "17:00", type: "출장 A/S",  status: "ASSIGNED",        assignStatus: "WAITING",  overtimeMin: 5,  engineerName: "최지현 기사", assignedAt: "2024-06-18 13:10" },
-];
-
-const statCards = [
-  { label: "전체 접수",      value: 42, today: "+8", icon: ClipboardList, color: "purple" },
-  { label: "배정 대기",      value: 12, today: "+3", icon: Clock,         color: "orange" },
-  { label: "기사 수락 대기", value: 18, today: "+4", icon: Users,         color: "blue"   },
-  { label: "배정 완료",      value: 7,  today: "+1", icon: Hourglass,     color: "amber"  },
-  { label: "취소 / 반려",    value: 5,  today: "+0", icon: XCircle,       color: "red"    },
-];
 
 // ── 헬퍼 ──────────────────────────────────────
 function getReassignReason(item) {
@@ -140,20 +145,53 @@ function EngineerAvatar({ name, profileImageUrl }) {
 // ══════════════════════════════════════════════
 export default function AgencyWorkReceiptTab() {
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 5;
+  const [totalPages,  setTotalPages]  = useState(1);
 
   const [workDetailModal,   setWorkDetailModal]   = useState(null);
   const [assignDetailModal, setAssignDetailModal] = useState(null);
   const [reassignModal,     setReassignModal]     = useState(null);
 
-  // 10번 API: 작업 현황 통계
+  // 접수 목록 상태
+  const [receiptList, setReceiptList] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [totalCount,  setTotalCount]  = useState(0);
+
+  // 통계 (as_status_log 기반)
   const [workStats, setWorkStats] = useState(DUMMY_STATS);
 
+  // 접수 목록 조회 (GET /api/agency/work-requests)
+  useEffect(() => {
+    setListLoading(true);
+    api.get("/api/agency/work-requests")
+      .then(res => {
+        const data = Array.isArray(res.data) ? res.data : [];
+        const mapped = data.map(mapReceiptItem);
+        setReceiptList(mapped);
+        setTotalCount(mapped.length);
+        setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
+      })
+      .catch(() => setReceiptList([]))
+      .finally(() => setListLoading(false));
+  }, []);
+
+  // 작업 현황 통계 조회 (GET /api/agency/work-requests/stats)
   useEffect(() => {
     apiFetch("/api/agency/work-requests/stats")
-      .then(setWorkStats)
-      .catch(() => setWorkStats(DUMMY_STATS));
+      .then(data => { if (data) setWorkStats(data); })
+      .catch(() => {});
   }, []);
+
+  // 클라이언트 페이지네이션 (백엔드 페이징 미지원 → 전체 목록을 10개씩 슬라이싱)
+  const pagedList = receiptList.slice((currentPage - 1) * 10, currentPage * 10);
+
+  // 통계 카드 (workStats 기반)
+  const statCards = [
+    { label: "전체 접수",      value: totalCount,                        today: "",  icon: ClipboardList, color: "purple" },
+    { label: "배정 대기",      value: workStats?.waitingCount ?? 0,      today: "",  icon: Clock,         color: "orange" },
+    { label: "기사 출발",      value: workStats?.engineerDepartedCount ?? 0, today: "", icon: Users,       color: "blue"   },
+    { label: "수리 진행 중",   value: workStats?.inProgressCount ?? 0,   today: "",  icon: Hourglass,     color: "amber"  },
+    { label: "수리 완료",      value: workStats?.completedCount ?? 0,    today: "",  icon: XCircle,       color: "red"    },
+  ];
 
   const handleAction = (item) => {
     const action = getActionType(item);
@@ -206,7 +244,7 @@ export default function AgencyWorkReceiptTab() {
 
           {/* 테이블 메타 */}
           <div className="receipt-table-meta">
-            <span className="receipt-total">총 42건</span>
+            <span className="receipt-total">총 {totalCount}건</span>
             <div className="receipt-table-meta__right">
               <div className="receipt-sort-select">최신순 <ChevronDown size={13} /></div>
             </div>
@@ -227,7 +265,17 @@ export default function AgencyWorkReceiptTab() {
               <span></span>
             </div>
 
-            {receiptList.map((item) => {
+            {listLoading && (
+              <div style={{ padding: "24px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                불러오는 중...
+              </div>
+            )}
+            {!listLoading && pagedList.length === 0 && (
+              <div style={{ padding: "32px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                접수 내역이 없습니다.
+              </div>
+            )}
+            {!listLoading && pagedList.map((item) => {
               const reassignReason = getReassignReason(item);
               const action = getActionType(item);
               const s = STATUS_MAP[item.status] ?? { label: item.status, type: "pending" };
@@ -286,15 +334,18 @@ export default function AgencyWorkReceiptTab() {
             })}
           </div>
 
-          {/* 페이지네이션 (기존 그대로) */}
+          {/* 페이지네이션 */}
           <div className="receipt-pagination">
             <div className="receipt-pagination__left">
               <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-              {[1,2,3,4,5].map(p => (
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+                return start + i;
+              }).filter(p => p <= totalPages).map(p => (
                 <button key={p} className={currentPage === p ? "receipt-pagination__page--active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
               ))}
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
               <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
             </div>
             <div className="receipt-page-size">
@@ -372,8 +423,39 @@ export default function AgencyWorkReceiptTab() {
       </div>
 
       {workDetailModal   && <WorkDetailModal   onClose={() => setWorkDetailModal(null)}   detail={workDetailModal} />}
-      {assignDetailModal && <AssignDetailModal onClose={() => setAssignDetailModal(null)} item={assignDetailModal} />}
-      {reassignModal     && <ReassignModal     onClose={() => setReassignModal(null)}     item={reassignModal} />}
+      {assignDetailModal && (
+        <AssignDetailModal
+          onClose={() => setAssignDetailModal(null)}
+          item={assignDetailModal}
+          onSuccess={() => {
+            // 배정 취소/재배정 후 목록 갱신
+            api.get("/api/agency/work-requests")
+              .then(res => {
+                const mapped = (Array.isArray(res.data) ? res.data : []).map(mapReceiptItem);
+                setReceiptList(mapped);
+                setTotalCount(mapped.length);
+                setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
+              })
+              .catch(() => {});
+          }}
+        />
+      )}
+      {reassignModal && (
+        <ReassignModal
+          onClose={() => setReassignModal(null)}
+          item={reassignModal}
+          onSuccess={() => {
+            api.get("/api/agency/work-requests")
+              .then(res => {
+                const mapped = (Array.isArray(res.data) ? res.data : []).map(mapReceiptItem);
+                setReceiptList(mapped);
+                setTotalCount(mapped.length);
+                setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
+              })
+              .catch(() => {});
+          }}
+        />
+      )}
     </div>
   );
 }

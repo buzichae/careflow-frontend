@@ -13,6 +13,7 @@ export const ROLES = [
     loginTitle: "일반 고객 로그인",
     signupTitle: "일반 고객 회원가입",
     dashPath: "/customer/home",
+    canSignup: true,
   },
   {
     key: "agency",
@@ -24,6 +25,7 @@ export const ROLES = [
     loginTitle: "대행사 로그인",
     signupTitle: "대행사 회원가입",
     dashPath: "/agency/dashboard",
+    canSignup: true,
   },
   {
     key: "engineer",
@@ -35,5 +37,13 @@ export const ROLES = [
     loginTitle: "기사님 로그인",
     signupTitle: "기사님 회원가입",
     dashPath: "/engineer/dashboard",
+    canSignup: true,
   },
 ];
+
+export const ADMIN_ROLE = {
+  key: "admin",
+  title: "관리자",
+  color: "#6b7280",
+  loginTitle: "관리자 로그인",
+};

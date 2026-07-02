@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Phone, History, ZoomIn } from "lucide-react";
 import "../../../styles/Agency/Modal/WorkDetailModal.css";
-
-// TODO: API - GET /api/agency/work-requests/:requestId/detail
-// as_requests + appliances + users(고객) + engineer_profiles + as_status_logs JOIN
+import api from "../../../apis/axiosInstance";
+import { getRecommendedEngineers } from "../../../apis/agencyEngineer";
 
 const STATUS_LOG_LABEL = {
   WAITING:            "방문 대기",
@@ -70,35 +69,71 @@ function mapDetail(raw) {
   };
 }
  
-export default function WorkDetailModal({ onClose, detail: rawDetail }) {
+export default function WorkDetailModal({ onClose, detail: rawDetail, onSuccess }) {
   const detail = mapDetail(rawDetail);
   const [selectedEngineer, setSelectedEngineer] = useState(null);
-  const [zoomedImg, setZoomedImg] = useState(null);
- 
-  // ──────────────────────────────────────────
-  // TODO: API - POST /api/agency/as-assignments
-  // { requestId, engineerId, assignedBy, assignMethod: "MANUAL" }
-  // ──────────────────────────────────────────
+  const [zoomedImg,        setZoomedImg]        = useState(null);
+  const [submitting,       setSubmitting]        = useState(false);
+
+  // 추천 기사 목록: GET /api/agency/engineers/recommended?requestId={id}
+  const [engineers,        setEngineers]        = useState([]);
+  const [loadingEngineers, setLoadingEngineers] = useState(false);
+
+  useEffect(() => {
+    if (!rawDetail?.requestId) return;
+    setLoadingEngineers(true);
+    getRecommendedEngineers(rawDetail.requestId)
+      .then((res) => setEngineers(res.data ?? []))
+      .catch(() => setEngineers([]))
+      .finally(() => setLoadingEngineers(false));
+  }, [rawDetail?.requestId]);
+
+  // 수동 배정: POST /api/agency/as-assignments/change (assignMethod=MANUAL, 기존 배정이 없으면 새 배정 생성)
   const handleAssign = async () => {
     if (!selectedEngineer) return;
-    // await axios.post("/api/agency/as-assignments", {
-    //   requestId:    rawDetail.requestId,
-    //   engineerId:   selectedEngineer,
-    //   assignedBy:   currentUser.userId,   // 로그인 유저 ID
-    //   assignMethod: "MANUAL",             // DB: assign_method ENUM('AUTO','MANUAL')
-    // });
-    alert(`기사 배정 완료`);
-    onClose();
+    setSubmitting(true);
+    try {
+      // 기존 WAITING 배정이 있으면 change, 없으면 신규 생성 엔드포인트가 구현될 때까지 임시 안내
+      const existing = rawDetail?.assignmentId;
+      if (existing) {
+        await api.post("/api/agency/as-assignments/change", {
+          assignmentId:  existing,
+          newEngineerId: selectedEngineer,
+        });
+      } else {
+        // 직접 배정 생성 엔드포인트 미구현 시 알림
+        alert("배정 생성 기능은 현재 준비 중입니다.");
+        return;
+      }
+      alert("기사 배정이 완료되었습니다.");
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      alert(e.response?.data?.message ?? "기사 배정에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   };
- 
+
+  // 자동 배정: 재배정 reassign 엔드포인트 활용 (기존 배정이 있는 경우)
   const handleAutoAssign = async () => {
-    // await axios.post("/api/agency/as-assignments/auto", {
-    //   requestId:    rawDetail.requestId,
-    //   assignedBy:   currentUser.userId,
-    //   assignMethod: "AUTO",
-    // });
-    alert("자동 배정 요청");
-    onClose();
+    setSubmitting(true);
+    try {
+      const existing = rawDetail?.assignmentId;
+      if (existing) {
+        const res = await api.post(`/api/agency/as-assignments/${existing}/reassign`);
+        alert(res.data?.message ?? "자동 배정이 요청되었습니다.");
+      } else {
+        alert("자동 배정 기능은 현재 준비 중입니다.");
+        return;
+      }
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      alert(e.response?.data?.message ?? "자동 배정 요청에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   };
  
   return (
@@ -218,35 +253,41 @@ export default function WorkDetailModal({ onClose, detail: rawDetail }) {
             }
           </section>
  
-          {/* 7. 기사 배정 - 수정 2,3: LMS 미이수 기사 배정 불가 표시 */}
+          {/* 7. 기사 배정 - GET /api/agency/engineers/recommended?requestId={id} */}
           <section className="wdm__section">
             <h3 className="wdm__section-title">기사 배정</h3>
-            <div className="wdm__engineer-list">
-              {detail.engineerCandidates.map((e) => (
-                <div
-                  key={e.id}
-                  className={`wdm__engineer-item
-                    ${selectedEngineer === e.id ? "wdm__engineer-item--selected" : ""}
-                    ${!e.isLmsCompleted ? "wdm__engineer-item--disabled" : ""}
-                  `}
-                  onClick={() => e.isLmsCompleted && setSelectedEngineer(e.id)}
-                >
-                  <div className="wdm__engineer-avatar">{e.name.charAt(0)}</div>
-                  <div className="wdm__engineer-info">
-                    <span className="wdm__engineer-name">{e.name}</span>
-                    <span className="wdm__engineer-brand">{e.brand} 전문</span>
+            {loadingEngineers ? (
+              <p style={{ fontSize: "13px", color: "#aaa" }}>추천 기사를 불러오는 중...</p>
+            ) : engineers.length === 0 ? (
+              <p style={{ fontSize: "13px", color: "#aaa" }}>배정 가능한 기사가 없습니다.</p>
+            ) : (
+              <div className="wdm__engineer-list">
+                {engineers.map((e) => (
+                  <div
+                    key={e.id}
+                    className={`wdm__engineer-item
+                      ${selectedEngineer === e.id ? "wdm__engineer-item--selected" : ""}
+                      ${!e.isLmsCompleted ? "wdm__engineer-item--disabled" : ""}
+                    `}
+                    onClick={() => e.isLmsCompleted && setSelectedEngineer(e.id)}
+                  >
+                    <div className="wdm__engineer-avatar">{e.name?.charAt(0) ?? "?"}</div>
+                    <div className="wdm__engineer-info">
+                      <span className="wdm__engineer-name">{e.name}</span>
+                      <span className="wdm__engineer-brand">{e.brand}</span>
+                    </div>
+                    <div className="wdm__engineer-meta">
+                      <span className="wdm__engineer-rating">⭐ {e.rating}</span>
+                      <span className="wdm__engineer-avail">{e.availableFrom}</span>
+                    </div>
+                    {!e.isLmsCompleted
+                      ? <span className="wdm__lms-fail">배차 불가</span>
+                      : selectedEngineer === e.id && <div className="wdm__engineer-check">✓</div>
+                    }
                   </div>
-                  <div className="wdm__engineer-meta">
-                    <span className="wdm__engineer-rating">⭐ {e.rating}</span>
-                    <span className="wdm__engineer-avail">{e.availableFrom}</span>
-                  </div>
-                  {!e.isLmsCompleted
-                    ? <span className="wdm__lms-fail">배차 불가</span>
-                    : selectedEngineer === e.id && <div className="wdm__engineer-check">✓</div>
-                  }
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
  
           {/* 8. 처리 이력 - 수정 1: DB ENUM 기준 한글 매핑 */}
@@ -276,16 +317,16 @@ export default function WorkDetailModal({ onClose, detail: rawDetail }) {
             <button
               className="wdm__action-btn wdm__action-btn--secondary"
               onClick={handleAutoAssign}
-              disabled={detail.status !== "AGENCY_RECEIVED"}
+              disabled={detail.status !== "AGENCY_RECEIVED" || submitting}
             >
-              자동 배정
+              {submitting ? "처리 중..." : "자동 배정"}
             </button>
             <button
               className="wdm__action-btn wdm__action-btn--primary"
-              disabled={!selectedEngineer || detail.status !== "AGENCY_RECEIVED"}
+              disabled={!selectedEngineer || detail.status !== "AGENCY_RECEIVED" || submitting}
               onClick={handleAssign}
             >
-              기사 배정
+              {submitting ? "처리 중..." : "기사 배정"}
             </button>
           </div>
         </div>
