@@ -37,3 +37,6 @@ export const getEngineerConfirmations = (engineerUserId, year) =>
 // 대행사용
 export const getAgencyEngineersLmsStatus = (agencyId) =>
     api.get(`/api/lms/agency/${agencyId}/engineers/lms-status`);
+
+export const sendLmsNotification = (agencyId, engineerUserId) =>
+    api.post(`/api/lms/agency/${agencyId}/engineers/${engineerUserId}/notify-lms`);
