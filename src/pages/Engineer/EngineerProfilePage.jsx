@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Pencil, Phone, Mail, LogOut,
+  Pencil, Phone, Mail, LogOut, X, Check,
 } from "lucide-react";
-import { getEngineerProfile } from "../../apis/engineers"; // 실제 경로에 맞게 수정
+import { getEngineerProfile, updateEngineerProfile } from "../../apis/engineers";
 import "../../styles/Engineer/EngineerProfilePage.css";
 
 const SKILL_MAP = {
@@ -19,25 +19,88 @@ export default function EngineerProfilePage() {
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
 
-  useEffect(() => {
-    let mounted = true;
+  // ── 편집 모드 상태 ──
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [editData, setEditData] = useState(null);
+
+  const fetchProfile = () => {
     setLoading(true);
     setError(null);
-
-    getEngineerProfile()
-      .then((res) => {
-        if (mounted) setProfile(res.data);
-      })
+    return getEngineerProfile()
+      .then((res) => setProfile(res.data))
       .catch((err) => {
         console.error("프로필 조회 실패:", err);
-        if (mounted) setError("프로필 정보를 불러오지 못했습니다.");
+        setError("프로필 정보를 불러오지 못했습니다.");
       })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+      .finally(() => setLoading(false));
+  };
 
+  useEffect(() => {
+    let mounted = true;
+    fetchProfile();
     return () => { mounted = false; };
   }, []);
+
+  const startEdit = () => {
+    setSaveError("");
+    setEditData({
+      phone: profile.phone ?? "",
+      careerStartedYear: profile.careerStartedYear ?? "",
+      // 배열 필드는 편집 편의를 위해 쉼표구분 문자열로 변환
+      serviceRegionNames: (profile.serviceRegionNames ?? []).join(", "),
+      expertBrands: (profile.expertBrands ?? []).join(", "),
+      categoryName: profile.categoryName ?? "",
+    });
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditData(null);
+    setSaveError("");
+  };
+
+  const handleEditChange = (field) => (e) => {
+    const value = e.target.value;
+    setEditData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      // ⚠ 백엔드 UpdateEngineerProfileRequest 필드명과 반드시 맞춰야 함
+      const payload = {
+        phone: editData.phone,
+        careerStartedYear: editData.careerStartedYear
+          ? Number(editData.careerStartedYear)
+          : null,
+        serviceRegionNames: editData.serviceRegionNames
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        expertBrands: editData.expertBrands
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        categoryName: editData.categoryName,
+      };
+
+      await updateEngineerProfile(payload);
+      await fetchProfile();
+      setIsEditing(false);
+      setEditData(null);
+    } catch (err) {
+      console.error("프로필 수정 실패:", err);
+      setSaveError(
+        err.response?.data?.message || "프로필 수정에 실패했습니다."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) return <div className="epp">불러오는 중...</div>;
   if (error || !profile) return <div className="epp">{error ?? "프로필을 찾을 수 없습니다."}</div>;
@@ -58,8 +121,27 @@ export default function EngineerProfilePage() {
           <h1 className="epp-title">기사 프로필 관리</h1>
           <p className="epp-sub">기사 기본 정보와 근무 정보를 확인 및 수정할 수 있습니다.</p>
         </div>
-        <button className="epp-edit-btn"><Pencil size={13} /> 프로필 수정</button>
+        {!isEditing ? (
+          <button className="epp-edit-btn" onClick={startEdit}>
+            <Pencil size={13} /> 프로필 수정
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="epp-edit-btn" onClick={cancelEdit} disabled={saving}>
+              <X size={13} /> 취소
+            </button>
+            <button className="epp-edit-btn" onClick={handleSave} disabled={saving}>
+              <Check size={13} /> {saving ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        )}
       </div>
+
+      {saveError && (
+        <div className="epp-error-banner" style={{ color: "crimson", marginBottom: 12 }}>
+          {saveError}
+        </div>
+      )}
 
       {/* 상단: 프로필 카드 + 기본 정보 */}
       <div className="epp-top">
@@ -87,29 +169,92 @@ export default function EngineerProfilePage() {
         <div className="epp-info-card">
           <div className="epp-info-card__header">
             <h3 className="epp-info-card__title">기본 정보</h3>
-            <button className="epp-icon-btn"><Pencil size={13} /> 편집</button>
           </div>
           <div className="epp-info-grid">
-            <div className="epp-info-row"><span className="epp-info-label">이름</span><span>{profile.name}</span></div>
-            <div className="epp-info-row"><span className="epp-info-label">연락처</span><span>{profile.phone}</span></div>
-            <div className="epp-info-row"><span className="epp-info-label">경력 시작 연도</span><span>{profile.careerStartedYear ? `${profile.careerStartedYear}년` : "-"}</span></div>
-            <div className="epp-info-row"><span className="epp-info-label">활동 지역</span><span>{serviceRegions.length ? serviceRegions.join(", ") : "-"}</span></div>
+            <div className="epp-info-row">
+              <span className="epp-info-label">이름</span><span>{profile.name}</span>
+            </div>
+
+            <div className="epp-info-row">
+              <span className="epp-info-label">연락처</span>
+              {isEditing ? (
+                <input
+                  className="epp-edit-input"
+                  value={editData.phone}
+                  onChange={handleEditChange("phone")}
+                />
+              ) : (
+                <span>{profile.phone}</span>
+              )}
+            </div>
+
+            <div className="epp-info-row">
+              <span className="epp-info-label">경력 시작 연도</span>
+              {isEditing ? (
+                <input
+                  className="epp-edit-input"
+                  type="number"
+                  value={editData.careerStartedYear}
+                  onChange={handleEditChange("careerStartedYear")}
+                />
+              ) : (
+                <span>{profile.careerStartedYear ? `${profile.careerStartedYear}년` : "-"}</span>
+              )}
+            </div>
+
+            <div className="epp-info-row">
+              <span className="epp-info-label">활동 지역</span>
+              {isEditing ? (
+                <input
+                  className="epp-edit-input"
+                  placeholder="쉼표로 구분 (예: 강남구, 서초구)"
+                  value={editData.serviceRegionNames}
+                  onChange={handleEditChange("serviceRegionNames")}
+                />
+              ) : (
+                <span>{serviceRegions.length ? serviceRegions.join(", ") : "-"}</span>
+              )}
+            </div>
+
             <div className="epp-info-row">
               <span className="epp-info-label">기술 등급</span>
               <span>{skill.label} <span className="epp-info-hint">ⓘ</span></span>
             </div>
-            {/* ⚠ 거주 지역(regionName), 상세주소(addressDetail)는 ProfileResponse 스펙에 없습니다 */}
+
             <div className="epp-info-row">
               <span className="epp-info-label">전문 가전 카테고리</span>
-              <span>{profile.categoryName ?? "미지정"} <span className="epp-single-badge">단일 카테고리</span></span>
+              {isEditing ? (
+                <input
+                  className="epp-edit-input"
+                  value={editData.categoryName}
+                  onChange={handleEditChange("categoryName")}
+                />
+              ) : (
+                <span>{profile.categoryName ?? "미지정"} <span className="epp-single-badge">단일 카테고리</span></span>
+              )}
             </div>
-            <div className="epp-info-row"><span className="epp-info-label">전문 브랜드</span><span>{brands.length ? brands.join(", ") : "-"}</span></div>
+
+            <div className="epp-info-row">
+              <span className="epp-info-label">전문 브랜드</span>
+              {isEditing ? (
+                <input
+                  className="epp-edit-input"
+                  placeholder="쉼표로 구분 (예: 삼성, LG)"
+                  value={editData.expertBrands}
+                  onChange={handleEditChange("expertBrands")}
+                />
+              ) : (
+                <span>{brands.length ? brands.join(", ") : "-"}</span>
+              )}
+            </div>
+
             <div className="epp-info-row"><span className="epp-info-label">가입일</span><span>{profile.createdAt ?? "-"}</span></div>
             <div className="epp-info-row"><span className="epp-info-label">이메일</span><span>{profile.email}</span></div>
             <div className="epp-info-row"><span className="epp-info-label">최종 정보 수정일</span><span>{profile.updatedAt ?? "-"}</span></div>
           </div>
         </div>
       </div>
+
 
       {/* 중단: 전문 정보 + 근무표 링크 + LMS */}
       <div className="epp-mid">

@@ -29,15 +29,18 @@ export const updateAssignmentStatus = (requestId, status) =>
 export const getEngineerTaskSchedule = (date) =>
   api.get("/api/engineer/schedule", { params: { date } });
 
-// ── 프로필 (engineerProfile.md) ──
-export const completeEngineerProfile = (data) =>
-  api.put("/api/engineer/profile", data);
 
 export const getEngineerProfile = () =>
   api.get("/api/engineer/profile");
 
+// 최초 프로필 등록 (회원가입 직후)
+export const createEngineerProfile = (data) =>
+  api.post("/api/engineer/profile", data);
+
+// 프로필 수정
 export const updateEngineerProfile = (data) =>
-  api.patch("/api/engineer/profile", data);
+  api.put("/api/engineer/profile", data);
+
 
 // ── 근무표 (engineerSchedule.md) — "내 근무표 보기"에서 사용 ──
 export const createEngineerWorkSchedule = (workDate, timeSlots) =>
@@ -103,3 +106,7 @@ export const getEngineerReviews = (rating, page = 0, size = 10) =>
   api.get("/api/engineer/reviews", {
     params: { rating: rating === "ALL" ? undefined : rating, page, size },
   });
+
+  // 리뷰 통계 (평균 평점 + 평점 분포)
+export const getEngineerReviewStats = () =>
+  api.get("/api/engineer/reviews/stats");

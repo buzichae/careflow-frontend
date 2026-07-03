@@ -7,10 +7,11 @@ import {
 } from "lucide-react";
 import "../../styles/Agency/agency/AgencyEngineerPage.css";
 import "../../styles/Agency/agency/Agencyengineerpage.edit form.css"
+import EngineerApprovalModal from "../../pages/Agency/Modal/Engineerapprovalmodal";
 
-const BASE_URL = "http://localhost:8080";
+export const BASE_URL = "http://localhost:8080";
 
-async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
@@ -56,6 +57,17 @@ function formatEngineerId(userId) {
 function getCareerYears(startYear) {
   if (!startYear) return "-";
   return `${new Date().getFullYear() - startYear}년`;
+}
+
+// 서버의 등급 자동 산정 규칙(1~5년=초급, 6~10년=중급, 11년↑=고급)을 그대로 반영한
+// 프론트 미리보기용 계산. 실제 저장 값은 서버가 재계산하며, 이 값은 참고용 표시일 뿐입니다.
+function previewSkillLevel(startYear) {
+  const year = Number(startYear);
+  if (!year || Number.isNaN(year)) return "BEGINNER";
+  const years = new Date().getFullYear() - year;
+  if (years >= 11) return "EXPERT";
+  if (years >= 6) return "INTERMEDIATE";
+  return "BEGINNER";
 }
 
 function Avatar({ name, profileImg, size = 36 }) {
@@ -265,7 +277,6 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
     expertBrands: Array.isArray(initialData.expertBrands) ? [...initialData.expertBrands] : [],
     serviceRegionIds: Array.isArray(initialData.serviceRegionIds) ? [...initialData.serviceRegionIds] : [],
     careerStartedYear: initialData.careerStartedYear ?? "",
-    skillLevel: initialData.skillLevel ?? "BEGINNER",
     introduction: initialData.introduction ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -278,16 +289,17 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
     setSaving(true);
     setError(null);
     try {
-      // 참고: 브랜드/지역을 모두 삭제하려는 의도로 빈 배열을 보내는 경우,
-      // 백엔드가 `!isEmpty()` 조건으로 빈 배열을 무시하도록 구현되어 있다면
-      // 이 요청은 서버에서 조용히 무시될 수 있습니다. 백엔드 로직 확인이 필요합니다.
+      // 참고(백엔드 확인 완료):
+      // - expertBrands/serviceRegionIds: []는 "전체 삭제", 필드 자체를 보내지 않으면(undefined) "변경 안 함"으로 처리됩니다.
+      //   여기서는 항상 배열(빈 배열 포함)로 명시해서 보내므로 "전체 삭제" 의도가 정상 반영됩니다.
+      // - skillLevel: 서버가 careerStartedYear 기준으로 자동 재산정하며, 요청 필드 자체가 없습니다.
+      //   프론트에서 편집 불가능한 값이라 payload에서 완전히 제외합니다.
       const payload = {
         phone: form.phone,
         email: form.email,
         expertBrands: form.expertBrands,
         serviceRegionIds: form.serviceRegionIds,
         careerStartedYear: form.careerStartedYear ? Number(form.careerStartedYear) : null,
-        skillLevel: form.skillLevel,
         introduction: form.introduction,
       };
 
@@ -364,15 +376,12 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
 
       <div className="aep-edit-field">
         <span className="aep-detail__info-label">기술 등급</span>
-        <select
-          className="aep-edit-input"
-          value={form.skillLevel}
-          onChange={e => updateField("skillLevel", e.target.value)}
-        >
-          {Object.entries(SKILL_MAP).map(([key, v]) => (
-            <option key={key} value={key}>{v.label} ({v.en})</option>
-          ))}
-        </select>
+        <div className="aep-edit-readonly">
+          <span className={`aep-skill-badge aep-skill-badge--${(SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ?? SKILL_MAP.BEGINNER).type}`}>
+            <span>{(SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ?? SKILL_MAP.BEGINNER).label}</span>
+          </span>
+          <span className="aep-edit-readonly__hint">경력 시작 연도 기준으로 저장 시 서버에서 자동 산정됩니다 (직접 지정 불가)</span>
+        </div>
       </div>
 
       <div className="aep-edit-field">
@@ -414,6 +423,9 @@ export default function AgencyEngineerPage() {
 
   // ── 13번: 기사 프로필 수정 ─────────────────────
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // ── 가입 신청 관리 모달 ─────────────────────────
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
 
   // ── 필터 / 페이지 ────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -532,7 +544,9 @@ export default function AgencyEngineerPage() {
         <button className="aep-reset-btn" onClick={() => setSearchQuery("")}>
           <RefreshCw size={13} /> 필터 초기화
         </button>
-        <button className="aep-invite-btn"><UserPlus size={14} /> 가입 신청 관리</button>
+        <button className="aep-invite-btn" onClick={() => setIsApprovalModalOpen(true)}>
+          <UserPlus size={14} /> 가입 신청 관리
+        </button>
       </div>
 
       <div className="aep-body">
@@ -765,6 +779,13 @@ export default function AgencyEngineerPage() {
           </aside>
         )}
       </div>
+
+      {isApprovalModalOpen && (
+        <EngineerApprovalModal
+          onClose={() => setIsApprovalModalOpen(false)}
+          onApproved={fetchEngineers}
+        />
+      )}
     </div>
   );
 }
