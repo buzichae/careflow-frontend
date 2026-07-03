@@ -8,7 +8,7 @@ export const signupAgency = (data) =>
   api.post("/api/agencies/signup", data);
 
 export const signupEngineer = (data) =>
-  api.post("/api/engineers/signup", data);
+  api.post("/api/engineer/signup", data);
 
 export const login = (data) =>
   api.post("/api/auth/login", data);
@@ -24,3 +24,13 @@ export const updateUserProfile = (data) => api.patch("/api/users/me", data);
 
 // 지역명으로 regionId 조회 -> regionId로 넘기도록 수정 필요
 export const getRegionByName = (name) => api.get("/api/regions", { data: { name } });
+
+// 비밀번호 찾기
+export const sendPasswordResetCode = (email) =>
+  api.post("/api/auth/password/send-code", { email });
+
+export const verifyPasswordResetCode = (email, code) =>
+  api.post("/api/auth/password/verify-code", { email, code });
+
+export const resetPassword = (email, code, newPassword) =>
+  api.post("/api/auth/password/reset", { email, code, newPassword });

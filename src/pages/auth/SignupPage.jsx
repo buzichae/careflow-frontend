@@ -7,12 +7,16 @@ import {
   ArrowLeft,
   MapPin,
   Info,
+  Search,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import { ROLES } from "./authConstants";
 import "../../styles/Auth/Auth.css";
 import { signupAgency, signupCustomer, signupEngineer } from "../../apis/auth";
+import { getAgencyByName } from "../../apis/agency";
 
 import { REGIONS } from "../../constants/regions";
 
@@ -46,6 +50,7 @@ function AuthInput({
   value,
   onChange,
   rightEl,
+  readOnly = false,
 }) {
   return (
     <div className="auth-input-wrap">
@@ -57,6 +62,8 @@ function AuthInput({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          readOnly={readOnly}
+          style={readOnly ? { background: "#f7f7fb", color: "#888" } : undefined}
         />
         {rightEl && <span className="auth-input-right">{rightEl}</span>}
       </div>
@@ -159,12 +166,20 @@ function SignupForm({ roleKey, onBack }) {
   const navigate = useNavigate();
   const role = ROLES.find((r) => r.key === roleKey) || ROLES[0];
   const isCustomer = roleKey === "customer";
+  const isAgency = roleKey === "agency";
 
   const [step, setStep] = useState(1);
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // ── 대행사명 조회 상태 (GET /api/agencies/agency) ──
+  // flag: 1 = 기존 등록된 대행사 데이터를 그대로 사용 / 0 = 신규 입력
+  const [agencyLookup, setAgencyLookup] = useState({
+    status: "idle", // idle | loading | found | notfound | error
+    message: "",
+  });
 
   const [formData, setFormData] = useState({
     /* 공통 */
@@ -175,16 +190,16 @@ function SignupForm({ roleKey, onBack }) {
     phone: "",
     /* 주소 */
     regionParent: "",
-    regionId: "", // customer: DB region id (integer)
-    regionName: "", // agency/engineer: region name string
+    regionId: "",
     addressDetail: "",
     /* 대행사 전용 */
     agencyName: "",
     agencyAddress: "",
     agencyFeeRate: 0,
     businessNumber: "",
+    flag: 0, // 대행사 기존 데이터 존재 여부 (조회 성공 시 1)
     /* 기사 전용 */
-    agencyId: "",
+    agencyBusinessNumber: "",
   });
 
   const handleChange = (field) => (value) => {
@@ -192,12 +207,56 @@ function SignupForm({ roleKey, onBack }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // 대행사명이 바뀌면 기존 조회 결과는 무효화 (다시 조회해야 함)
+  const handleAgencyNameChange = (value) => {
+    setFormError("");
+    setAgencyLookup({ status: "idle", message: "" });
+    setFormData((prev) => ({
+      ...prev,
+      agencyName: value,
+      flag: 0,
+      agencyAddress: prev.flag === 1 ? "" : prev.agencyAddress,
+      businessNumber: prev.flag === 1 ? "" : prev.businessNumber,
+      agencyFeeRate: prev.flag === 1 ? 0 : prev.agencyFeeRate,
+    }));
+  };
+
+  // "조회" 버튼 클릭 → GET /api/agencies/agency?agencyName=
+  const handleAgencyLookup = async () => {
+    const name = formData.agencyName.trim();
+    if (!name) return;
+
+    setAgencyLookup({ status: "loading", message: "" });
+    try {
+      const { data } = await getAgencyByName(name);
+      // ※ 응답이 Agencies 엔티티 그대로라 필드명은 추정치입니다.
+      //    실제 엔티티 필드명 확인 후 아래 매핑을 맞춰주세요.
+      setFormData((prev) => ({
+        ...prev,
+        flag: 1,
+        businessNumber: data.businessNumber ?? prev.businessNumber,
+        agencyAddress: data.agencyAddress ?? prev.agencyAddress,
+        agencyFeeRate: data.agencyFeeRate ?? prev.agencyFeeRate,
+      }));
+      setAgencyLookup({
+        status: "found",
+        message: "등록된 대행사 정보를 찾았습니다. 정보가 자동으로 입력됩니다.",
+      });
+    } catch (error) {
+      // 404(NoSuchElementException) 등 조회 실패 → 신규 등록으로 처리
+      setFormData((prev) => ({ ...prev, flag: 0 }));
+      setAgencyLookup({
+        status: "notfound",
+        message: "등록된 대행사 정보가 없습니다. 아래에 직접 입력해주세요.",
+      });
+    }
+  };
+
   const handleRegionParent = (v) =>
     setFormData((prev) => ({
       ...prev,
       regionParent: v,
       regionId: "",
-      regionName: "",
     }));
 
   const subRegions = formData.regionParent
@@ -233,7 +292,8 @@ function SignupForm({ roleKey, onBack }) {
         !formData.email ||
         !formData.password ||
         !formData.name ||
-        !formData.businessNumber
+        !formData.phone ||
+        !formData.agencyBusinessNumber
       );
     return !formData.email || !formData.password;
   })();
@@ -246,11 +306,18 @@ function SignupForm({ roleKey, onBack }) {
     if (roleKey === "agency") {
       return (
         !formData.regionParent ||
-        !formData.regionName ||
+        !formData.regionId ||
         !formData.addressDetail ||
         !formData.agencyAddress ||
         formData.agencyFeeRate === null ||
         formData.agencyFeeRate === ""
+      );
+    }
+    if (roleKey === "engineer") {
+      return (
+        !formData.regionParent ||
+        !formData.regionId ||
+        !formData.addressDetail
       );
     }
     return false;
@@ -273,12 +340,13 @@ function SignupForm({ roleKey, onBack }) {
           email: formData.email,
           password: formData.password,
           phoneNumber: formData.phone,
-          regionName: formData.regionName,
+          regionId: Number(formData.regionId),
           addressDetail: formData.addressDetail,
           businessNumber: formData.businessNumber,
           agencyName: formData.agencyName,
           agencyAddress: formData.agencyAddress,
           agencyFeeRate: formData.agencyFeeRate,
+          flag: formData.flag, // 기존 대행사 데이터 사용 여부
         };
       case "engineer":
         return {
@@ -286,9 +354,9 @@ function SignupForm({ roleKey, onBack }) {
           email: formData.email,
           password: formData.password,
           phoneNumber: formData.phone,
-          regionName: formData.regionName,
+          regionId: Number(formData.regionId),
           addressDetail: formData.addressDetail,
-          businessNumber: formData.businessNumber,
+          businessNumber: formData.agencyBusinessNumber,
         };
       default:
         throw new Error("역할이 선택되지 않았습니다.");
@@ -447,13 +515,59 @@ function SignupForm({ roleKey, onBack }) {
                         placeholder="- 없이 숫자만 입력해주세요"
                         value={formData.businessNumber}
                         onChange={handleChange("businessNumber")}
+                        readOnly={formData.flag === 1}
                       />
-                      <AuthInput
-                        label="대행사명"
-                        placeholder="대행사명을 입력해주세요"
-                        value={formData.agencyName}
-                        onChange={handleChange("agencyName")}
-                      />
+
+                      {/* 대행사명 + 조회 버튼 (GET /api/agencies/agency) */}
+                      <div className="auth-input-wrap">
+                        <label className="auth-label">대행사명</label>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <div className="auth-input-box" style={{ flex: 1 }}>
+                            <input
+                              className="auth-input"
+                              type="text"
+                              placeholder="대행사명을 입력해주세요"
+                              value={formData.agencyName}
+                              onChange={(e) => handleAgencyNameChange(e.target.value)}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="auth-link"
+                            style={{
+                              flexShrink: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              padding: "0 14px",
+                              border: "1px solid #ddd",
+                              borderRadius: 8,
+                              fontSize: 13,
+                              fontWeight: 600,
+                            }}
+                            disabled={!formData.agencyName.trim() || agencyLookup.status === "loading"}
+                            onClick={handleAgencyLookup}
+                          >
+                            {agencyLookup.status === "loading"
+                              ? <Loader2 size={14} className="auth-spin" />
+                              : <Search size={14} />}
+                            조회
+                          </button>
+                        </div>
+                        {agencyLookup.status === "found" && (
+                          <p
+                            className="auth-agency-lookup-msg"
+                            style={{ color: "#16a34a", display: "flex", alignItems: "center", gap: 4 }}
+                          >
+                            <CheckCircle2 size={13} /> {agencyLookup.message}
+                          </p>
+                        )}
+                        {agencyLookup.status === "notfound" && (
+                          <p className="auth-agency-lookup-msg" style={{ color: "#888" }}>
+                            {agencyLookup.message}
+                          </p>
+                        )}
+                      </div>
                     </>
                   )}
                   {roleKey === "engineer" && (
@@ -465,32 +579,17 @@ function SignupForm({ roleKey, onBack }) {
                         onChange={handleChange("name")}
                       />
                       <AuthInput
-                        label="사업자등록번호"
-                        placeholder="- 없이 숫자만 입력해주세요"
-                        value={formData.businessNumber}
-                        onChange={handleChange("businessNumber")}
+                        label="연락처"
+                        placeholder="010 - 없이 숫자만 입력해주세요"
+                        value={formData.phone}
+                        onChange={handleChange("phone")}
                       />
-                      <div className="auth-input-wrap">
-                        <label className="auth-label">소속 대행사 (선택)</label>
-                        <div className="auth-input-box auth-input-box--select">
-                          <select
-                            className="auth-select"
-                            value={formData.agencyId}
-                            onChange={(e) =>
-                              handleChange("agencyId")(e.target.value)
-                            }
-                          >
-                            <option value="">소속 대행사를 선택해주세요</option>
-                            <option value="1">케어플로 서울점</option>
-                            <option value="2">케어플로 경기점</option>
-                            <option value="3">케어플로 부산점</option>
-                          </select>
-                          <ChevronDown
-                            size={15}
-                            className="auth-select-arrow"
-                          />
-                        </div>
-                      </div>
+                      <AuthInput
+                        label="소속 대행사 사업자등록번호"
+                        placeholder="소속 대행사의 사업자등록번호를 입력해주세요"
+                        value={formData.agencyBusinessNumber}
+                        onChange={handleChange("agencyBusinessNumber")}
+                      />
                     </>
                   )}
 
@@ -649,15 +748,15 @@ function SignupForm({ roleKey, onBack }) {
                           <div className="auth-input-box auth-input-box--select">
                             <select
                               className="auth-select"
-                              value={formData.regionName}
+                              value={formData.regionId}
                               onChange={(e) =>
-                                handleChange("regionName")(e.target.value)
+                                handleChange("regionId")(e.target.value)
                               }
                               disabled={!formData.regionParent}
                             >
                               <option value="">구·시 선택</option>
                               {subRegions.map((r) => (
-                                <option key={r.id} value={r.name}>
+                                <option key={r.id} value={r.id}>
                                   {r.name}
                                 </option>
                               ))}
@@ -675,11 +774,17 @@ function SignupForm({ roleKey, onBack }) {
                         value={formData.addressDetail}
                         onChange={handleChange("addressDetail")}
                       />
+                      {formData.flag === 1 && (
+                        <p className="auth-agency-lookup-msg" style={{ color: "#5B4FF5" }}>
+                          기존 등록된 대행사 정보로 자동 입력되었습니다.
+                        </p>
+                      )}
                       <AuthInput
                         label="대행사 소재지"
                         placeholder="대행사 주소를 입력해주세요"
                         value={formData.agencyAddress}
                         onChange={handleChange("agencyAddress")}
+                        readOnly={formData.flag === 1}
                       />
                       <AuthInput
                         label="수수료율 (%)"
@@ -689,16 +794,49 @@ function SignupForm({ roleKey, onBack }) {
                         onChange={(v) =>
                           handleChange("agencyFeeRate")(parseFloat(v) || 0)
                         }
+                        readOnly={formData.flag === 1}
                       />
                     </>
                   )}
                   {roleKey === "engineer" && (
                     <>
+                      <div className="auth-input-wrap">
+                        <label className="auth-label">거주 지역</label>
+                        <div className="auth-region-row">
+                          <div className="auth-input-box auth-input-box--select">
+                            <select
+                              className="auth-select"
+                              value={formData.regionParent}
+                              onChange={(e) => handleRegionParent(e.target.value)}
+                            >
+                              <option value="">시·도 선택</option>
+                              {Object.keys(REGIONS).map((r) => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={15} className="auth-select-arrow" />
+                          </div>
+                          <div className="auth-input-box auth-input-box--select">
+                            <select
+                              className="auth-select"
+                              value={formData.regionId}
+                              onChange={(e) => handleChange("regionId")(e.target.value)}
+                              disabled={!formData.regionParent}
+                            >
+                              <option value="">구·시 선택</option>
+                              {subRegions.map((r) => (
+                                <option key={r.id} value={r.id}>{r.name}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={15} className="auth-select-arrow" />
+                          </div>
+                        </div>
+                      </div>
                       <AuthInput
-                        label="휴대폰 번호"
-                        placeholder="- 없이 숫자만 입력해주세요"
-                        value={formData.phone}
-                        onChange={handleChange("phone")}
+                        label="상세 주소"
+                        placeholder="동·호수·번지 등을 입력해주세요"
+                        value={formData.addressDetail}
+                        onChange={handleChange("addressDetail")}
                       />
                     </>
                   )}
@@ -742,13 +880,9 @@ function SignupForm({ roleKey, onBack }) {
                           <span>
                             {[
                               formData.regionParent,
-                              formData.regionId
-                                ? subRegions.find(
-                                    (r) =>
-                                      String(r.id) ===
-                                      String(formData.regionId),
-                                  )?.name
-                                : formData.regionName,
+                              subRegions.find(
+                                (r) => String(r.id) === String(formData.regionId)
+                              )?.name,
                               formData.addressDetail,
                             ]
                               .filter(Boolean)
