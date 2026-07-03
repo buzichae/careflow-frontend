@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CheckCircle, AlertCircle, RefreshCw, BookOpen } from "lucide-react";
+import "../../styles/Engineer/EngineerQuizPage.css";
 import {
     getQuizStatus,
     getQuizQuestions,

@@ -300,21 +300,6 @@ export default function AdminLMSPage() {
           {/* ── 교육 콘텐츠 목록 탭 ── */}
           {mainTab === "contents" && (
               <>
-                {/* 기존 내부 탭 */}
-                <div className="admin-tabs">
-                  {[
-                    { key: "matrix",   label: "교육 과정 매트릭스" },
-                    { key: "engineer", label: "기사별 이수 현황" },
-                  ].map((t) => (
-                      <button
-                          key={t.key}
-                          className={`admin-tab${tab === t.key ? " admin-tab--active" : ""}`}
-                          onClick={() => setTab(t.key)}
-                      >
-                        {t.label}
-                      </button>
-                  ))}
-                </div>
 
                 {/* 교육 과정 매트릭스 */}
                 {tab === "matrix" && (
@@ -372,81 +357,6 @@ export default function AdminLMSPage() {
                               ))}
                             </div>
                           </>
-                      )}
-                    </div>
-                )}
-
-                {/* 기사별 이수 현황 */}
-                {tab === "engineer" && (
-                    <div className="admin-section__body">
-                      <div className="admin-filter-bar">
-                        <div style={{ position: "relative", flex: 1 }}>
-                          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#aaa" }} />
-                          <input
-                              className="admin-search-input"
-                              style={{ paddingLeft: 32 }}
-                              placeholder="기사 ID 입력 후 Enter"
-                              value={engSearch}
-                              onChange={(e) => setEngSearch(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === "Enter") handleEngineerSearch(); }}
-                          />
-                        </div>
-                        <button className="admin-btn admin-btn--primary" onClick={handleEngineerSearch}>
-                          조회
-                        </button>
-                        <select className="admin-select" value={engFilter}
-                                onChange={(e) => setEngFilter(e.target.value)}>
-                          <option value="ALL">이수 전체</option>
-                          <option value="DONE">이수 완료</option>
-                          <option value="PENDING">미이수</option>
-                        </select>
-                      </div>
-
-                      {loading && <p style={{ padding: 20 }}>불러오는 중...</p>}
-                      {error   && <p style={{ padding: 20, color: "red" }}>{error}</p>}
-
-                      {!loading && (
-                          <table className="admin-table">
-                            <thead>
-                            <tr>
-                              <th>콘텐츠 제목</th>
-                              <th>카테고리</th>
-                              <th>대상 등급</th>
-                              <th>이수 버전</th>
-                              <th>이수 일시</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {filteredEng.map((confirm) => (
-                                <tr key={confirm.confirmationId}>
-                                  <td style={{ fontWeight: 600 }}>{confirm.content?.title}</td>
-                                  <td>
-                            <span className="admin-badge admin-badge--gray">
-                              {categoryName(confirm.content?.categoryId)}
-                            </span>
-                                  </td>
-                                  <td>
-                            <span className="admin-badge admin-badge--blue">
-                              {careerLabel(confirm.content?.requiredLevel)}
-                            </span>
-                                  </td>
-                                  <td>{confirm.confirmedVersion}</td>
-                                  <td style={{ color: "#666" }}>
-                                    {confirm.confirmedAt
-                                        ? new Date(confirm.confirmedAt).toLocaleDateString("ko-KR")
-                                        : "-"}
-                                  </td>
-                                </tr>
-                            ))}
-                            {filteredEng.length === 0 && (
-                                <tr>
-                                  <td colSpan={5} className="admin-empty">
-                                    기사 ID를 입력하고 조회하세요.
-                                  </td>
-                                </tr>
-                            )}
-                            </tbody>
-                          </table>
                       )}
                     </div>
                 )}

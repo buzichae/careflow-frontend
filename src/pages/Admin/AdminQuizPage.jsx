@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, X, AlertTriangle, CheckCircle, Search } from "lucide-react";
+import "../../styles/Admin/AdminQuizPage.css";
 import {
     getAdminQuizQuestions,
     createQuizQuestion,
@@ -270,28 +271,6 @@ export default function AdminQuizPage() {
                             {y}년{y === currentYear + 1 ? " (사전 등록)" : ""}
                         </button>
                     ))}
-                </div>
-
-                <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
-                    {[
-                        { key: "matrix",   label: "OX퀴즈 매트릭스" },
-                        { key: "attempts", label: "기사별 응시 현황" },
-                    ].map((t) => (
-                        <button
-                            key={t.key}
-                            className={`admin-tab ${innerTab === t.key ? "admin-tab--active" : ""}`}
-                            onClick={() => setInnerTab(t.key)}
-                        >
-                            {t.label}
-                        </button>
-                    ))}
-                    <button
-                        className="admin-btn admin-btn--primary"
-                        style={{ display: "flex", alignItems: "center", gap: 6 }}
-                        onClick={() => setModal({})}
-                    >
-                        <Plus size={14} /> 문항 등록
-                    </button>
                 </div>
             </div>
 
