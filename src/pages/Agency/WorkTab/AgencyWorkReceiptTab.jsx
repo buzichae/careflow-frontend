@@ -3,28 +3,15 @@ import {
   ClipboardList, Clock, Users, Hourglass, XCircle,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, Download, MoreVertical, RefreshCw,
-  Activity, CheckCircle, Calendar, AlertTriangle,
+  Calendar, AlertTriangle,
 } from "lucide-react";
 import "../../../styles/Agency/WorkTab/AgencyWorkReceiptTab.css";
 import WorkDetailModal from "../../Agency/Modal/WorkDetailModal";
 import { AssignDetailModal, ReassignModal } from "../../../pages/Agency/Modal/AssignModals";
 import api from "../../../apis/axiosInstance";
+import { searchAssignments } from "../../../apis/agency";
+import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
 
-// 통계 API (as_status_log 기반)는 기존 fetch 패턴 유지
-const BASE_URL = "http://localhost:8080";
-
-async function apiFetch(path) {
-  const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-  });
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
-}
 
 // API 응답 AgencyAsRequestListResponse → 컴포넌트 내부 형식으로 매핑
 function mapReceiptItem(r) {
@@ -47,7 +34,7 @@ function mapReceiptItem(r) {
     overtimeMin:  0,
   };
 }
-
+ 
 // ── 상태 맵 ───────────────────────────────────
 const STATUS_MAP = {
   PENDING:         { label: "접수",          type: "pending"   },
@@ -59,32 +46,32 @@ const STATUS_MAP = {
   PAID:            { label: "정산 완료",      type: "paid"      },
   CANCELLED:       { label: "취소 / 반려",    type: "cancelled" },
 };
-
-// ── 더미: 작업 현황 통계 ──────────────────────
-const DUMMY_STATS = {
-  waitingCount: 12,
-  engineerDepartedCount: 5,
-  engineerArrivedCount: 3,
-  inProgressCount: 8,
-  completedCount: 47,
+ 
+// AsAssignment.status 라벨 — 실제 enum 값 확인 후 필요시 조정하세요 (AssignmentDetailResponse.assignmentStatus와 동일 값 추정)
+const ASSIGNMENT_STATUS_MAP = {
+  WAITING:     { label: "수락 대기", type: "waiting" },
+  ACCEPTED:    { label: "배정 완료", type: "assigned" },
+  IN_PROGRESS: { label: "작업 중",   type: "working" },
+  COMPLETED:   { label: "완료",      type: "done" },
+  CANCELLED:   { label: "취소",      type: "cancelled" },
+  REJECTED:    { label: "거절됨",    type: "rejected" },
 };
-
-// ── 실시간 기사 현황 (백엔드 미구현 — 임시 빈 배열 유지) ────────
-const realtimeEngineers = [
-  { id: 1, name: "김철수", specialty: "LG 전문",   region: "강남·서초", product: "디오스 냉장고 수리", timeRange: "10:00 ~ 12:30", progress: 60,   isLmsCompleted: true,  profileImageUrl: null, asStatus: "IN_PROGRESS" },
-  { id: 2, name: "박민수", specialty: "삼성 전문", region: "송파·강동", product: "그랑데 세탁기 수리", timeRange: "13:30 ~ 16:00", progress: 30,   isLmsCompleted: true,  profileImageUrl: null, asStatus: "ASSIGNED"    },
-  { id: 3, name: "이영호", specialty: "LG 전문",   region: "강남·송파", product: null,                timeRange: null,            progress: null, isLmsCompleted: false, profileImageUrl: null, asStatus: null          },
-  { id: 4, name: "최지현", specialty: "삼성 전문", region: "서초·관악", product: null,                timeRange: null,            progress: null, isLmsCompleted: true,  profileImageUrl: null, asStatus: null          },
-];
-
-
-// ── 헬퍼 ──────────────────────────────────────
+ 
+// as_status_log.to_status → 라벨 (AgencyWorkMonitorTab의 STATUS_LOG_MAP과 동일 체계)
+// AsRequest.status(큰 흐름)와 별개로, 기사의 실시간 진행 상황은 여기서 옴
+const ENGINEER_PROGRESS_MAP = {
+  WAITING:           { label: "방문 대기",   type: "waiting"  },
+  ENGINEER_DEPARTED: { label: "기사 이동 중", type: "waiting"  },
+  ENGINEER_ARRIVED:  { label: "기사 도착",   type: "waiting"  },
+  IN_PROGRESS:       { label: "작업 중",     type: "visiting" },
+  COMPLETED:         { label: "작업 완료",   type: "completed"},
+};
 function getReassignReason(item) {
   if (item.assignStatus === "REJECTED") return "rejected";
   if (item.assignStatus === "WAITING" && item.overtimeMin >= 30) return "overtime";
   return null;
 }
-
+ 
 function getActionType(item) {
   const reassignReason = getReassignReason(item);
   if (reassignReason) return { type: "reassign", reason: reassignReason };
@@ -92,7 +79,7 @@ function getActionType(item) {
   if (item.status === "ASSIGNED") return { type: "assignDetail" };
   return { type: "workDetail" };
 }
-
+ 
 function formatRequestId(requestId, createdAt) {
   const date = new Date(createdAt);
   const yy = String(date.getFullYear()).slice(2);
@@ -100,7 +87,7 @@ function formatRequestId(requestId, createdAt) {
   const dd = String(date.getDate()).padStart(2, "0");
   return `AS-${yy}${mm}${dd}-${String(requestId).padStart(4, "0")}`;
 }
-
+ 
 function formatDateTime(dateStr) {
   const d = new Date(dateStr);
   const days = ["일","월","화","수","목","금","토"];
@@ -112,7 +99,7 @@ function formatDateTime(dateStr) {
   const min = String(d.getMinutes()).padStart(2,"0");
   return { date: `${yy}.${mm}.${dd} (${day})`, time: `${hh}:${min}` };
 }
-
+ 
 function formatVisitDate(dateStr, startTime, endTime) {
   const d = new Date(dateStr);
   const days = ["일","월","화","수","목","금","토"];
@@ -122,16 +109,7 @@ function formatVisitDate(dateStr, startTime, endTime) {
   const day = days[d.getDay()];
   return `${yy}.${mm}.${dd} (${day})\n${startTime} ~ ${endTime}`;
 }
-
-function getEngineerStatusLabel(asStatus, isLmsCompleted) {
-  if (!isLmsCompleted) return { label: "배차 불가", type: "lms-fail" };
-  switch (asStatus) {
-    case "IN_PROGRESS": return { label: "작업 중", type: "working" };
-    case "ASSIGNED":    return { label: "이동 중", type: "moving"  };
-    default:            return { label: "대기",    type: "waiting" };
-  }
-}
-
+ 
 function EngineerAvatar({ name, profileImageUrl }) {
   return (
     <div className="aw-engineer-avatar">
@@ -141,24 +119,39 @@ function EngineerAvatar({ name, profileImageUrl }) {
     </div>
   );
 }
-
+ 
 // ══════════════════════════════════════════════
 export default function AgencyWorkReceiptTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages,  setTotalPages]  = useState(1);
-
+ 
   const [workDetailModal,   setWorkDetailModal]   = useState(null);
   const [assignDetailModal, setAssignDetailModal] = useState(null);
   const [reassignModal,     setReassignModal]     = useState(null);
-
+ 
   // 접수 목록 상태
   const [receiptList, setReceiptList] = useState([]);
   const [listLoading, setListLoading] = useState(false);
   const [totalCount,  setTotalCount]  = useState(0);
-
-  // 통계 (as_status_log 기반)
-  const [workStats, setWorkStats] = useState(DUMMY_STATS);
-
+ 
+  // 작업 현황 통계 — 별도 API(work-requests/stats) 대신 현재 목록(receiptList)에서 직접 집계
+  // (그 API는 대행사 전체 누적 로그 건수를 세는 거라 지금 화면의 목록 건수와 안 맞았음)
+  const workStats = {
+    waitingCount: receiptList.filter(i => i.status === "AGENCY_RECEIVED").length,
+    engineerDepartedCount: receiptList.filter(i => i.status === "ASSIGNED" || i.status === "ACCEPTED").length,
+    inProgressCount: receiptList.filter(i => i.status === "IN_PROGRESS").length,
+    completedCount: receiptList.filter(i => i.status === "COMPLETED" || i.status === "PAID").length,
+  };
+ 
+  // 실시간 배정 현황 (GET /api/agency/as-assignments/search — 오늘 날짜, 전체 상태)
+  const [assignments,        setAssignments]        = useState([]);
+  const [assignmentsLoading, setAssignmentsLoading]  = useState(false);
+  const [assignmentsError,   setAssignmentsError]    = useState(null);
+ 
+  // 접수건별 최신 기사 진행상태 (GET /api/as-status-logs/agency, requestId별 최신 로그만 추출)
+  // AsRequest.status는 큰 흐름만 담고 있어서, 기사가 수락/출발/도착/작업중인지는 여기서 보강
+  const [latestLogByRequestId, setLatestLogByRequestId] = useState({});
+ 
   // 접수 목록 조회 (GET /api/agency/work-requests)
   useEffect(() => {
     setListLoading(true);
@@ -173,17 +166,51 @@ export default function AgencyWorkReceiptTab() {
       .catch(() => setReceiptList([]))
       .finally(() => setListLoading(false));
   }, []);
-
-  // 작업 현황 통계 조회 (GET /api/agency/work-requests/stats)
+ 
+  // (work-requests/stats 별도 호출 제거 — 위에서 receiptList로 직접 계산)
+ 
+  // 실시간 배정 현황 조회
+  const fetchAssignments = () => {
+    setAssignmentsLoading(true);
+    setAssignmentsError(null);
+    searchAssignments({}) // 파라미터 없이 호출 → 오늘 날짜, 전체 상태
+      .then(res => setAssignments(Array.isArray(res.data) ? res.data : []))
+      .catch((err) => {
+        if (err.response?.status === 204) {
+          setAssignments([]);
+        } else {
+          console.error("배정 현황 조회 실패:", err);
+          setAssignmentsError("배정 현황을 불러오지 못했습니다.");
+        }
+      })
+      .finally(() => setAssignmentsLoading(false));
+  };
+ 
   useEffect(() => {
-    apiFetch("/api/agency/work-requests/stats")
-      .then(data => { if (data) setWorkStats(data); })
-      .catch(() => {});
+    fetchAssignments();
   }, []);
-
+ 
+  // 접수건별 최신 기사 진행상태 조회 (전체 로그 중 requestId별 가장 최근 것만 추출)
+  // AsRequest.status는 큰 흐름만 담고 있어서, 기사가 수락/출발/도착/작업중인지는 이 로그로 보강
+  useEffect(() => {
+    getAgencyStatusLogs()
+      .then((res) => {
+        const logs = res.data?.logs ?? [];
+        const latest = {};
+        for (const log of logs) {
+          const prev = latest[log.requestId];
+          if (!prev || new Date(log.changedAt) > new Date(prev.changedAt)) {
+            latest[log.requestId] = log;
+          }
+        }
+        setLatestLogByRequestId(latest);
+      })
+      .catch(() => setLatestLogByRequestId({}));
+  }, []);
+ 
   // 클라이언트 페이지네이션 (백엔드 페이징 미지원 → 전체 목록을 10개씩 슬라이싱)
   const pagedList = receiptList.slice((currentPage - 1) * 10, currentPage * 10);
-
+ 
   // 통계 카드 (workStats 기반)
   const statCards = [
     { label: "전체 접수",      value: totalCount,                        today: "",  icon: ClipboardList, color: "purple" },
@@ -192,17 +219,17 @@ export default function AgencyWorkReceiptTab() {
     { label: "수리 진행 중",   value: workStats?.inProgressCount ?? 0,   today: "",  icon: Hourglass,     color: "amber"  },
     { label: "수리 완료",      value: workStats?.completedCount ?? 0,    today: "",  icon: XCircle,       color: "red"    },
   ];
-
+ 
   const handleAction = (item) => {
     const action = getActionType(item);
     if (action.type === "reassign")          setReassignModal({ ...item, reassignReason: action.reason });
     else if (action.type === "assignDetail") setAssignDetailModal(item);
     else                                     setWorkDetailModal(item);
   };
-
+ 
   return (
     <div className="receipt-tab">
-
+ 
       {/* ── 통계 카드 ── */}
       <div className="receipt-stats">
         {statCards.map((s) => (
@@ -210,7 +237,6 @@ export default function AgencyWorkReceiptTab() {
             <div className="receipt-stat-card__text">
               <p className="receipt-stat-card__value">{s.value}<span>건</span></p>
               <p className="receipt-stat-card__label">{s.label}</p>
-              <p className="receipt-stat-card__today">오늘 {s.today}</p>
             </div>
             <div className={`receipt-stat-card__icon receipt-stat-card__icon--${s.color}`}>
               <s.icon size={40} strokeWidth={1} />
@@ -218,11 +244,11 @@ export default function AgencyWorkReceiptTab() {
           </div>
         ))}
       </div>
-
+ 
       {/* ── 메인: 좌측(필터+테이블+페이지네이션) + 우측(실시간배정현황) ── */}
       <div className="receipt-body-layout">
         <div className="receipt-body-layout__left">
-
+ 
           {/* 필터 바 (기존 그대로) */}
           <div className="receipt-filters">
             <div className="receipt-filter-date">
@@ -241,7 +267,7 @@ export default function AgencyWorkReceiptTab() {
               <Download size={14} /> 엑셀 다운로드
             </button>
           </div>
-
+ 
           {/* 테이블 메타 */}
           <div className="receipt-table-meta">
             <span className="receipt-total">총 {totalCount}건</span>
@@ -249,7 +275,7 @@ export default function AgencyWorkReceiptTab() {
               <div className="receipt-sort-select">최신순 <ChevronDown size={13} /></div>
             </div>
           </div>
-
+ 
           {/* 테이블 (기존 그대로) */}
           <div className="receipt-table">
             <div className="receipt-table__header">
@@ -264,7 +290,7 @@ export default function AgencyWorkReceiptTab() {
               <span>상태</span>
               <span></span>
             </div>
-
+ 
             {listLoading && (
               <div style={{ padding: "24px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
                 불러오는 중...
@@ -278,18 +304,27 @@ export default function AgencyWorkReceiptTab() {
             {!listLoading && pagedList.map((item) => {
               const reassignReason = getReassignReason(item);
               const action = getActionType(item);
-              const s = STATUS_MAP[item.status] ?? { label: item.status, type: "pending" };
+              // 기사 진행상태 로그는 "진행 중"인 건에만 참고 — COMPLETED/PAID/CANCELLED처럼
+              // 이미 최종 상태에 도달한 건은 로그(WAITING~COMPLETED까지만 기록됨)를 무시하고
+              // AsRequest.status를 그대로 보여줘야 함 (안 그러면 PAID인데 "작업 완료"로 잘못 뜸)
+              const FINAL_STATUSES = ["COMPLETED", "PAID", "CANCELLED"];
+              const latestLog = FINAL_STATUSES.includes(item.status)
+                ? null
+                : latestLogByRequestId[item.requestId];
+              const s = latestLog
+                ? (ENGINEER_PROGRESS_MAP[latestLog.toStatus] ?? { label: latestLog.toStatus, type: "waiting" })
+                : (STATUS_MAP[item.status] ?? { label: item.status, type: "pending" });
               const displayId = formatRequestId(item.requestId, item.createdAt);
               const dt = formatDateTime(item.createdAt);
               const visit = formatVisitDate(item.visitDate, item.startTime, item.endTime);
-
+ 
               let badgeLabel = s.label, badgeType = s.type, subLabel = null, subType = null;
               if (reassignReason === "rejected")      { badgeLabel = "재배차 필요"; badgeType = "reassign"; subLabel = "기사 취소"; subType = "rejected"; }
               else if (reassignReason === "overtime") { badgeLabel = "재배차 필요"; badgeType = "reassign"; subLabel = `${item.overtimeMin}분 초과`; subType = "overtime"; }
               else if (item.status === "ASSIGNED" && item.overtimeMin > 0) { subLabel = `수락 대기 ${item.overtimeMin}분`; subType = "waiting"; }
-
+ 
               const showEngineer = item.status === "ASSIGNED" && item.engineerName && !reassignReason;
-
+ 
               return (
                 <div key={item.requestId} className={`receipt-table__row ${reassignReason ? "receipt-table__row--alert" : ""}`}>
                   <span className="receipt-table__id">{displayId}</span>
@@ -333,7 +368,7 @@ export default function AgencyWorkReceiptTab() {
               );
             })}
           </div>
-
+ 
           {/* 페이지네이션 */}
           <div className="receipt-pagination">
             <div className="receipt-pagination__left">
@@ -352,76 +387,55 @@ export default function AgencyWorkReceiptTab() {
               <span>10개씩 보기</span><ChevronDown size={13} />
             </div>
           </div>
-
-          {/* ── 작업 현황 요약 카드 (10번 API) ── */}
-          <section className="aw-today">
-            <h2 className="aw-section-title">오늘 작업 현황 요약</h2>
-            <div className="aw-today__cards">
-              <div className="aw-today__card aw-today__card--orange">
-                <div className="aw-today__icon"><Clock size={20} /></div>
-                <p className="aw-today__label">배정 대기</p>
-                <p className="aw-today__value">{workStats?.waitingCount ?? 0}<span>건</span></p>
-              </div>
-              <div className="aw-today__card aw-today__card--blue">
-                <div className="aw-today__icon"><Activity size={20} /></div>
-                <p className="aw-today__label">수리 진행 중</p>
-                <p className="aw-today__value">{workStats?.inProgressCount ?? 0}<span>건</span></p>
-              </div>
-              <div className="aw-today__card aw-today__card--green">
-                <div className="aw-today__icon"><CheckCircle size={20} /></div>
-                <p className="aw-today__label">수리 완료</p>
-                <p className="aw-today__value">{workStats?.completedCount ?? 0}<span>건</span></p>
-              </div>
-              <div className="aw-today__card aw-today__card--purple">
-                <div className="aw-today__icon"><Users size={20} /></div>
-                <p className="aw-today__label">기사 출발</p>
-                <p className="aw-today__value">{workStats?.engineerDepartedCount ?? 0}<span>건</span></p>
-              </div>
-            </div>
-          </section>
         </div>
-
-        {/* ── 우측: 실시간 배정 현황 ── */}
+ 
+        {/* ── 우측: 실시간 배정 현황 (GET /api/agency/as-assignments/search) ── */}
         <aside className="receipt-body-layout__right">
           <div className="aw-realtime">
             <div className="aw-realtime__header">
               <h2 className="aw-section-title" style={{ marginBottom: 0 }}>실시간 배정 현황</h2>
-              <button className="aw-more-link">전체 보기 ›</button>
+              <button className="aw-more-link" onClick={fetchAssignments}>
+                <RefreshCw size={12} /> 새로고침
+              </button>
             </div>
-            {realtimeEngineers.map((e) => {
-              const engineerStatus = getEngineerStatusLabel(e.asStatus, e.isLmsCompleted);
+ 
+            {assignmentsLoading && (
+              <p style={{ padding: "12px", color: "#aaa", fontSize: "12px" }}>불러오는 중...</p>
+            )}
+            {!assignmentsLoading && assignmentsError && (
+              <p style={{ padding: "12px", color: "#dc2626", fontSize: "12px" }}>{assignmentsError}</p>
+            )}
+            {!assignmentsLoading && !assignmentsError && assignments.length === 0 && (
+              <p style={{ padding: "12px", color: "#aaa", fontSize: "12px" }}>오늘 예정된 배정이 없습니다.</p>
+            )}
+ 
+            {!assignmentsLoading && !assignmentsError && (assignments ?? []).map((a) => {
+              const status = ASSIGNMENT_STATUS_MAP[a.assignmentStatus] ?? { label: a.assignmentStatus, type: "waiting" };
               return (
-                <div key={e.id} className="aw-engineer-item">
-                  <EngineerAvatar name={e.name} profileImageUrl={e.profileImageUrl} />
+                <div key={a.assignmentId} className="aw-engineer-item">
+                  <EngineerAvatar name={a.engineerName} />
                   <div className="aw-engineer-info">
                     <div className="aw-engineer-info__top">
-                      <span className="aw-engineer-name">{e.name} 기사</span>
-                      <span className={`aw-engineer-status aw-engineer-status--${engineerStatus.type}`}>{engineerStatus.label}</span>
+                      <span className="aw-engineer-name">{a.engineerName ?? "미배정"} 기사</span>
+                      <span className={`aw-engineer-status aw-engineer-status--${status.type}`}>{status.label}</span>
                     </div>
-                    <p className="aw-engineer-specialty">{e.specialty} / {e.region}</p>
-                    {!e.isLmsCompleted
-                      ? <p className="aw-engineer-lms-warn"><AlertTriangle size={11} /> LMS 미이수 — 배차 불가</p>
-                      : e.product
-                        ? <>
-                            <p className="aw-engineer-product">{e.product} {e.timeRange}</p>
-                            <div className="aw-progress-bar">
-                              <div className="aw-progress-bar__fill" style={{ width: `${e.progress}%` }} />
-                            </div>
-                            <p className="aw-progress-label">진행률 {e.progress}%</p>
-                          </>
-                        : <p className="aw-engineer-empty">배정 가능한 작업이 없습니다.</p>
-                    }
+                    <p className="aw-engineer-specialty">{a.symptomName}</p>
+                    <p className="aw-engineer-product">
+                      {a.scheduledDate} {a.scheduledTime ?? ""}
+                    </p>
+                    <p className="aw-engineer-empty" style={{ marginTop: 2 }}>{a.visitAddressDetail}</p>
                   </div>
                 </div>
               );
             })}
+ 
             <button className="aw-schedule-btn">
               <Calendar size={14} /> 기사 근무표 보기
             </button>
           </div>
         </aside>
       </div>
-
+ 
       {workDetailModal   && <WorkDetailModal   onClose={() => setWorkDetailModal(null)}   detail={workDetailModal} />}
       {assignDetailModal && (
         <AssignDetailModal
@@ -437,6 +451,7 @@ export default function AgencyWorkReceiptTab() {
                 setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
               })
               .catch(() => {});
+            fetchAssignments();
           }}
         />
       )}
@@ -453,6 +468,7 @@ export default function AgencyWorkReceiptTab() {
                 setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
               })
               .catch(() => {});
+            fetchAssignments();
           }}
         />
       )}

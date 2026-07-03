@@ -334,3 +334,18 @@
   .asp-modal { max-width: 100%; max-height: 92vh; }
   .asp-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+.asp-table-wrap--performance {
+  overflow-x: visible;
+}
+ 
+.asp-table--performance {
+  min-width: 0;
+  width: 100%;
+}
+ 
+.asp-table--performance .asp-table__header,
+.asp-table--performance .asp-table__row {
+  grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
+}
+ 

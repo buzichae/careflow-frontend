@@ -8,7 +8,7 @@ export const signupAgency = (data) =>
   api.post("/api/agencies/signup", data);
 
 export const signupEngineer = (data) =>
-  api.post("/api/engineers/signup", data);
+  api.post("/api/engineer/signup", data);
 
 export const login = (data) =>
   api.post("/api/auth/login", data);

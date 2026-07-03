@@ -60,6 +60,21 @@
   min-height: 72px;
 }
 
+.aep-edit-readonly {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px dashed #e5e5ec;
+  border-radius: 8px;
+  background: #fafafc;
+}
+
+.aep-edit-readonly__hint {
+  font-size: 11px;
+  color: #aaa;
+}
+
 .aep-tag-input {
   border: 1px solid #e5e5ec;
   border-radius: 8px;

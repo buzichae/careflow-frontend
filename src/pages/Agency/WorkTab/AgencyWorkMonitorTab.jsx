@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  ClipboardList, Clock, Wrench, CheckCircle,
+  ClipboardList, Clock, MapPin, Wrench, CheckCircle,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw, Phone,
 } from "lucide-react";
 import "../../../styles/Agency/WorkTab/AgencyWorkMonitorTab.css";
+import "../../../styles/Agency/WorkTab/Agencyworkmonitortab.additions.css"
 import { getInProgressAssignments } from "../../../apis/agencyAssignment";
+import { getAgencyStatusLogs, getAgencyStatusSummary } from "../../../apis/agencyAsStatusLog";
 
 // as_status_logs.to_status ENUM → UI 표현 매핑
 const STATUS_LOG_MAP = {
@@ -93,11 +95,24 @@ export default function AgencyWorkMonitorTab() {
   const [page, setPage]   = useState(0); // 0-based (API 기준)
   const [size, setSize]   = useState(10);
 
-  // ── API 응답 상태 ──
-  const [stats,        setStats]        = useState({ totalCount: 0, movingCount: 0, inProgressCount: 0, completedCount: 0 });
+  // ── API 응답 상태 (진행 중 배정 목록) ──
   const [content,      setContent]      = useState([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages,   setTotalPages]   = useState(0);
+
+  // ── 상태 요약 통계 (GET /api/as-status-logs/agency/status-summary) ──
+  const [summary, setSummary] = useState({
+    waitingCount: 0, engineerDepartedCount: 0, engineerArrivedCount: 0,
+    inProgressCount: 0, completedCount: 0,
+  });
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
+  // ── 전체 상태 변경 이력 (GET /api/as-status-logs/agency) ──
+  const [statusLogs,        setStatusLogs]        = useState([]);
+  const [statusLogsTotal,   setStatusLogsTotal]   = useState(0);
+  const [statusLogsLoading, setStatusLogsLoading] = useState(false);
+  const [statusLogsError,   setStatusLogsError]   = useState(null);
+  const [statusLogsVisible, setStatusLogsVisible] = useState(20); // 더보기용
 
   // ── UI 상태 ──
   const [selectedItem,          setSelectedItem]          = useState(null);
@@ -108,7 +123,7 @@ export default function AgencyWorkMonitorTab() {
   const [loading,               setLoading]               = useState(false);
   const [error,                 setError]                 = useState(null);
 
-  // ── API 호출 ──
+  // ── 진행 중 배정 목록 조회 (좌측 테이블) ──
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -121,7 +136,6 @@ export default function AgencyWorkMonitorTab() {
         brand:           filters.brand           || undefined,
         keyword:         filters.keyword         || undefined,
       });
-      setStats(data.stats ?? { totalCount: 0, movingCount: 0, inProgressCount: 0, completedCount: 0 });
       setContent(data.content ?? []);
       setTotalElements(data.totalElements ?? 0);
       setTotalPages(data.totalPages ?? 0);
@@ -138,17 +152,61 @@ export default function AgencyWorkMonitorTab() {
     }
   }, [page, size, filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── 상태 요약 통계 조회 ──
+  const fetchSummary = useCallback(async () => {
+    setSummaryLoading(true);
+    try {
+      const { data } = await getAgencyStatusSummary();
+      setSummary(data);
+    } catch (err) {
+      console.error("상태 요약 조회 실패:", err);
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, []);
+
+  // ── 전체 상태 변경 이력 조회 ──
+  const fetchStatusLogs = useCallback(async () => {
+    setStatusLogsLoading(true);
+    setStatusLogsError(null);
+    try {
+      const { data } = await getAgencyStatusLogs();
+      setStatusLogs(data.logs ?? []);
+      setStatusLogsTotal(data.totalCount ?? 0);
+    } catch (err) {
+      console.error("상태 변경 이력 조회 실패:", err);
+      setStatusLogsError("상태 변경 이력을 불러오는 데 실패했습니다.");
+    } finally {
+      setStatusLogsLoading(false);
+    }
+  }, []);
+
   // 필터·페이지 변경 시 재조회
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // 자동 갱신 polling
+  useEffect(() => {
+    fetchSummary();
+    fetchStatusLogs();
+  }, [fetchSummary, fetchStatusLogs]);
+
+  // 자동 갱신 polling (배정 목록 + 요약 + 이력 모두 갱신)
   useEffect(() => {
     if (!autoRefresh) return;
-    const timer = setInterval(fetchData, refreshInterval * 1000);
+    const timer = setInterval(() => {
+      fetchData();
+      fetchSummary();
+      fetchStatusLogs();
+    }, refreshInterval * 1000);
     return () => clearInterval(timer);
-  }, [autoRefresh, refreshInterval, fetchData]);
+  }, [autoRefresh, refreshInterval, fetchData, fetchSummary, fetchStatusLogs]);
+
+  const handleRefreshNow = () => {
+    fetchData();
+    fetchSummary();
+    fetchStatusLogs();
+  };
 
   // ── 필터 핸들러 ──
   const handleFilterChange = (key, value) => {
@@ -161,12 +219,13 @@ export default function AgencyWorkMonitorTab() {
     setPage(0);
   };
 
-  // ── 통계 카드 목록 (API stats 기반) ──
+  // ── 통계 카드 목록 (status-summary API 기반, 5개) ──
   const statCards = [
-    { label: "전체 진행 중", value: stats.totalCount,      icon: ClipboardList, color: "purple" },
-    { label: "기사 이동 중", value: stats.movingCount,     icon: Clock,         color: "blue"   },
-    { label: "작업 진행 중", value: stats.inProgressCount, icon: Wrench,        color: "green"  },
-    { label: "완료",         value: stats.completedCount,  icon: CheckCircle,   color: "gray"   },
+    { label: "방문 대기",   value: summary.waitingCount,           icon: ClipboardList, },
+    { label: "기사 이동 중", value: summary.engineerDepartedCount,  icon: Clock,           },
+    { label: "기사 도착",   value: summary.engineerArrivedCount,   icon: MapPin,       },
+    { label: "작업 진행 중", value: summary.inProgressCount,        icon: Wrench,        },
+    { label: "완료",       value: summary.completedCount,          icon: CheckCircle,    },
   ];
 
   // ── 선택 항목 상태 ──
@@ -213,17 +272,17 @@ export default function AgencyWorkMonitorTab() {
             </div>
           )}
         </div>
-        <button className="wmt-refresh-now-btn" onClick={fetchData} title="지금 새로고침">
+        <button className="wmt-refresh-now-btn" onClick={handleRefreshNow} title="지금 새로고침">
           <RefreshCw size={13} />
         </button>
       </div>
 
-      {/* 통계 카드 */}
+      {/* 통계 카드 (상태 요약: GET /api/as-status-logs/agency/status-summary) */}
       <div className="wmt-stats">
         {statCards.map((s) => (
           <div key={s.label} className="wmt-stat-card">
             <div className="wmt-stat-card__text">
-              <p className="wmt-stat-card__value">{s.value}<span>건</span></p>
+              <p className="wmt-stat-card__value">{summaryLoading ? "..." : s.value}<span>건</span></p>
               <p className="wmt-stat-card__label">{s.label}</p>
             </div>
             <div className={`wmt-stat-card__icon wmt-stat-card__icon--${s.color}`}>
@@ -391,20 +450,46 @@ export default function AgencyWorkMonitorTab() {
             </div>
           </div>
 
-          {/* 오늘 진행 요약 */}
+          {/* 상태 변경 이력 (GET /api/as-status-logs/agency) */}
           <div className="wmt-table-meta">
-            <span className="wmt-total">오늘 진행 요약</span>
+            <span className="wmt-total">상태 변경 이력 ({statusLogsTotal}건)</span>
           </div>
-          <div className="wmt-today">
-            <div className="wmt-today__cards">
-              {statCards.map((s) => (
-                <div key={s.label} className="wmt-today__card">
-                  <div className={`wmt-today__icon wmt-today__icon--${s.color}`}><s.icon size={16} /></div>
-                  <p className="wmt-today__label">{s.label}</p>
-                  <p className="wmt-today__value">{s.value}<span>건</span></p>
-                </div>
-              ))}
-            </div>
+
+          {statusLogsError && <p className="wmt-error">{statusLogsError}</p>}
+
+          <div className="wmt-logs-panel">
+            {statusLogsLoading ? (
+              <div className="wmt-loading">이력을 불러오는 중...</div>
+            ) : statusLogs.length === 0 ? (
+              <div className="wmt-empty">상태 변경 이력이 없습니다.</div>
+            ) : (
+              <>
+                {statusLogs.slice(0, statusLogsVisible).map((log) => {
+                  const toStatus = STATUS_LOG_MAP[log.toStatus] ?? { label: log.toStatus, type: "waiting" };
+                  const fromLabel = log.fromStatus ? (STATUS_LOG_MAP[log.fromStatus]?.label ?? log.fromStatus) : "접수";
+                  return (
+                    <div key={log.logId} className="wmt-log-row">
+                      <span className="wmt-log-row__id">#{log.requestId}</span>
+                      <span className="wmt-log-row__transition">
+                        {fromLabel} <span className="wmt-log-row__arrow">→</span>{" "}
+                        <span className={`wmt-badge wmt-badge--${toStatus.type}`}>{toStatus.label}</span>
+                      </span>
+                      <span className="wmt-log-row__memo">{log.memo || "-"}</span>
+                      <span className="wmt-log-row__by">{log.changedByName ?? "-"}</span>
+                      <span className="wmt-log-row__time">{formatUpdatedAt(log.changedAt)}</span>
+                    </div>
+                  );
+                })}
+                {statusLogsVisible < statusLogs.length && (
+                  <button
+                    className="wmt-logs-more-btn"
+                    onClick={() => setStatusLogsVisible(v => v + 20)}
+                  >
+                    더보기 ({statusLogs.length - statusLogsVisible}건 남음)
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -488,23 +573,27 @@ export default function AgencyWorkMonitorTab() {
               </div>
             </div>
 
-            {/* 단계별 로그 */}
-            {selectedItem.logs?.length > 0 && (
-              <div className="wmt-detail__section">
-                <p className="wmt-detail__section-label">단계별 로그</p>
-                <div className="wmt-logs">
-                  {selectedItem.logs.map((log, i) => (
-                    <div key={i} className="wmt-log-item">
-                      <span className="wmt-log-time">{log.createdAt?.slice(11, 16)}</span>
-                      <div>
-                        <p className="wmt-log-label">{STATUS_LOG_MAP[log.toStatus]?.label ?? log.toStatus}</p>
-                        <p className="wmt-log-desc">{log.memo}</p>
+            {/* 단계별 로그 (해당 건의 전체 이력에서 requestId로 필터링) */}
+            {(() => {
+              const itemLogs = statusLogs.filter(l => l.requestId === selectedItem.requestId);
+              if (itemLogs.length === 0) return null;
+              return (
+                <div className="wmt-detail__section">
+                  <p className="wmt-detail__section-label">단계별 로그</p>
+                  <div className="wmt-logs">
+                    {itemLogs.map((log) => (
+                      <div key={log.logId} className="wmt-log-item">
+                        <span className="wmt-log-time">{log.changedAt?.slice(11, 16)}</span>
+                        <div>
+                          <p className="wmt-log-label">{STATUS_LOG_MAP[log.toStatus]?.label ?? log.toStatus}</p>
+                          <p className="wmt-log-desc">{log.memo}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </aside>
         )}
       </div>

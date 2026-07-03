@@ -7,7 +7,7 @@ import {
   Shield,
 } from "lucide-react";
 
-import { getEngineerDashboard, updateAssignmentStatus } from "../../apis/engineers";
+import { getEngineerDashboard, updateAssignmentStatus, getSettlementSummary, getEngineerReviewStats } from "../../apis/engineers";
 import "../../styles/Engineer/Engineerdashboard.css";
 
 const WORK_STATUS_STEPS = [
@@ -40,54 +40,111 @@ export default function EngineerDashboard() {
   });
   const [workStatus, setWorkStatus] = useState(null);
 
-  // ⚠ 응답에 currentAssignmentId/currentRequestId가 없습니다.
-  // "빠른 액션" 버튼을 실제로 누를 수 있으려면 오늘 배정된 작업 중 진행 중인 건의 ID가 필요해요.
-  // 백엔드에 이 필드 추가를 요청하거나, todaySchedules 배열의 첫 항목 ID를 쓰는 임시 방편이 필요합니다.
+  // 백엔드가 명시적으로 계산해서 내려주는 "현재 진행 중(또는 다음 대기) 작업"의 requestId.
+  // 오늘 진행/대기 작업이 하나도 없으면 null로 옴 → 이 경우 빠른 액션 버튼 비활성화.
   const [currentRequestId, setCurrentRequestId] = useState(null);
 
   const [todaySchedule, setTodaySchedule] = useState([]);
+
+  // "개인 실적 및 정산" 패널 데이터 — /api/engineer/settlements/summary 재사용
+  const [performance, setPerformance] = useState({
+    workCount: { total: 0, done: 0, ing: 0, cancel: 0 },
+    settlement: { current: 0, previous: 0 },
+    rating: { avg: 0, total: 0, previous: 0 },
+    period: "",
+  });
+
   const [notices, setNotices] = useState([]);
 
+  // 대시보드 스냅샷 (기사 정보 + 오늘 일정 + 현재 작업 상태 + 알림)
+useEffect(() => {
+  let mounted = true;
+
+  getEngineerDashboard()
+    .then((res) => {
+      if (!mounted) return;
+      const d = res.data;
+
+      setEngineer((prev) => ({
+        ...prev,
+        name: d.engineerName ?? "",
+        skillLevel: d.skillLevel ?? "",
+        isLmsCompleted: d.lmsCompleted ?? false,
+        totalReviews: d.totalReviews ?? 0,
+        profileImageUrl: d.profileImageUrl ?? null,
+      }));
+      setStats({
+        todayCount: d.todayExpectedCount ?? 0,
+        completedTodayCount: d.todayCompletedCount ?? 0,
+        monthlyEarnings: d.thisMonthExpectedEarning ?? 0,
+      });
+      setWorkStatus(d.currentWorkStatus ?? null);
+      setTodaySchedule(d.todaySchedules ?? []);
+      setCurrentRequestId(d.currentRequestId ?? null);
+      setNotices(d.notices ?? []);
+    })
+    .catch((err) => {
+      console.error("대시보드 조회 실패:", err);
+      if (mounted) setError("대시보드 정보를 불러오지 못했습니다.");
+    })
+    .finally(() => {
+      if (mounted) setLoading(false);
+    });
+
+  return () => { mounted = false; };
+}, []);
+
+  // 개인 실적 및 정산 — 별도 API로 이번 달 요약 조회 (engineer 정보 세팅 이후 실행)
   useEffect(() => {
     let mounted = true;
 
-    getEngineerDashboard()
+    const now = new Date();
+    const dateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const dateTo = now.toISOString().slice(0, 10);
+
+    getSettlementSummary(dateFrom, dateTo)
       .then((res) => {
         if (!mounted) return;
-        const d = res.data;
+        const s = res.data;
 
-        setEngineer({
-          name: d.engineerName ?? "",
-          skillLevel: d.skillLevel ?? "",
-          isLmsCompleted: d.lmsCompleted ?? false,
-          avgRating: d.avgRating ?? 0,
-          totalReviews: d.totalReviews ?? 0,
-          profileImageUrl: d.profileImageUrl ?? null,
+        setPerformance({
+          workCount: {
+            total: (s.stats?.completedCount ?? 0) + (s.stats?.inProgressCount ?? 0) + (s.stats?.cancelledCount ?? 0),
+            done: s.stats?.completedCount ?? 0,
+            ing: s.stats?.inProgressCount ?? 0,
+            cancel: s.stats?.cancelledCount ?? 0,
+          },
+          settlement: {
+            current: s.monthlyComparison?.thisMonthNetAmount ?? s.settlementSummary?.engineerNetAmount ?? 0,
+            previous: s.monthlyComparison?.prevMonthNetAmount ?? 0,
+          },
+          rating: {
+            avg: s.monthlyComparison?.thisMonthAvgRating ?? s.stats?.avgRating ?? 0,
+            total: engineer.totalReviews, // 이 API엔 총 리뷰 건수가 없어 대시보드 API 값 재사용
+            previous: s.monthlyComparison?.prevMonthAvgRating ?? 0,
+          },
+          period: `${dateFrom} ~ ${dateTo}`,
         });
-        setStats({
-          todayCount: d.todayExpectedCount ?? 0,
-          completedTodayCount: d.todayCompletedCount ?? 0,
-          monthlyEarnings: d.thisMonthExpectedEarning ?? 0,
-        });
-        setWorkStatus(d.currentWorkStatus ?? null);
-
-        const schedules = d.todaySchedules ?? [];
-        setTodaySchedule(schedules);
-        // 임시 방편: 오늘 일정 중 첫 번째 항목의 requestId를 현재 작업으로 사용
-        setCurrentRequestId(schedules[0]?.requestId ?? null);
-
-        setNotices(d.notices ?? []);
       })
       .catch((err) => {
-        console.error("대시보드 조회 실패:", err);
-        if (mounted) setError("대시보드 정보를 불러오지 못했습니다.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
+        console.error("실적 요약 조회 실패:", err);
       });
 
     return () => { mounted = false; };
-  }, []);
+  }, [engineer.totalReviews]);
+
+  useEffect(() => {
+  let mounted = true;
+  getEngineerReviewStats()
+    .then((res) => {
+      if (!mounted) return;
+      setEngineer((prev) => ({ ...prev, avgRating: res.data.avgRating ?? 0 }));
+    })
+    .catch((err) => {
+      console.error("평점 조회 실패:", err);
+    });
+  return () => { mounted = false; };
+}, []);
 
   const currentStepIdx = WORK_STATUS_STEPS.findIndex((s) => s.key === workStatus);
 
@@ -100,13 +157,13 @@ export default function EngineerDashboard() {
     if (!currentRequestId) return;
 
     const prevStatus = workStatus;
-    setWorkStatus(key);
+    setWorkStatus(key); // 낙관적 업데이트
 
     try {
       await updateAssignmentStatus(currentRequestId, key);
     } catch (err) {
       console.error("작업 상태 변경 실패:", err);
-      setWorkStatus(prevStatus);
+      setWorkStatus(prevStatus); // 실패 시 롤백
       alert("작업 상태 변경에 실패했습니다. 다시 시도해주세요.");
     }
   };
@@ -133,7 +190,12 @@ export default function EngineerDashboard() {
           <div className="ed-stat-card__text">
             <p className="ed-stat-card__value">{stats.todayCount}<span>건</span></p>
             <p className="ed-stat-card__label">오늘 예정 작업</p>
-            <button className="ed-stat-card__link">전체 일정 보기 ›</button>
+            <button
+             className="ed-stat-card__link"
+             onClick={() => navigate("/engineer/schedule")}
+            >
+              전체 일정 보기 ›
+            </button>
           </div>
           <Calendar className="ed-stat-card__watermark" strokeWidth={1} />
         </div>
@@ -149,6 +211,7 @@ export default function EngineerDashboard() {
           <div className="ed-stat-card__text">
             <p className="ed-stat-card__value">{engineer.avgRating}<span className="ed-stat-card__star"> ★</span></p>
             <p className="ed-stat-card__label">평균 고객 평점</p>
+            <p className="ed-stat-card__sub">전체 리뷰 기준</p>
           </div>
           <Star className="ed-stat-card__watermark" strokeWidth={1} />
         </div>
@@ -248,7 +311,12 @@ export default function EngineerDashboard() {
                     <p className="ed-schedule-item__address"><MapPinIcon size={11} /> {item.address}</p>
                   </div>
                   <div className="ed-schedule-item__actions">
-                    <button className="ed-schedule-detail-btn">상세 보기</button>
+                    <button
+                      className="ed-schedule-detail-btn"
+                      onClick={() => navigate("/engineer/work", { state: { assignmentId: item.requestId } })}
+                    >
+                      상세 보기
+                    </button>
                     <button className="ed-schedule-call-btn"><Phone size={14} /></button>
                   </div>
                 </div>
@@ -318,9 +386,42 @@ export default function EngineerDashboard() {
             </div>
           )}
 
-          {/* ⚠ performance(작업건수/정산금액/평점 상세)는 대시보드 응답에 없어서 패널 자체를 제거했습니다.
-              필요하면 별도 API(예: 실적/정산 페이지의 getSettlementSummary)를 여기서도 호출하거나,
-              백엔드에 대시보드 응답에 필드 추가를 요청해야 합니다. */}
+          <div className="ed-panel">
+            <div className="ed-panel__header">
+              <h3 className="ed-panel__title">개인 실적 및 정산</h3>
+              <div className="ed-panel__period">{performance.period} <ChevronDown size={12} /></div>
+            </div>
+            <div className="ed-perf-grid">
+              <div className="ed-perf-card">
+                <p className="ed-perf-card__label">작업 건수</p>
+                <p className="ed-perf-card__value-big">{performance.workCount.total}<span>건</span></p>
+                <div className="ed-perf-card__counts">
+                  <span className="ed-perf-count ed-perf-count--done">완료 {performance.workCount.done}</span>
+                  <span className="ed-perf-count ed-perf-count--ing">진행 {performance.workCount.ing}</span>
+                  <span className="ed-perf-count ed-perf-count--cancel">취소 {performance.workCount.cancel}</span>
+                </div>
+              </div>
+
+              <div className="ed-perf-card">
+                <p className="ed-perf-card__label">정산 금액</p>
+                <p className="ed-perf-card__amount">{performance.settlement.current.toLocaleString()}원</p>
+                <p className="ed-perf-card__sub2">이번 달 예정 금액</p>
+                <p className="ed-perf-card__prev">지난 달 {performance.settlement.previous.toLocaleString()}원</p>
+              </div>
+
+              <div className="ed-perf-card">
+                <p className="ed-perf-card__label">고객 평점</p>
+                <p className="ed-perf-card__rating">{performance.rating.avg}</p>
+                <div className="ed-perf-stars">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <span key={s} className={`ed-star ${s <= Math.floor(performance.rating.avg) ? "ed-star--full" : ""}`}>★</span>
+                  ))}
+                </div>
+                <p className="ed-perf-card__sub2">({performance.rating.total}건)</p>
+                <p className="ed-perf-card__prev">지난 달 {performance.rating.previous}</p>
+              </div>
+            </div>
+          </div>
 
           <div className="ed-panel">
             <div className="ed-panel__header">
