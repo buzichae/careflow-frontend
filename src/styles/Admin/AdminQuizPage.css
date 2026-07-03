@@ -1,0 +1,202 @@
+/* =====================================================
+   AdminQuizPage.css
+   관리자용 OX퀴즈 문항 관리 페이지 스타일
+   기존 Admin.css 클래스(.admin-*)와 함께 사용
+===================================================== */
+
+/* ─────────────────────────────────────────────
+   미등록 계층 경고 배너
+───────────────────────────────────────────── */
+.admin-quiz-warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #92400e;
+  margin-bottom: 16px;
+}
+
+.admin-quiz-warning-banner strong {
+  font-weight: 700;
+  color: #d97706;
+}
+
+/* ─────────────────────────────────────────────
+   매트릭스 셀 내 문항 행
+───────────────────────────────────────────── */
+.admin-quiz-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.admin-quiz-tier--done {
+  background: #eaf3de;
+  color: #16a34a;
+  border: 1px solid #c0e0a8;
+}
+
+.admin-quiz-tier--partial {
+  background: #fef9e0;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.admin-quiz-tier--empty {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border: 1px solid #e5e7eb;
+}
+
+/* 문항 행 */
+.admin-quiz-question-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 8px;
+  background: #f9f9fc;
+  border: 1px solid #f0f0f8;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.admin-quiz-question-num {
+  font-weight: 700;
+  color: #5B4FF5;
+  flex-shrink: 0;
+  min-width: 22px;
+}
+
+.admin-quiz-question-text {
+  flex: 1;
+  color: #444;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* O/X 정답 배지 */
+.admin-quiz-answer-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.admin-quiz-answer-badge--o {
+  background: #eeeaff;
+  color: #5B4FF5;
+}
+
+.admin-quiz-answer-badge--x {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* 문항 액션 버튼 묶음 */
+.admin-quiz-question-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+/* 추가 버튼 */
+.admin-quiz-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 5px 8px;
+  background: none;
+  border: 1px dashed #c8c0f0;
+  border-radius: 8px;
+  color: #8b7fe8;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  justify-content: center;
+  margin-top: 2px;
+  transition: all 0.15s;
+}
+
+.admin-quiz-add-btn:hover {
+  background: #eeeaff;
+  border-color: #5B4FF5;
+  color: #5B4FF5;
+}
+
+/* ─────────────────────────────────────────────
+   문항 등록/수정 모달 — 정답 선택 버튼
+───────────────────────────────────────────── */
+.admin-quiz-answer-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 2px solid #e8e4ff;
+  background: #f9f9fc;
+  color: #888;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.admin-quiz-answer-btn:hover {
+  border-color: #c8c0f0;
+  background: #f3f1ff;
+}
+
+.admin-quiz-answer-btn--selected-o {
+  background: #eeeaff;
+  border-color: #5B4FF5;
+  color: #5B4FF5;
+  box-shadow: 0 0 0 3px rgba(91, 79, 245, 0.12);
+}
+
+.admin-quiz-answer-btn--selected-x {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+/* ─────────────────────────────────────────────
+   기존 admin-btn에 xs 사이즈 추가
+───────────────────────────────────────────── */
+.admin-btn--xs {
+  padding: 3px 7px;
+  font-size: 10px;
+  border-radius: 5px;
+}
+
+/* ─────────────────────────────────────────────
+   상위 탭 (AdminLMSPage 교육콘텐츠 / 교육시험)
+───────────────────────────────────────────── */
+.admin-tabs--main {
+  border-bottom: 2px solid #e8e4ff;
+  margin-bottom: 16px;
+  padding-bottom: 0;
+}
+
+.admin-tab--main {
+  font-size: 15px;
+  padding: 12px 24px;
+}
