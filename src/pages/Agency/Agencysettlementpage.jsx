@@ -11,11 +11,10 @@ import {
   downloadMonthlySettlementCsv,
 } from "../../apis/agencySettlement";
 
-// 백엔드 status 값 → UI 레이블/스타일 매핑
+// 백엔드 status 값 → UI 레이블/스타일 매핑 (APPROVED는 DDL v11에서 제거됨)
 const STATUS_MAP = {
   PAID:     { label: "지급 완료", type: "success"  },
   PENDING:  { label: "지급 대기", type: "ready"    },
-  APPROVED: { label: "승인됨",   type: "approved" },
   DISPUTED: { label: "보류",     type: "hold"     },
 };
 
@@ -173,19 +172,13 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             )}
             {item.status === "PENDING" && (
               <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--approve" onClick={() => onStatusChange(item.settlementId, "APPROVED")}>승인</button>
-                <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onStatusChange(item.settlementId, "DISPUTED")}>보류</button>
-              </div>
-            )}
-            {item.status === "APPROVED" && (
-              <div className="asp-modal__action-row">
                 <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
                 <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onStatusChange(item.settlementId, "DISPUTED")}>보류</button>
               </div>
             )}
             {item.status === "DISPUTED" && (
               <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--approve" onClick={() => onStatusChange(item.settlementId, "APPROVED")}>승인</button>
+                <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
                 <button className="asp-action-btn asp-action-btn--revert" onClick={() => onStatusChange(item.settlementId, "PENDING")}>재검토</button>
               </div>
             )}
