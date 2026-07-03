@@ -36,7 +36,7 @@ const DUMMY_SETTLEMENTS = [
     payMethod: "계좌이체", bankAccount: "국민 123-456-789012",
   },
   {
-    settlementId: 10235, status: "APPROVED", type: "ENGINEER",
+    settlementId: 10235, status: "DISPUTED", type: "ENGINEER",
     engineerId: 2, engineerName: "이서연", engineerPhone: "010-2345-6789",
     periodStart: "2026-06-01", periodEnd: "2026-06-30",
     completedCount: 19, grossAmount: 2580000,
@@ -96,7 +96,7 @@ const DUMMY_SETTLEMENTS = [
     payMethod: "계좌이체", bankAccount: "농협 444-555-666777",
   },
   {
-    settlementId: 10240, status: "APPROVED", type: "ENGINEER",
+    settlementId: 10240, status: "PENDING", type: "ENGINEER",
     engineerId: 6, engineerName: "강시우", engineerPhone: "010-6789-0123",
     periodStart: "2026-06-01", periodEnd: "2026-06-30",
     completedCount: 12, grossAmount: 1580000,
@@ -121,11 +121,10 @@ const DUMMY_SETTLEMENTS = [
   },
 ];
 
-// 백엔드 status 값 → UI 레이블/스타일 매핑
+// 백엔드 status 값 → UI 레이블/스타일 매핑 (APPROVED는 DDL v11에서 제거됨)
 const STATUS_MAP = {
   PAID:     { label: "지급 완료", type: "success"  },
   PENDING:  { label: "지급 대기", type: "ready"    },
-  APPROVED: { label: "승인됨",   type: "approved" },
   DISPUTED: { label: "보류",     type: "hold"     },
 };
 
@@ -287,19 +286,13 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             )}
             {item.status === "PENDING" && (
               <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--approve" onClick={() => onStatusChange(item.settlementId, "APPROVED")}>승인</button>
-                <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onStatusChange(item.settlementId, "DISPUTED")}>보류</button>
-              </div>
-            )}
-            {item.status === "APPROVED" && (
-              <div className="asp-modal__action-row">
                 <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
                 <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onStatusChange(item.settlementId, "DISPUTED")}>보류</button>
               </div>
             )}
             {item.status === "DISPUTED" && (
               <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--approve" onClick={() => onStatusChange(item.settlementId, "APPROVED")}>승인</button>
+                <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
                 <button className="asp-action-btn asp-action-btn--revert" onClick={() => onStatusChange(item.settlementId, "PENDING")}>재검토</button>
               </div>
             )}

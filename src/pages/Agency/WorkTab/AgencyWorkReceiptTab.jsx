@@ -33,8 +33,8 @@ function mapReceiptItem(r) {
     createdAt:   r.createdAt,
     customer:    r.customerName,
     phone:       r.customerPhone,
-    productName: "-",                         // 목록 API 미포함 → 상세 API에서 확인
-    modelNo:     "-",
+    productName: r.brand ?? "-",
+    modelNo:     r.modelName ?? "-",
     symptomDesc: r.symptomDesc,
     visitDate:   r.scheduledDate,
     startTime:   r.scheduledTime ?? "-",
