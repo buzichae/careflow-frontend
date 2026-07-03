@@ -1,0 +1,197 @@
+/* ============================================================
+   기사 프로필 수정 폼 스타일
+   기존 AgencyEngineerPage.css 하단에 그대로 붙여넣어 사용하세요.
+   (기존 aep-* 클래스 네이밍 규칙과 색상 토큰을 그대로 따릅니다)
+   ============================================================ */
+
+.aep-detail__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aep-edit-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #e3e0fb;
+  background: #f8f7ff;
+  color: #5B4FF5;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.aep-edit-toggle-btn:hover {
+  background: #efedff;
+}
+
+.aep-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 12px;
+}
+
+.aep-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aep-edit-input {
+  border: 1px solid #e5e5ec;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1a1a2e;
+  font-family: inherit;
+  background: #fff;
+}
+.aep-edit-input:focus {
+  outline: none;
+  border-color: #5B4FF5;
+  box-shadow: 0 0 0 3px rgba(91, 79, 245, 0.12);
+}
+
+.aep-edit-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.aep-tag-input {
+  border: 1px solid #e5e5ec;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+}
+
+.aep-tag-input__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.aep-tag-input__empty {
+  font-size: 12px;
+  color: #aaa;
+  padding: 2px 0;
+}
+
+.aep-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0eefe;
+  color: #5B4FF5;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.aep-tag-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #5B4FF5;
+  cursor: pointer;
+  padding: 0;
+}
+
+.aep-tag-input__add {
+  display: flex;
+  gap: 6px;
+}
+.aep-tag-input__add input {
+  flex: 1;
+  border: 1px solid #e5e5ec;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.aep-tag-input__add input:focus {
+  outline: none;
+  border-color: #5B4FF5;
+}
+.aep-tag-input__add button {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border: none;
+  background: #5B4FF5;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.aep-tag-input__add button:hover {
+  background: #4a3fe0;
+}
+
+.aep-edit-error {
+  font-size: 12px;
+  color: #e0483e;
+  background: #fdeceb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 0;
+}
+
+.aep-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.aep-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.aep-edit-btn--cancel {
+  background: #fff;
+  border-color: #e5e5ec;
+  color: #666;
+}
+.aep-edit-btn--cancel:hover {
+  background: #f5f5f7;
+}
+
+.aep-edit-btn--save {
+  background: #5B4FF5;
+  color: #fff;
+}
+.aep-edit-btn--save:hover {
+  background: #4a3fe0;
+}
+.aep-edit-btn--save:disabled,
+.aep-edit-btn--cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.aep-spin {
+  animation: aep-spin-anim 0.8s linear infinite;
+}
+@keyframes aep-spin-anim {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

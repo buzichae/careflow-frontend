@@ -3,22 +3,34 @@ import {
   Users, Circle, BookCheck, ClipboardList, Star,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw,
-  Phone, Mail, Building2, X, UserPlus,
+  Phone, Mail, Building2, X, UserPlus, Pencil, Plus, Save, Loader2,
 } from "lucide-react";
 import "../../styles/Agency/agency/AgencyEngineerPage.css";
+import "../../styles/Agency/agency/Agencyengineerpage.edit form.css"
 
 const BASE_URL = "http://localhost:8080";
 
-async function apiFetch(path) {
+async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...(options.headers || {}),
     },
   });
   if (res.status === 204) return [];
-  if (!res.ok) throw new Error(`${res.status}`);
+  if (!res.ok) {
+    let message = `${res.status}`;
+    try {
+      const body = await res.json();
+      message = body?.message ?? message;
+    } catch {
+      /* 응답 본문이 JSON이 아닌 경우 무시 */
+    }
+    throw new Error(message);
+  }
   return res.json();
 }
 
@@ -50,6 +62,69 @@ function Avatar({ name, profileImg, size = 36 }) {
   return (
     <div className="aep-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
       {profileImg ? <img src={profileImg} alt={name} /> : <span>{name?.charAt(0)}</span>}
+    </div>
+  );
+}
+
+// ── 태그(칩) 입력 컴포넌트: 전문 브랜드 / 활동 지역 ID 편집용 ──────────
+function TagInput({ label, values, onChange, placeholder, parseValue }) {
+  const [draft, setDraft] = useState("");
+
+  const addTag = () => {
+    const raw = draft.trim();
+    if (!raw) return;
+    const parsed = parseValue ? parseValue(raw) : raw;
+    if (parsed === null || parsed === undefined || parsed === "") {
+      setDraft("");
+      return;
+    }
+    if (values.some(v => String(v) === String(parsed))) {
+      setDraft("");
+      return;
+    }
+    onChange([...values, parsed]);
+    setDraft("");
+  };
+
+  const removeTag = (idx) => {
+    onChange(values.filter((_, i) => i !== idx));
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTag();
+    }
+  };
+
+  return (
+    <div className="aep-edit-field">
+      <span className="aep-detail__info-label">{label}</span>
+      <div className="aep-tag-input">
+        <div className="aep-tag-input__tags">
+          {values.length === 0 && (
+            <span className="aep-tag-input__empty">등록된 항목이 없습니다</span>
+          )}
+          {values.map((v, idx) => (
+            <span key={`${v}-${idx}`} className="aep-tag-chip">
+              {v}
+              <button type="button" onClick={() => removeTag(idx)} aria-label={`${v} 삭제`}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="aep-tag-input__add">
+          <input
+            type="text"
+            value={draft}
+            placeholder={placeholder}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button type="button" onClick={addTag}><Plus size={13} /> 추가</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -182,6 +257,150 @@ function ScheduleCalendar({ engineerUserId }) {
   );
 }
 
+// ── 기본 정보 편집 폼 ────────────────────────────
+function ProfileEditForm({ initialData, onCancel, onSaved }) {
+  const [form, setForm] = useState({
+    phone: initialData.phone ?? "",
+    email: initialData.email ?? "",
+    expertBrands: Array.isArray(initialData.expertBrands) ? [...initialData.expertBrands] : [],
+    serviceRegionIds: Array.isArray(initialData.serviceRegionIds) ? [...initialData.serviceRegionIds] : [],
+    careerStartedYear: initialData.careerStartedYear ?? "",
+    skillLevel: initialData.skillLevel ?? "BEGINNER",
+    introduction: initialData.introduction ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const updateField = (key, value) => setForm(f => ({ ...f, [key]: value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      // 참고: 브랜드/지역을 모두 삭제하려는 의도로 빈 배열을 보내는 경우,
+      // 백엔드가 `!isEmpty()` 조건으로 빈 배열을 무시하도록 구현되어 있다면
+      // 이 요청은 서버에서 조용히 무시될 수 있습니다. 백엔드 로직 확인이 필요합니다.
+      const payload = {
+        phone: form.phone,
+        email: form.email,
+        expertBrands: form.expertBrands,
+        serviceRegionIds: form.serviceRegionIds,
+        careerStartedYear: form.careerStartedYear ? Number(form.careerStartedYear) : null,
+        skillLevel: form.skillLevel,
+        introduction: form.introduction,
+      };
+
+      const updated = await apiFetch(
+        `/api/agency/engineers/${initialData.engineerUserId}/profile`,
+        { method: "PUT", body: JSON.stringify(payload) }
+      );
+
+      onSaved(updated ?? { ...initialData, ...payload });
+    } catch (err) {
+      console.error(err);
+      setError(err.message === "404" || err.message === "403"
+        ? "수정 권한이 없거나 대상을 찾을 수 없습니다."
+        : "저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form className="aep-edit-form" onSubmit={handleSubmit}>
+      <div className="aep-edit-field">
+        <span className="aep-detail__info-label">연락처</span>
+        <input
+          className="aep-edit-input"
+          type="tel"
+          value={form.phone}
+          onChange={e => updateField("phone", e.target.value)}
+          placeholder="010-0000-0000"
+        />
+      </div>
+
+      <div className="aep-edit-field">
+        <span className="aep-detail__info-label">이메일</span>
+        <input
+          className="aep-edit-input"
+          type="email"
+          value={form.email}
+          onChange={e => updateField("email", e.target.value)}
+          placeholder="engineer@example.com"
+        />
+      </div>
+
+      <TagInput
+        label="전문 브랜드"
+        values={form.expertBrands}
+        onChange={v => updateField("expertBrands", v)}
+        placeholder="브랜드명 입력 후 Enter"
+      />
+
+      <TagInput
+        label="활동 지역 ID"
+        values={form.serviceRegionIds}
+        onChange={v => updateField("serviceRegionIds", v)}
+        placeholder="지역 ID 입력 후 Enter"
+        parseValue={(raw) => {
+          const n = Number(raw);
+          return Number.isFinite(n) ? n : null;
+        }}
+      />
+
+      <div className="aep-edit-field">
+        <span className="aep-detail__info-label">경력 시작 연도</span>
+        <input
+          className="aep-edit-input"
+          type="number"
+          min="1980"
+          max={new Date().getFullYear()}
+          value={form.careerStartedYear}
+          onChange={e => updateField("careerStartedYear", e.target.value)}
+          placeholder="예: 2015"
+        />
+      </div>
+
+      <div className="aep-edit-field">
+        <span className="aep-detail__info-label">기술 등급</span>
+        <select
+          className="aep-edit-input"
+          value={form.skillLevel}
+          onChange={e => updateField("skillLevel", e.target.value)}
+        >
+          {Object.entries(SKILL_MAP).map(([key, v]) => (
+            <option key={key} value={key}>{v.label} ({v.en})</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="aep-edit-field">
+        <span className="aep-detail__info-label">자기 소개</span>
+        <textarea
+          className="aep-edit-input aep-edit-textarea"
+          rows={4}
+          value={form.introduction}
+          onChange={e => updateField("introduction", e.target.value)}
+          placeholder="기사 소개를 입력하세요"
+        />
+      </div>
+
+      {error && <p className="aep-edit-error">{error}</p>}
+
+      <div className="aep-edit-actions">
+        <button type="button" className="aep-edit-btn aep-edit-btn--cancel" onClick={onCancel} disabled={saving}>
+          취소
+        </button>
+        <button type="submit" className="aep-edit-btn aep-edit-btn--save" disabled={saving}>
+          {saving ? <Loader2 size={14} className="aep-spin" /> : <Save size={14} />}
+          {saving ? "저장 중..." : "저장"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function AgencyEngineerPage() {
   // ── 11번: 기사 목록 ──────────────────────────
   const [engineerList, setEngineerList] = useState([]);
@@ -192,6 +411,9 @@ export default function AgencyEngineerPage() {
   const [detailData, setDetailData]       = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailTab, setDetailTab]         = useState("기본 정보");
+
+  // ── 13번: 기사 프로필 수정 ─────────────────────
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // ── 필터 / 페이지 ────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -211,6 +433,7 @@ export default function AgencyEngineerPage() {
   const handleSelectEngineer = useCallback(async (engineer) => {
     setSelectedItem(engineer);
     setDetailTab("기본 정보");
+    setIsEditMode(false);
     setDetailLoading(true);
     try {
       const data = await apiFetch(`/api/agency/engineers/${engineer.engineerUserId}/profile`);
@@ -222,6 +445,13 @@ export default function AgencyEngineerPage() {
       setDetailLoading(false);
     }
   }, []);
+
+  const handleProfileSaved = useCallback((updated) => {
+    setDetailData(prev => ({ ...prev, ...updated }));
+    setIsEditMode(false);
+    // 목록의 요약 정보(전문 가전 등)도 최신 상태를 반영하도록 새로고침
+    fetchEngineers();
+  }, [fetchEngineers]);
 
   const filteredList = engineerList.filter(e =>
     !searchQuery ||
@@ -390,9 +620,19 @@ export default function AgencyEngineerPage() {
           <aside className="aep-detail">
             <div className="aep-detail__header">
               <span className="aep-detail__title">기사 상세 정보</span>
-              <button className="aep-detail__close" onClick={() => { setSelectedItem(null); setDetailData(null); }}>
-                <X size={16} />
-              </button>
+              <div className="aep-detail__header-actions">
+                {detailTab === "기본 정보" && detailData && !isEditMode && (
+                  <button className="aep-edit-toggle-btn" onClick={() => setIsEditMode(true)}>
+                    <Pencil size={13} /> 수정
+                  </button>
+                )}
+                <button
+                  className="aep-detail__close"
+                  onClick={() => { setSelectedItem(null); setDetailData(null); setIsEditMode(false); }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             <div className="aep-detail__profile">
@@ -422,7 +662,7 @@ export default function AgencyEngineerPage() {
                 <button
                   key={tab}
                   className={`aep-detail__tab ${detailTab === tab ? "aep-detail__tab--active" : ""}`}
-                  onClick={() => setDetailTab(tab)}
+                  onClick={() => { setDetailTab(tab); setIsEditMode(false); }}
                 >
                   {tab}
                 </button>
@@ -434,77 +674,85 @@ export default function AgencyEngineerPage() {
                 detailLoading ? (
                   <p style={{ color: "#aaa", fontSize: "13px", padding: "12px" }}>로딩 중...</p>
                 ) : detailData ? (
-                  <div className="aep-detail__info">
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">연락처</span>
-                      <span className="aep-detail__info-value">{detailData.phone} <Phone size={11} /></span>
-                    </div>
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">이메일</span>
-                      <span className="aep-detail__info-value">{detailData.email} <Mail size={11} /></span>
-                    </div>
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">전문 가전</span>
-                      <span className="aep-detail__info-value">{detailData.categoryName ?? "-"}</span>
-                    </div>
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">전문 브랜드</span>
-                      <span className="aep-detail__info-value">{detailData.expertBrands?.join(", ") ?? "-"}</span>
-                    </div>
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">활동 지역 ID</span>
-                      <span className="aep-detail__info-value">{detailData.serviceRegionIds?.join(", ") ?? "-"}</span>
-                    </div>
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">경력 시작</span>
-                      <span className="aep-detail__info-value">
-                        {detailData.careerStartedYear}년 (경력 {getCareerYears(detailData.careerStartedYear)})
-                      </span>
-                    </div>
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">기술 등급</span>
-                      <span className="aep-detail__info-value">
-                        {SKILL_MAP[detailData.skillLevel]?.label ?? detailData.skillLevel}
-                      </span>
-                    </div>
-                    {detailData.introduction && (
+                  isEditMode ? (
+                    <ProfileEditForm
+                      initialData={detailData}
+                      onCancel={() => setIsEditMode(false)}
+                      onSaved={handleProfileSaved}
+                    />
+                  ) : (
+                    <div className="aep-detail__info">
                       <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">자기 소개</span>
-                        <span className="aep-detail__info-value">{detailData.introduction}</span>
+                        <span className="aep-detail__info-label">연락처</span>
+                        <span className="aep-detail__info-value">{detailData.phone} <Phone size={11} /></span>
                       </div>
-                    )}
-                    <div className="aep-detail__info-row">
-                      <span className="aep-detail__info-label">가입일</span>
-                      <span className="aep-detail__info-value">{detailData.createdAt?.slice(0, 10)}</span>
-                    </div>
-
-                    <div className="aep-detail__lms-section">
-                      <p className="aep-detail__section-label">LMS 교육 상태</p>
-                      <div className="aep-detail__lms-row">
-                        {detailData.isLmsCompleted
-                          ? <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>
-                          : <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>
-                        }
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">이메일</span>
+                        <span className="aep-detail__info-value">{detailData.email} <Mail size={11} /></span>
                       </div>
-                      {!detailData.isLmsCompleted && (
-                        <p className="aep-detail__lms-warn">⚠ LMS 미이수 — 배차 불가 상태</p>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">전문 가전</span>
+                        <span className="aep-detail__info-value">{detailData.categoryName ?? "-"}</span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">전문 브랜드</span>
+                        <span className="aep-detail__info-value">{detailData.expertBrands?.join(", ") ?? "-"}</span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">활동 지역 ID</span>
+                        <span className="aep-detail__info-value">{detailData.serviceRegionIds?.join(", ") ?? "-"}</span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">경력 시작</span>
+                        <span className="aep-detail__info-value">
+                          {detailData.careerStartedYear}년 (경력 {getCareerYears(detailData.careerStartedYear)})
+                        </span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">기술 등급</span>
+                        <span className="aep-detail__info-value">
+                          {SKILL_MAP[detailData.skillLevel]?.label ?? detailData.skillLevel}
+                        </span>
+                      </div>
+                      {detailData.introduction && (
+                        <div className="aep-detail__info-row">
+                          <span className="aep-detail__info-label">자기 소개</span>
+                          <span className="aep-detail__info-value">{detailData.introduction}</span>
+                        </div>
                       )}
-                    </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">가입일</span>
+                        <span className="aep-detail__info-value">{detailData.createdAt?.slice(0, 10)}</span>
+                      </div>
 
-                    <div className="aep-detail__month-section">
-                      <p className="aep-detail__section-label">평점 현황</p>
-                      <div className="aep-detail__month-cards">
-                        <div className="aep-detail__month-card">
-                          <p className="aep-detail__month-label">평균 평점</p>
-                          <p className="aep-detail__month-value">{detailData.avgRating ?? "-"}</p>
+                      <div className="aep-detail__lms-section">
+                        <p className="aep-detail__section-label">LMS 교육 상태</p>
+                        <div className="aep-detail__lms-row">
+                          {detailData.isLmsCompleted
+                            ? <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>
+                            : <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>
+                          }
                         </div>
-                        <div className="aep-detail__month-card">
-                          <p className="aep-detail__month-label">누적 리뷰</p>
-                          <p className="aep-detail__month-value">{detailData.totalReviews ?? 0}건</p>
+                        {!detailData.isLmsCompleted && (
+                          <p className="aep-detail__lms-warn">⚠ LMS 미이수 — 배차 불가 상태</p>
+                        )}
+                      </div>
+
+                      <div className="aep-detail__month-section">
+                        <p className="aep-detail__section-label">평점 현황</p>
+                        <div className="aep-detail__month-cards">
+                          <div className="aep-detail__month-card">
+                            <p className="aep-detail__month-label">평균 평점</p>
+                            <p className="aep-detail__month-value">{detailData.avgRating ?? "-"}</p>
+                          </div>
+                          <div className="aep-detail__month-card">
+                            <p className="aep-detail__month-label">누적 리뷰</p>
+                            <p className="aep-detail__month-value">{detailData.totalReviews ?? 0}건</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )
                 ) : (
                   <p style={{ color: "#aaa", fontSize: "13px", padding: "12px" }}>상세 정보를 불러올 수 없습니다.</p>
                 )

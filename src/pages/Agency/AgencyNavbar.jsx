@@ -2,16 +2,30 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../apis/auth";
+import { getAgencyMe } from "../../apis/agency"; 
 import "../../styles/Agency/AgencyNavbar.css"
 
 export default function AgencyNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
+  const [agency, setAgency] = useState({ name: "", role: "" });
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  // TODO: API - GET /api/agency/me
-  const agency = { name: "퀵케어 서비스", role: "대행사 관리자" };
+  useEffect(() => {
+  async function fetchAgency() {
+    try {
+      const data = await getAgencyMe();
+      setAgency({
+        name: data.agencyName,
+        role: "대행사 관리자", // 응답에 role 필드가 없으므로 고정 텍스트 사용
+      });
+    } catch (err) {
+      console.error("대행사 정보를 불러오지 못했습니다.", err);
+    }
+  }
+  fetchAgency();
+}, []);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -23,7 +37,6 @@ export default function AgencyNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -31,15 +44,15 @@ export default function AgencyNavbar() {
     localStorage.removeItem("token");
     navigate("/auth/login");
   };
+
   return (
     <div className="agency-navbar">
       <div className="agency-navbar__actions">
-       
         <div className="agency-navbar__profile-wrap" ref={dropdownRef}>
           <button className="agency-navbar__profile" onClick={() => setDropdownOpen(p => !p)}>
             <div className="agency-navbar__avatar">🏢</div>
             <div>
-              <p className="agency-navbar__name">{agency.name}</p>
+              <p className="agency-navbar__name">{agency.name || "불러오는 중..."}</p>
               <p className="agency-navbar__role">{agency.role}</p>
             </div>
             {dropdownOpen ? <ChevronUp size={14} color="#aaa" /> : <ChevronDown size={14} color="#aaa" />}

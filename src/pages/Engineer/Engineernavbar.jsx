@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
-import { logout } from "../../apis/auth";
+import { logout,getUserInfo  } from "../../apis/auth";
 
 import "../../styles/Engineer/EngineerNavbar.css";
 
