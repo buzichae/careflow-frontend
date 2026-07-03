@@ -329,3 +329,91 @@
     background: #5B4FF5;
     color: #fff;
 }
+
+/* =====================================================
+   AgencyLmsPage.css — OX퀴즈 섹션 추가 스타일
+   기존 AgencyLmsPage.css 파일 하단에 추가
+===================================================== */
+
+/* ─────────────────────────────────────────────
+   상세 패널 섹션 구분
+───────────────────────────────────────────── */
+.agency-lms__section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f8;
+    margin-top: 4px;
+}
+
+.agency-lms__section:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+}
+
+.agency-lms__section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+/* ─────────────────────────────────────────────
+   OX퀴즈 합격 여부 요약
+───────────────────────────────────────────── */
+.agency-lms__quiz-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+/* ─────────────────────────────────────────────
+   상세 패널 테이블 컬럼 너비 고정
+  (이수 일시가 박스 밖으로 넘어가지 않도록)
+───────────────────────────────────────────── */
+.agency-lms__detail .agency-lms__table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.agency-lms__detail .agency-lms__table th:nth-child(1),
+.agency-lms__detail .agency-lms__table td:nth-child(1) {
+    width: 50%;
+}
+
+.agency-lms__detail .agency-lms__table th:nth-child(2),
+.agency-lms__detail .agency-lms__table td:nth-child(2) {
+    width: 20%;
+    white-space: nowrap;
+}
+
+.agency-lms__detail .agency-lms__table th:nth-child(3),
+.agency-lms__detail .agency-lms__table td:nth-child(3) {
+    width: 30%;
+    white-space: nowrap;
+}
+
+/* OX퀴즈 응시 이력 테이블 (3컬럼) */
+.agency-lms__section .agency-lms__table th:nth-child(1),
+.agency-lms__section .agency-lms__table td:nth-child(1) {
+    width: 20%;
+}
+
+.agency-lms__section .agency-lms__table th:nth-child(2),
+.agency-lms__section .agency-lms__table td:nth-child(2) {
+    width: 30%;
+}
+
+.agency-lms__section .agency-lms__table th:nth-child(3),
+.agency-lms__section .agency-lms__table td:nth-child(3) {
+    width: 50%;
+    white-space: nowrap;
+}
