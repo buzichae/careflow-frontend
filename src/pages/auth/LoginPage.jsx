@@ -135,7 +135,7 @@ export default function LoginPage() {
                     />
                     로그인 상태 유지
                   </label>
-                  <button type="button" className="auth-link">
+                  <button type="button" className="auth-link" onClick={() => navigate("/auth/forgot-password")}>
                     비밀번호 찾기
                   </button>
                 </div>
