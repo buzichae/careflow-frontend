@@ -1,43 +1,21 @@
-import { useState } from "react";
-import { X, Shield } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import api from "../../apis/axiosInstance";
 import "../../styles/Admin/Admin.css";
 
-/* ── 목 데이터 ── */
-const mockAsStat = [
-  { status: "접수",     count: 23, color: "orange" },
-  { status: "배정 완료", count: 41, color: "blue"   },
-  { status: "작업 중",  count: 15, color: "purple"  },
-  { status: "완료",    count: 312, color: "green"   },
-  { status: "취소",    count:  8,  color: "gray"    },
-];
-
-const mockAsDetails = [
-  { id: "AS-2026-0891", customer: "김철수", appliance: "냉장고", symptom: "냉각 불량",   region: "서울", status: "접수",     date: "2026.06.25" },
-  { id: "AS-2026-0890", customer: "이영희", appliance: "세탁기", symptom: "소음 발생",   region: "경기", status: "배정 완료", date: "2026.06.25" },
-  { id: "AS-2026-0889", customer: "박민준", appliance: "에어컨", symptom: "냉방 효율 저하", region: "인천", status: "작업 중",  date: "2026.06.24" },
-  { id: "AS-2026-0888", customer: "최수연", appliance: "TV",    symptom: "화면 깜빡임", region: "서울", status: "완료",    date: "2026.06.24" },
-  { id: "AS-2026-0887", customer: "정다은", appliance: "건조기", symptom: "건조 미흡",   region: "부산", status: "취소",    date: "2026.06.23" },
-];
-
-const STATUS_BADGE = {
-  "접수":     "orange",
-  "배정 완료": "blue",
-  "작업 중":  "purple",
-  "완료":     "green",
-  "취소":     "gray",
+/* ── 상태 한글 매핑 ── */
+const STATUS_MAP = {
+  PENDING:           { label: "접수",      color: "orange" },
+  AGENCY_RECEIVED:   { label: "대행사 접수", color: "blue"   },
+  ASSIGNED:          { label: "배정 완료",  color: "blue"   },
+  ACCEPTED:          { label: "수락",      color: "purple" },
+  ENGINEER_DEPARTED: { label: "출발",      color: "purple" },
+  ENGINEER_ARRIVED:  { label: "도착",      color: "purple" },
+  IN_PROGRESS:       { label: "작업 중",   color: "purple" },
+  COMPLETED:         { label: "완료",      color: "green"  },
+  PAID:              { label: "결제 완료",  color: "green"  },
+  CANCELLED:         { label: "취소",      color: "gray"   },
 };
-
-const mockRepairCosts = [
-  { id: 1, category: "냉장고", symptom: "냉각 불량",     avgCost: 85000  },
-  { id: 2, category: "냉장고", symptom: "소음 발생",     avgCost: 45000  },
-  { id: 3, category: "세탁기", symptom: "탈수 불량",     avgCost: 72000  },
-  { id: 4, category: "세탁기", symptom: "소음 발생",     avgCost: 38000  },
-  { id: 5, category: "에어컨", symptom: "냉방 효율 저하",  avgCost: 95000  },
-  { id: 6, category: "TV",    symptom: "화면 깜빡임",    avgCost: 120000 },
-  { id: 7, category: "건조기", symptom: "건조 미흡",     avgCost: 65000  },
-];
-
-const mockBadgeCriteria = { minGrade: "B", minScore: 75 };
 
 function CostEditModal({ item, onClose, onSave }) {
   const [cost, setCost] = useState(item.avgCost);
@@ -49,7 +27,7 @@ function CostEditModal({ item, onClose, onSave }) {
           <button className="admin-modal__close" onClick={onClose}><X size={18} /></button>
         </div>
         <p style={{ fontSize: 13, color: "#555", marginBottom: 16 }}>
-          <strong>{item.category}</strong> · {item.symptom}
+          <strong>{item.categoryName}</strong> · {item.symptom}
         </p>
         <div className="admin-modal__field">
           <label className="admin-modal__label">예상 평균 비용 (원)</label>
@@ -74,35 +52,125 @@ function CostEditModal({ item, onClose, onSave }) {
 
 export default function AdminServicePage() {
   const [tab, setTab] = useState("as");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [regionFilter, setRegionFilter] = useState("ALL");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo]   = useState("");
-  const [repairCosts, setRepairCosts] = useState(mockRepairCosts);
-  const [editCost, setEditCost] = useState(null);
-  const [badge, setBadge] = useState(mockBadgeCriteria);
-  const [badgeEdit, setBadgeEdit] = useState(false);
-  const [badgeDraft, setBadgeDraft] = useState(mockBadgeCriteria);
 
-  const filteredAs = mockAsDetails.filter((a) => {
-    const matchStatus = statusFilter === "ALL" || a.status === statusFilter;
-    const matchRegion = regionFilter === "ALL" || a.region === regionFilter;
-    const d = a.date.replaceAll(".", "-");
-    const matchFrom = !dateFrom || d >= dateFrom;
-    const matchTo   = !dateTo   || d <= dateTo;
-    return matchStatus && matchRegion && matchFrom && matchTo;
-  });
+  /* ── A/S 상태 ── */
+  const [stats, setStats] = useState({});
+  const [asItems, setAsItems] = useState([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(0);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [asLoading, setAsLoading] = useState(false);
+
+  /* ── 수리 비용 상태 ── */
+  const [repairCosts, setRepairCosts] = useState([]);
+  const [editCost, setEditCost] = useState(null);
+  const [costLoading, setCostLoading] = useState(false);
+
+  /* ── 인증 뱃지 상태 ── */
+  const [badge, setBadge] = useState({ minGrade: "B", minScore: 75 });
+  const [badgeEdit, setBadgeEdit] = useState(false);
+  const [badgeDraft, setBadgeDraft] = useState({ minGrade: "B", minScore: 75 });
+  const [badgeLoading, setBadgeLoading] = useState(false);
+
+  /* ── A/S 데이터 fetch ── */
+  const fetchAs = useCallback(async () => {
+    setAsLoading(true);
+    try {
+      const params = { page, size: 10 };
+      if (statusFilter) params.status = statusFilter;
+      if (regionFilter) params.region = regionFilter;
+      if (dateFrom) params.from = dateFrom;
+      if (dateTo) params.to = dateTo;
+
+      const res = await api.get("/api/admin/as-requests", { params });
+      setStats(res.data.stats || {});
+      setAsItems(res.data.content || []);
+      setTotalElements(res.data.totalElements || 0);
+      setTotalPages(res.data.totalPages || 0);
+    } catch (e) {
+      console.error("A/S 내역 조회 실패", e);
+    } finally {
+      setAsLoading(false);
+    }
+  }, [page, statusFilter, regionFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (tab === "as") fetchAs();
+  }, [tab, fetchAs]);
+
+  /* ── 수리 비용 fetch ── */
+  useEffect(() => {
+    if (tab !== "cost") return;
+    setCostLoading(true);
+    api.get("/api/admin/repair-costs")
+      .then((res) => setRepairCosts(res.data))
+      .catch((e) => console.error("수리 비용 조회 실패", e))
+      .finally(() => setCostLoading(false));
+  }, [tab]);
+
+  /* ── 뱃지 기준 fetch ── */
+  useEffect(() => {
+    if (tab !== "badge") return;
+    setBadgeLoading(true);
+    api.get("/api/admin/badge-criteria")
+      .then((res) => {
+        setBadge(res.data);
+        setBadgeDraft(res.data);
+      })
+      .catch((e) => console.error("뱃지 기준 조회 실패", e))
+      .finally(() => setBadgeLoading(false));
+  }, [tab]);
+
+  /* ── 수리 비용 저장 ── */
+  const handleSaveCost = async (newCost) => {
+    try {
+      const res = await api.patch(`/api/admin/repair-costs/${editCost.id}`, { avgCost: newCost });
+      setRepairCosts((prev) => prev.map((c) => c.id === editCost.id ? res.data : c));
+      setEditCost(null);
+    } catch (e) {
+      console.error("수리 비용 수정 실패", e);
+      alert("수정에 실패했습니다.");
+    }
+  };
+
+  /* ── 뱃지 기준 저장 ── */
+  const handleSaveBadge = async () => {
+    try {
+      await api.put("/api/admin/badge-criteria", badgeDraft);
+      setBadge(badgeDraft);
+      setBadgeEdit(false);
+    } catch (e) {
+      console.error("뱃지 기준 저장 실패", e);
+      alert("저장에 실패했습니다.");
+    }
+  };
+
+  /* ── 필터 초기화 ── */
+  const resetFilters = () => {
+    setStatusFilter("");
+    setRegionFilter("");
+    setDateFrom("");
+    setDateTo("");
+    setPage(0);
+  };
+
+  /* ── 통계 카드용 배열 ── */
+  const statCards = Object.entries(STATUS_MAP).map(([key, { label, color }]) => ({
+    key, label, color, count: stats[key] ?? 0,
+  }));
 
   return (
     <div className="admin-page">
-
-      {/* 탭 */}
       <div className="admin-section">
         <div className="admin-tabs">
           {[
-            { key: "as",     label: "전체 A/S 처리 내역" },
-            { key: "cost",   label: "수리 비용 가이드" },
-            { key: "badge",  label: "인증 뱃지 기준" },
+            { key: "as",    label: "전체 A/S 처리 내역" },
+            { key: "cost",  label: "수리 비용 가이드" },
+            { key: "badge", label: "인증 뱃지 기준" },
           ].map((t) => (
             <button
               key={t.key}
@@ -118,12 +186,15 @@ export default function AdminServicePage() {
         {tab === "as" && (
           <div className="admin-section__body">
             {/* 통계 요약 */}
-            <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-              {mockAsStat.map((s) => (
-                <div key={s.status} className="admin-stat-card" style={{ flex: 1, minWidth: 0 }}>
-                  <p className="admin-stat-card__num">{s.count}<span style={{ fontSize: 14, fontWeight: 400, color: "#aaa" }}>건</span></p>
+            <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+              {statCards.map((s) => (
+                <div key={s.key} className="admin-stat-card" style={{ flex: "1 1 100px", minWidth: 0 }}>
+                  <p className="admin-stat-card__num">
+                    {s.count}
+                    <span style={{ fontSize: 14, fontWeight: 400, color: "#aaa" }}>건</span>
+                  </p>
                   <p className="admin-stat-card__label">
-                    <span className={`admin-badge admin-badge--${s.color}`}>{s.status}</span>
+                    <span className={`admin-badge admin-badge--${s.color}`}>{s.label}</span>
                   </p>
                 </div>
               ))}
@@ -131,28 +202,30 @@ export default function AdminServicePage() {
 
             {/* 필터 */}
             <div className="admin-filter-bar" style={{ flexWrap: "wrap", gap: 8 }}>
-              <select className="admin-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="ALL">상태 전체</option>
-                <option value="접수">접수</option>
-                <option value="배정 완료">배정 완료</option>
-                <option value="작업 중">작업 중</option>
-                <option value="완료">완료</option>
-                <option value="취소">취소</option>
+              <select
+                className="admin-select"
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+              >
+                <option value="">상태 전체</option>
+                {Object.entries(STATUS_MAP).map(([key, { label }]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
               </select>
-              <select className="admin-select" value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}>
-                <option value="ALL">지역 전체</option>
-                <option value="서울">서울</option>
-                <option value="경기">경기</option>
-                <option value="인천">인천</option>
-                <option value="부산">부산</option>
-              </select>
+              <input
+                className="admin-select"
+                placeholder="지역 검색"
+                value={regionFilter}
+                onChange={(e) => { setRegionFilter(e.target.value); setPage(0); }}
+                style={{ width: 120 }}
+              />
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
                 <input
                   type="date"
                   className="admin-date-input"
                   value={dateFrom}
                   max={dateTo || undefined}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                  onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
                 />
                 <span style={{ fontSize: 12, color: "#aaa" }}>~</span>
                 <input
@@ -160,13 +233,10 @@ export default function AdminServicePage() {
                   className="admin-date-input"
                   value={dateTo}
                   min={dateFrom || undefined}
-                  onChange={(e) => setDateTo(e.target.value)}
+                  onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
                 />
-                {(dateFrom || dateTo) && (
-                  <button
-                    className="admin-btn admin-btn--outline admin-btn--sm"
-                    onClick={() => { setDateFrom(""); setDateTo(""); }}
-                  >
+                {(statusFilter || regionFilter || dateFrom || dateTo) && (
+                  <button className="admin-btn admin-btn--outline admin-btn--sm" onClick={resetFilters}>
                     초기화
                   </button>
                 )}
@@ -186,22 +256,55 @@ export default function AdminServicePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAs.map((a) => (
-                  <tr key={a.id}>
-                    <td style={{ fontSize: 11, color: "#aaa" }}>{a.id}</td>
-                    <td>{a.customer}</td>
-                    <td>{a.appliance}</td>
-                    <td style={{ color: "#555" }}>{a.symptom}</td>
-                    <td>{a.region}</td>
-                    <td><span className={`admin-badge admin-badge--${STATUS_BADGE[a.status]}`}>{a.status}</span></td>
-                    <td style={{ color: "#888", fontSize: 12 }}>{a.date}</td>
-                  </tr>
-                ))}
-                {filteredAs.length === 0 && (
+                {asLoading ? (
+                  <tr><td colSpan={7} className="admin-empty">불러오는 중...</td></tr>
+                ) : asItems.length === 0 ? (
                   <tr><td colSpan={7} className="admin-empty">해당 조건의 A/S 내역이 없습니다.</td></tr>
-                )}
+                ) : asItems.map((a) => {
+                  const s = STATUS_MAP[a.status] ?? { label: a.status, color: "gray" };
+                  return (
+                    <tr key={a.requestId}>
+                      <td style={{ fontSize: 11, color: "#aaa" }}>{a.requestCode}</td>
+                      <td>{a.customerName}</td>
+                      <td>{a.applianceName}</td>
+                      <td style={{ color: "#555" }}>{a.symptom}</td>
+                      <td>{a.region}</td>
+                      <td><span className={`admin-badge admin-badge--${s.color}`}>{s.label}</span></td>
+                      <td style={{ color: "#888", fontSize: 12 }}>{a.createdAt}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+
+            {/* 페이지네이션 */}
+            {totalPages > 1 && (
+              <div className="crh-pagination">
+                <button
+                  className="crh-page-btn"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    className={`crh-page-btn ${page === i ? "crh-page-btn--active" : ""}`}
+                    onClick={() => setPage(i)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button
+                  className="crh-page-btn"
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -221,13 +324,19 @@ export default function AdminServicePage() {
                 </tr>
               </thead>
               <tbody>
-                {repairCosts.map((c) => (
+                {costLoading ? (
+                  <tr><td colSpan={4} className="admin-empty">불러오는 중...</td></tr>
+                ) : repairCosts.length === 0 ? (
+                  <tr><td colSpan={4} className="admin-empty">데이터가 없습니다.</td></tr>
+                ) : repairCosts.map((c) => (
                   <tr key={c.id}>
-                    <td><span className="admin-badge admin-badge--purple">{c.category}</span></td>
+                    <td><span className="admin-badge admin-badge--purple">{c.categoryName}</span></td>
                     <td>{c.symptom}</td>
-                    <td style={{ fontWeight: 600 }}>{c.avgCost.toLocaleString()}원</td>
+                    <td style={{ fontWeight: 600 }}>{(c.avgCost ?? 0).toLocaleString()}원</td>
                     <td>
-                      <button className="admin-btn admin-btn--outline admin-btn--sm" onClick={() => setEditCost(c)}>수정</button>
+                      <button className="admin-btn admin-btn--outline admin-btn--sm" onClick={() => setEditCost(c)}>
+                        수정
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -246,7 +355,9 @@ export default function AdminServicePage() {
                   <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>CareFlow 인증 뱃지 기준</h3>
                 </div>
 
-                {!badgeEdit ? (
+                {badgeLoading ? (
+                  <p style={{ color: "#aaa", fontSize: 13 }}>불러오는 중...</p>
+                ) : !badgeEdit ? (
                   <>
                     <div style={{ background: "#f8f8fc", borderRadius: 12, padding: 20, marginBottom: 16 }}>
                       <p style={{ fontSize: 12, color: "#888", margin: "0 0 6px" }}>현재 인증 기준</p>
@@ -266,18 +377,30 @@ export default function AdminServicePage() {
                     <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
                       <div className="admin-modal__field" style={{ flex: 1 }}>
                         <label className="admin-modal__label">최소 등급</label>
-                        <select className="admin-select" style={{ width: "100%" }} value={badgeDraft.minGrade} onChange={(e) => setBadgeDraft((p) => ({ ...p, minGrade: e.target.value }))}>
+                        <select
+                          className="admin-select"
+                          style={{ width: "100%" }}
+                          value={badgeDraft.minGrade}
+                          onChange={(e) => setBadgeDraft((p) => ({ ...p, minGrade: e.target.value }))}
+                        >
                           {["A", "B", "C", "D"].map((g) => <option key={g} value={g}>{g}등급</option>)}
                         </select>
                       </div>
                       <div className="admin-modal__field" style={{ flex: 1 }}>
                         <label className="admin-modal__label">최소 점수</label>
-                        <input className="admin-modal__input" type="number" min={0} max={100} value={badgeDraft.minScore} onChange={(e) => setBadgeDraft((p) => ({ ...p, minScore: Number(e.target.value) }))} />
+                        <input
+                          className="admin-modal__input"
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={badgeDraft.minScore}
+                          onChange={(e) => setBadgeDraft((p) => ({ ...p, minScore: Number(e.target.value) }))}
+                        />
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 10 }}>
                       <button className="admin-btn admin-btn--outline" onClick={() => setBadgeEdit(false)}>취소</button>
-                      <button className="admin-btn admin-btn--primary" onClick={() => { setBadge(badgeDraft); setBadgeEdit(false); alert("저장되었습니다."); }}>저장</button>
+                      <button className="admin-btn admin-btn--primary" onClick={handleSaveBadge}>저장</button>
                     </div>
                   </>
                 )}
@@ -291,10 +414,7 @@ export default function AdminServicePage() {
         <CostEditModal
           item={editCost}
           onClose={() => setEditCost(null)}
-          onSave={(newCost) => {
-            setRepairCosts((prev) => prev.map((c) => c.id === editCost.id ? { ...c, avgCost: newCost } : c));
-            setEditCost(null);
-          }}
+          onSave={handleSaveCost}
         />
       )}
     </div>
