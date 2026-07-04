@@ -7,7 +7,7 @@ import {
 import "../../../styles/Agency/WorkTab/AgencyWorkMonitorTab.css";
 import "../../../styles/Agency/WorkTab/Agencyworkmonitortab.additions.css"
 import { getInProgressAssignments } from "../../../apis/agencyAssignment";
-import { getAgencyStatusLogs, getAgencyStatusSummary } from "../../../apis/agencyAsStatusLog";
+import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
 
 // as_status_logs.to_status ENUM → UI 표현 매핑
 const STATUS_LOG_MAP = {
@@ -41,11 +41,22 @@ const LOG_STATUS_OPTIONS = [
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const INTERVAL_OPTIONS  = [10, 30, 60];
 
-// 현재 스텝 인덱스 계산 (WORK_STEPS 기준)
+// 아직 상태 로그(as_status_logs)가 없더라도, 배정이 수락(ACCEPTED)된 순간부터는
+// 논리적으로 "방문 대기" 상태이므로 이를 기본값으로 보정해서 상태를 계산
+function resolveStatus(latestLogStatus, assignmentStatus) {
+  if (latestLogStatus && STATUS_LOG_MAP[latestLogStatus]) return STATUS_LOG_MAP[latestLogStatus];
+  if (assignmentStatus === "ACCEPTED") return STATUS_LOG_MAP.WAITING;
+  return { label: "대기", type: "waiting" };
+}
+
+// 현재 스텝 인덱스 계산 (WORK_STEPS 기준) — 반환값은 "현재 활성 단계"의 인덱스
 function getCurrentStepIdx(latestLogStatus, assignmentStatus) {
   if (assignmentStatus === "COMPLETED" || latestLogStatus === "COMPLETED") return 5;
   const map = { WAITING: 1, ENGINEER_DEPARTED: 2, ENGINEER_ARRIVED: 3, IN_PROGRESS: 4 };
-  return map[latestLogStatus] ?? 0;
+  if (latestLogStatus && map[latestLogStatus] != null) return map[latestLogStatus];
+  // 상태 로그가 아직 안 쌓였어도 배정 수락(ACCEPTED) 상태라면 "방문 대기" 단계로 간주
+  if (assignmentStatus === "ACCEPTED") return 1;
+  return 0;
 }
 
 // 날짜+시간 문자열 조합 → UI 표시용
@@ -100,7 +111,10 @@ export default function AgencyWorkMonitorTab() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages,   setTotalPages]   = useState(0);
 
-  // ── 상태 요약 통계 (GET /api/as-status-logs/agency/status-summary) ──
+  // ── 상태 요약 통계 ──
+  // 기존엔 별도 API(status-summary)를 썼는데, 그 API는 as_status_logs가 있는 건만 카운트해서
+  // "방금 수락돼서 로그가 아직 없는 건"(=방문 대기여야 함)이 어디에도 안 잡히는 문제가 있었음.
+  // → 테이블에 실제로 보여주는 것과 동일한 resolveStatus() 기준으로 직접 집계해서 항상 일치하게 함.
   const [summary, setSummary] = useState({
     waitingCount: 0, engineerDepartedCount: 0, engineerArrivedCount: 0,
     inProgressCount: 0, completedCount: 0,
@@ -152,14 +166,28 @@ export default function AgencyWorkMonitorTab() {
     }
   }, [page, size, filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 상태 요약 통계 조회 ──
+  // ── 상태 요약 통계 집계 ──
+  // 페이지네이션과 무관하게 "전체" 진행 중 배정을 가져와서 resolveStatus() 기준으로 카운트
   const fetchSummary = useCallback(async () => {
     setSummaryLoading(true);
     try {
-      const { data } = await getAgencyStatusSummary();
-      setSummary(data);
+      const { data } = await getInProgressAssignments({ page: 0, size: 1000 });
+      const list = data.content ?? [];
+      const counts = {
+        waitingCount: 0, engineerDepartedCount: 0, engineerArrivedCount: 0,
+        inProgressCount: 0, completedCount: 0,
+      };
+      list.forEach((item) => {
+        const s = resolveStatus(item.latestLogStatus, item.assignmentStatus);
+        if (s.type === "waiting")      counts.waitingCount += 1;
+        else if (s.type === "moving")  counts.engineerDepartedCount += 1;
+        else if (s.type === "arrived") counts.engineerArrivedCount += 1;
+        else if (s.type === "working") counts.inProgressCount += 1;
+        else if (s.type === "done")    counts.completedCount += 1;
+      });
+      setSummary(counts);
     } catch (err) {
-      console.error("상태 요약 조회 실패:", err);
+      console.error("상태 요약 집계 실패:", err);
     } finally {
       setSummaryLoading(false);
     }
@@ -226,15 +254,17 @@ export default function AgencyWorkMonitorTab() {
 
   // ── 통계 카드 목록 (status-summary API 기반, 5개) ──
   const statCards = [
-    { label: "방문 대기",   value: summary.waitingCount,           icon: ClipboardList, },
-    { label: "기사 이동 중", value: summary.engineerDepartedCount,  icon: Clock,           },
-    { label: "기사 도착",   value: summary.engineerArrivedCount,   icon: MapPin,       },
-    { label: "작업 진행 중", value: summary.inProgressCount,        icon: Wrench,        },
-    { label: "완료",       value: summary.completedCount,          icon: CheckCircle,    },
+    { label: "방문 대기",   value: summary.waitingCount,           icon: ClipboardList, color: "purple" },
+    { label: "기사 이동 중", value: summary.engineerDepartedCount,  icon: Clock,          color: "purple"  },
+    { label: "기사 도착",   value: summary.engineerArrivedCount,   icon: MapPin,         color: "purple"    },
+    { label: "작업 진행 중", value: summary.inProgressCount,        icon: Wrench,         color: "purple"},
+    { label: "완료",       value: summary.completedCount,          icon: CheckCircle,    color: "purple"  },
   ];
 
   // ── 선택 항목 상태 ──
-  const selectedStatus  = selectedItem ? STATUS_LOG_MAP[selectedItem.latestLogStatus]  : null;
+  const selectedStatus  = selectedItem
+    ? resolveStatus(selectedItem.latestLogStatus, selectedItem.assignmentStatus)
+    : null;
   const selectedStepIdx = selectedItem
     ? getCurrentStepIdx(selectedItem.latestLogStatus, selectedItem.assignmentStatus)
     : 0;
@@ -359,7 +389,6 @@ export default function AgencyWorkMonitorTab() {
               <span>제품 정보</span>
               <span>담당 기사</span>
               <span>진행 상태</span>
-              <span>현재 단계</span>
               <span>업데이트 시간</span>
               <span>액션</span>
             </div>
@@ -373,7 +402,7 @@ export default function AgencyWorkMonitorTab() {
             )}
 
             {!loading && content.map((item) => {
-              const s = STATUS_LOG_MAP[item.latestLogStatus] ?? { label: "대기", type: "waiting" };
+              const s = resolveStatus(item.latestLogStatus, item.assignmentStatus);
               const isSelected = selectedItem?.assignmentId === item.assignmentId;
               return (
                 <div
@@ -394,14 +423,13 @@ export default function AgencyWorkMonitorTab() {
                   </span>
                   <span className="wmt-table__engineer-col">
                     {item.engineerName
-                      ? <><Avatar name={item.engineerName} profileImageUrl={item.engineerImg} size={26} /><span>{item.engineerName}</span></>
+                      ? <span className="wmt-table__engineer-name">{item.engineerName}</span>
                       : <span className="wmt-table__no-engineer">-</span>
                     }
                   </span>
                   <span>
                     <span className={`wmt-badge wmt-badge--${s.type}`}>{s.label}</span>
                   </span>
-                  <span className="wmt-table__step">{s.label}</span>
                   <span className="wmt-table__updated">{formatUpdatedAt(item.updatedAt)}</span>
                   <span className="wmt-table__actions" onClick={e => e.stopPropagation()}>
                     <button
@@ -561,16 +589,16 @@ export default function AgencyWorkMonitorTab() {
               <p className="wmt-detail__section-label">진행 현황</p>
               <div className="wmt-steps">
                 {WORK_STEPS.map((step, i) => {
-                  const isDone    = i <= selectedStepIdx - 1;
-                  const isCurrent = i === selectedStepIdx - 1;
+                  const isDone    = i < selectedStepIdx;
+                  const isCurrent = i === selectedStepIdx;
                   const stepTime  = selectedItem.stepTimes?.[step.key];
                   return (
                     <div key={step.key} className="wmt-step-item">
                       <div className={`wmt-step-dot ${isDone ? "wmt-step-dot--done" : ""} ${isCurrent ? "wmt-step-dot--current" : ""}`} />
                       {i < WORK_STEPS.length - 1 && (
-                        <div className={`wmt-step-line ${isDone && !isCurrent ? "wmt-step-line--done" : ""}`} />
+                        <div className={`wmt-step-line ${isDone ? "wmt-step-line--done" : ""}`} />
                       )}
-                      <span className={`wmt-step-label ${isCurrent ? "wmt-step-label--current" : ""}`}>{step.label}</span>
+                      <span className={`wmt-step-label ${isDone ? "wmt-step-label--done" : ""} ${isCurrent ? "wmt-step-label--current" : ""}`}>{step.label}</span>
                       {stepTime && <span className="wmt-step-time">{stepTime}</span>}
                     </div>
                   );

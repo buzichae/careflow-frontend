@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  ClipboardList, Clock, Users, Hourglass, XCircle,
+  ClipboardList, Clock, MapPin, Users, Hourglass, XCircle,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, Download, MoreVertical, RefreshCw,
   Calendar, AlertTriangle,
@@ -23,6 +23,7 @@ function mapReceiptItem(r) {
     productName: r.brand ?? "-",
     modelNo:     r.modelName ?? "-",
     symptomDesc: r.symptomDesc,
+    region:      r.visitRegionName ?? "-",
     visitDate:   r.scheduledDate,
     startTime:   r.scheduledTime ?? "-",
     endTime:     "-",
@@ -119,6 +120,37 @@ function EngineerAvatar({ name, profileImageUrl }) {
     </div>
   );
 }
+
+// 날짜 input(type=date)용 "YYYY-MM-DD" 포맷
+function toInputDate(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// 접수 목록을 CSV로 변환해서 다운로드 (엑셀에서 바로 열림)
+function downloadCsv(rows) {
+  const header = ["접수번호", "접수일시", "고객명", "연락처", "브랜드", "모델명", "신청증상", "지역", "희망방문일", "유형", "상태"];
+  const lines = rows.map((item) => {
+    const displayId = formatRequestId(item.requestId, item.createdAt);
+    const dt = formatDateTime(item.createdAt);
+    const statusLabel = STATUS_MAP[item.status]?.label ?? item.status;
+    return [
+      displayId, `${dt.date} ${dt.time}`, item.customer, item.phone,
+      item.productName, item.modelNo, item.symptomDesc, item.region,
+      `${item.visitDate} ${item.startTime}`, item.type, statusLabel,
+    ].map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(",");
+  });
+  const csv = "\uFEFF" + [header.join(","), ...lines].join("\n"); // BOM 포함(엑셀 한글 깨짐 방지)
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `접수목록_${toInputDate(new Date())}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
  
 // ══════════════════════════════════════════════
 export default function AgencyWorkReceiptTab() {
@@ -134,15 +166,6 @@ export default function AgencyWorkReceiptTab() {
   const [listLoading, setListLoading] = useState(false);
   const [totalCount,  setTotalCount]  = useState(0);
  
-  // 작업 현황 통계 — 별도 API(work-requests/stats) 대신 현재 목록(receiptList)에서 직접 집계
-  // (그 API는 대행사 전체 누적 로그 건수를 세는 거라 지금 화면의 목록 건수와 안 맞았음)
-  const workStats = {
-    waitingCount: receiptList.filter(i => i.status === "AGENCY_RECEIVED").length,
-    engineerDepartedCount: receiptList.filter(i => i.status === "ASSIGNED" || i.status === "ACCEPTED").length,
-    inProgressCount: receiptList.filter(i => i.status === "IN_PROGRESS").length,
-    completedCount: receiptList.filter(i => i.status === "COMPLETED" || i.status === "PAID").length,
-  };
- 
   // 실시간 배정 현황 (GET /api/agency/as-assignments/search — 오늘 날짜, 전체 상태)
   const [assignments,        setAssignments]        = useState([]);
   const [assignmentsLoading, setAssignmentsLoading]  = useState(false);
@@ -151,6 +174,53 @@ export default function AgencyWorkReceiptTab() {
   // 접수건별 최신 기사 진행상태 (GET /api/as-status-logs/agency, requestId별 최신 로그만 추출)
   // AsRequest.status는 큰 흐름만 담고 있어서, 기사가 수락/출발/도착/작업중인지는 여기서 보강
   const [latestLogByRequestId, setLatestLogByRequestId] = useState({});
+
+  // ── 필터 상태 (기존엔 UI만 있고 실제 필터링 로직이 없었음) ──
+  // 날짜는 기본적으로 "전체" 기간을 보여주도록 비워둠 (사용자가 직접 선택할 때만 필터링)
+  const [filters, setFilters] = useState({
+    startDate: "",
+    endDate:   "",
+    brand:     "",
+    region:    "",
+    type:      "",
+    status:    "",
+    keyword:   "",
+  });
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setFilters({ startDate: "", endDate: "", brand: "", region: "", type: "", status: "", keyword: "" });
+    setCurrentPage(1);
+  };
+
+  // 작업 현황 통계 — 별도 API(work-requests/stats) 대신 현재 목록(receiptList)에서 직접 집계
+  // (그 API는 대행사 전체 누적 로그 건수를 세는 거라 지금 화면의 목록 건수와 안 맞았음)
+  // ACCEPTED(배정 완료)건은 latestLog로 실제 진행 단계를 확인해서
+  //  - 로그가 없거나 WAITING이면 "방문 대기"
+  //  - ENGINEER_DEPARTED/ENGINEER_ARRIVED로 넘어갔으면 그때부터 "기사 출발"
+  // 로 나눠서 집계 (예전엔 ACCEPTED가 통째로 "기사 출발"에 잡혀서 방문 대기 중인 건도 출발한 것처럼 보였음)
+  const workStats = {
+    waitingCount: receiptList.filter(i => i.status === "AGENCY_RECEIVED").length,
+    visitWaitingCount: receiptList.filter(i => {
+      if (i.status !== "ACCEPTED") return false;
+      const log = latestLogByRequestId[i.requestId];
+      return !log || log.toStatus === "WAITING";
+    }).length,
+    engineerDepartedCount: receiptList.filter(i => {
+      if (i.status === "ASSIGNED") return true;
+      if (i.status === "ACCEPTED") {
+        const log = latestLogByRequestId[i.requestId];
+        return log && (log.toStatus === "ENGINEER_DEPARTED" || log.toStatus === "ENGINEER_ARRIVED");
+      }
+      return false;
+    }).length,
+    inProgressCount: receiptList.filter(i => i.status === "IN_PROGRESS").length,
+    completedCount: receiptList.filter(i => i.status === "COMPLETED" || i.status === "PAID").length,
+  };
  
   // 접수 목록 조회 (GET /api/agency/work-requests)
   useEffect(() => {
@@ -208,16 +278,40 @@ export default function AgencyWorkReceiptTab() {
       .catch(() => setLatestLogByRequestId({}));
   }, []);
  
-  // 클라이언트 페이지네이션 (백엔드 페이징 미지원 → 전체 목록을 10개씩 슬라이싱)
-  const pagedList = receiptList.slice((currentPage - 1) * 10, currentPage * 10);
+  // 브랜드/지역 드롭다운 옵션 (실제 데이터에서 고유값 추출)
+  const brandOptions  = [...new Set(receiptList.map(i => i.productName).filter(Boolean))];
+  const regionOptions = [...new Set(receiptList.map(i => i.region).filter(v => v && v !== "-"))];
+
+  // 실제 필터링 (날짜/브랜드/지역/유형/상태/검색어) — 이전엔 UI만 있고 아무 것도 걸러내지 않았음
+  const filteredList = receiptList.filter((item) => {
+    if (filters.startDate && item.createdAt.slice(0, 10) < filters.startDate) return false;
+    if (filters.endDate && item.createdAt.slice(0, 10) > filters.endDate) return false;
+    if (filters.brand && item.productName !== filters.brand) return false;
+    if (filters.region && item.region !== filters.region) return false;
+    if (filters.type && item.type !== filters.type) return false;
+    if (filters.status && item.status !== filters.status) return false;
+    if (filters.keyword) {
+      const kw = filters.keyword.trim().toLowerCase();
+      const displayId = formatRequestId(item.requestId, item.createdAt).toLowerCase();
+      const haystack = `${item.customer} ${item.productName} ${item.modelNo} ${displayId}`.toLowerCase();
+      if (!haystack.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  // 클라이언트 페이지네이션 (백엔드 페이징 미지원 → 필터링된 목록을 10개씩 슬라이싱)
+  const filteredTotalCount = filteredList.length;
+  const filteredTotalPages = Math.max(1, Math.ceil(filteredTotalCount / 10));
+  const pagedList = filteredList.slice((currentPage - 1) * 10, currentPage * 10);
  
   // 통계 카드 (workStats 기반)
   const statCards = [
-    { label: "전체 접수",      value: totalCount,                        today: "",  icon: ClipboardList, color: "purple" },
-    { label: "배정 대기",      value: workStats?.waitingCount ?? 0,      today: "",  icon: Clock,         color: "orange" },
-    { label: "기사 출발",      value: workStats?.engineerDepartedCount ?? 0, today: "", icon: Users,       color: "blue"   },
-    { label: "수리 진행 중",   value: workStats?.inProgressCount ?? 0,   today: "",  icon: Hourglass,     color: "amber"  },
-    { label: "수리 완료",      value: workStats?.completedCount ?? 0,    today: "",  icon: XCircle,       color: "red"    },
+    { label: "전체 접수",      value: totalCount,                            icon: ClipboardList, color: "purple" },
+    { label: "배정 대기",      value: workStats.waitingCount,                icon: Clock,         color: "orange" },
+    { label: "방문 대기",      value: workStats.visitWaitingCount,           icon: MapPin,        color: "teal"   },
+    { label: "기사 출발",      value: workStats.engineerDepartedCount,       icon: Users,         color: "blue"   },
+    { label: "수리 진행 중",   value: workStats.inProgressCount,             icon: Hourglass,     color: "amber"  },
+    { label: "수리 완료",      value: workStats.completedCount,              icon: XCircle,       color: "red"    },
   ];
  
   const handleAction = (item) => {
@@ -245,32 +339,121 @@ export default function AgencyWorkReceiptTab() {
         ))}
       </div>
  
-      {/* ── 메인: 좌측(필터+테이블+페이지네이션) + 우측(실시간배정현황) ── */}
-      <div className="receipt-body-layout">
-        <div className="receipt-body-layout__left">
+      {/* ── 실시간 배정 현황 (테이블 위, 전체 폭 가로 배너) ── */}
+      <div className="aw-realtime aw-realtime--top">
+        <div className="aw-realtime__header">
+          <h2 className="aw-section-title" style={{ marginBottom: 0 }}>실시간 배정 현황</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button className="aw-schedule-btn aw-schedule-btn--compact">
+              <Calendar size={14} /> 기사 근무표 보기
+            </button>
+            <button className="aw-more-link" onClick={fetchAssignments}>
+              <RefreshCw size={12} /> 새로고침
+            </button>
+          </div>
+        </div>
+
+        {assignmentsLoading && (
+          <p style={{ padding: "12px", color: "#aaa", fontSize: "12px" }}>불러오는 중...</p>
+        )}
+        {!assignmentsLoading && assignmentsError && (
+          <p style={{ padding: "12px", color: "#dc2626", fontSize: "12px" }}>{assignmentsError}</p>
+        )}
+        {!assignmentsLoading && !assignmentsError && assignments.length === 0 && (
+          <p style={{ padding: "12px", color: "#aaa", fontSize: "12px" }}>오늘 예정된 배정이 없습니다.</p>
+        )}
+
+        {!assignmentsLoading && !assignmentsError && assignments.length > 0 && (
+          <div className="aw-realtime__row">
+            {assignments.map((a) => {
+              const status = ASSIGNMENT_STATUS_MAP[a.assignmentStatus] ?? { label: a.assignmentStatus, type: "waiting" };
+              return (
+                <div key={a.assignmentId} className="aw-engineer-item aw-engineer-item--card">
+                  <EngineerAvatar name={a.engineerName} />
+                  <div className="aw-engineer-info">
+                    <div className="aw-engineer-info__top">
+                      <span className="aw-engineer-name">{a.engineerName ?? "미배정"} 기사</span>
+                      <span className={`aw-engineer-status aw-engineer-status--${status.type}`}>{status.label}</span>
+                    </div>
+                    <p className="aw-engineer-specialty">{a.symptomName}</p>
+                    <p className="aw-engineer-product">
+                      {a.scheduledDate} {a.scheduledTime ?? ""}
+                    </p>
+                    <p className="aw-engineer-empty" style={{ marginTop: 2 }}>{a.visitAddressDetail}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── 필터 + 테이블 + 페이지네이션 (전체 폭) ── */}
+      <div className="receipt-body-layout__left">
  
-          {/* 필터 바 (기존 그대로) */}
+          {/* 필터 바 (실제 동작하도록 date input / select / 검색 / 엑셀 다운로드 연결) */}
           <div className="receipt-filters">
             <div className="receipt-filter-date">
-              <span>2024.06.01 ~ 2024.06.30</span>
-              <Download size={14} color="#aaa" />
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={e => handleFilterChange("startDate", e.target.value)}
+                style={{ border: "none", outline: "none", fontSize: "12px", color: "#444", fontFamily: "inherit", background: "none" }}
+              />
+              <span>~</span>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={e => handleFilterChange("endDate", e.target.value)}
+                style={{ border: "none", outline: "none", fontSize: "12px", color: "#444", fontFamily: "inherit", background: "none" }}
+              />
             </div>
-            <div className="receipt-filter-select"><span>전체 브랜드</span><ChevronDown size={14} /></div>
-            <div className="receipt-filter-select"><span>전체 지역</span><ChevronDown size={14} /></div>
-            <div className="receipt-filter-select"><span>전체 유형</span><ChevronDown size={14} /></div>
-            <div className="receipt-filter-select"><span>전체 상태</span><ChevronDown size={14} /></div>
+
+            <select className="receipt-filter-select" value={filters.brand} onChange={e => handleFilterChange("brand", e.target.value)}>
+              <option value="">전체 브랜드</option>
+              {brandOptions.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+
+            <select className="receipt-filter-select" value={filters.region} onChange={e => handleFilterChange("region", e.target.value)}>
+              <option value="">전체 지역</option>
+              {regionOptions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+
+            <select className="receipt-filter-select" value={filters.type} onChange={e => handleFilterChange("type", e.target.value)}>
+              <option value="">전체 유형</option>
+              <option value="자동 A/S">자동 A/S</option>
+              <option value="수동 A/S">수동 A/S</option>
+            </select>
+
+            <select className="receipt-filter-select" value={filters.status} onChange={e => handleFilterChange("status", e.target.value)}>
+              <option value="">전체 상태</option>
+              {Object.entries(STATUS_MAP).map(([key, v]) => (
+                <option key={key} value={key}>{v.label}</option>
+              ))}
+            </select>
+
             <div className="receipt-search">
               <Search size={14} color="#aaa" />
-              <input type="text" placeholder="고객명, 제품명, 접수번호 검색" />
+              <input
+                type="text"
+                placeholder="고객명, 제품명, 접수번호 검색"
+                value={filters.keyword}
+                onChange={e => handleFilterChange("keyword", e.target.value)}
+              />
             </div>
-            <button className="receipt-excel-btn">
+
+            <button className="receipt-reset-btn" onClick={handleResetFilters}>
+              <RefreshCw size={13} /> 필터 초기화
+            </button>
+
+            <button className="receipt-excel-btn" onClick={() => downloadCsv(filteredList)}>
               <Download size={14} /> 엑셀 다운로드
             </button>
           </div>
  
           {/* 테이블 메타 */}
           <div className="receipt-table-meta">
-            <span className="receipt-total">총 {totalCount}건</span>
+            <span className="receipt-total">총 {filteredTotalCount}건</span>
             <div className="receipt-table-meta__right">
               <div className="receipt-sort-select">최신순 <ChevronDown size={13} /></div>
             </div>
@@ -374,68 +557,21 @@ export default function AgencyWorkReceiptTab() {
             <div className="receipt-pagination__left">
               <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+              {Array.from({ length: Math.min(filteredTotalPages, 5) }, (_, i) => {
+                const start = Math.max(1, Math.min(currentPage - 2, filteredTotalPages - 4));
                 return start + i;
-              }).filter(p => p <= totalPages).map(p => (
+              }).filter(p => p <= filteredTotalPages).map(p => (
                 <button key={p} className={currentPage === p ? "receipt-pagination__page--active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
               ))}
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
-              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
+              <button onClick={() => setCurrentPage(p => Math.min(filteredTotalPages, p + 1))} disabled={currentPage === filteredTotalPages}><ChevronRight size={14} /></button>
+              <button onClick={() => setCurrentPage(filteredTotalPages)} disabled={currentPage === filteredTotalPages}><ChevronsRight size={14} /></button>
             </div>
             <div className="receipt-page-size">
               <span>10개씩 보기</span><ChevronDown size={13} />
             </div>
           </div>
         </div>
- 
-        {/* ── 우측: 실시간 배정 현황 (GET /api/agency/as-assignments/search) ── */}
-        <aside className="receipt-body-layout__right">
-          <div className="aw-realtime">
-            <div className="aw-realtime__header">
-              <h2 className="aw-section-title" style={{ marginBottom: 0 }}>실시간 배정 현황</h2>
-              <button className="aw-more-link" onClick={fetchAssignments}>
-                <RefreshCw size={12} /> 새로고침
-              </button>
-            </div>
- 
-            {assignmentsLoading && (
-              <p style={{ padding: "12px", color: "#aaa", fontSize: "12px" }}>불러오는 중...</p>
-            )}
-            {!assignmentsLoading && assignmentsError && (
-              <p style={{ padding: "12px", color: "#dc2626", fontSize: "12px" }}>{assignmentsError}</p>
-            )}
-            {!assignmentsLoading && !assignmentsError && assignments.length === 0 && (
-              <p style={{ padding: "12px", color: "#aaa", fontSize: "12px" }}>오늘 예정된 배정이 없습니다.</p>
-            )}
- 
-            {!assignmentsLoading && !assignmentsError && (assignments ?? []).map((a) => {
-              const status = ASSIGNMENT_STATUS_MAP[a.assignmentStatus] ?? { label: a.assignmentStatus, type: "waiting" };
-              return (
-                <div key={a.assignmentId} className="aw-engineer-item">
-                  <EngineerAvatar name={a.engineerName} />
-                  <div className="aw-engineer-info">
-                    <div className="aw-engineer-info__top">
-                      <span className="aw-engineer-name">{a.engineerName ?? "미배정"} 기사</span>
-                      <span className={`aw-engineer-status aw-engineer-status--${status.type}`}>{status.label}</span>
-                    </div>
-                    <p className="aw-engineer-specialty">{a.symptomName}</p>
-                    <p className="aw-engineer-product">
-                      {a.scheduledDate} {a.scheduledTime ?? ""}
-                    </p>
-                    <p className="aw-engineer-empty" style={{ marginTop: 2 }}>{a.visitAddressDetail}</p>
-                  </div>
-                </div>
-              );
-            })}
- 
-            <button className="aw-schedule-btn">
-              <Calendar size={14} /> 기사 근무표 보기
-            </button>
-          </div>
-        </aside>
-      </div>
- 
+
       {workDetailModal   && <WorkDetailModal   onClose={() => setWorkDetailModal(null)}   detail={workDetailModal} />}
       {assignDetailModal && (
         <AssignDetailModal

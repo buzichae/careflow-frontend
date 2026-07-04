@@ -3,6 +3,7 @@ import { X, Clock, MapPin, Star, RefreshCw, XCircle, Phone, History, ZoomIn } fr
 import "../../../styles/Agency/Modal/AssignModals.css";
 import api from "../../../apis/axiosInstance";
 import { getRecommendedEngineers } from "../../../apis/agencyEngineer";
+import { getAssignmentDetail } from "../../../apis/agency";
 
 // ──────────────────────────────────────────
 // 공통 아바타
@@ -39,6 +40,16 @@ const AS_STATUS_LABEL = {
   CANCELLED:       "취소",
 };
 
+// ISO 날짜시간("2026-06-22T19:30:00") → "2026.06.22 19:30" (T 제거 + 연도 유지)
+function formatDateTime(isoStr) {
+  if (!isoStr) return "-";
+  const [datePart, timePart] = isoStr.split("T");
+  if (!datePart) return isoStr;
+  const dateFmt = datePart.replaceAll("-", ".");
+  const timeFmt = timePart ? timePart.slice(0, 5) : "";
+  return timeFmt ? `${dateFmt} ${timeFmt}` : dateFmt;
+}
+
 function mapDetail(raw) {
   const date = new Date(raw.createdAt);
   const yy = String(date.getFullYear()).slice(2);
@@ -66,10 +77,6 @@ function mapDetail(raw) {
     symptomImages: raw.symptomImages ?? [],
     avgCost:       raw.avgCost       ?? null,
     repairHistory: raw.repairHistory ?? [],
-    statusLogs:    raw.statusLogs    ?? [
-      { to_status: null, memo: "고객 접수",   created_at: raw.createdAt },
-      { to_status: null, memo: "대행사 접수", created_at: raw.createdAt },
-    ],
     // 배정 관련
     engineerName:  raw.engineerName  ?? null,
     assignedAt:    raw.assignedAt    ?? null,
@@ -90,6 +97,10 @@ export function AssignDetailModal({ onClose, item, onSuccess }) {
   const [resolvedAssignStatus,  setResolvedAssignStatus]  = useState(item.assignStatus ?? null);
   const [resolvedEngineerName,  setResolvedEngineerName]  = useState(item.engineerName ?? null);
   const [assignLoading, setAssignLoading] = useState(false);
+
+  // 배정 상세 — 처리 이력(배정 완료/수락 완료 시각 + 방문대기 이후 진행 로그)을 여기서 가져옴
+  const [assignmentDetail,        setAssignmentDetail]        = useState(null);
+  const [assignmentDetailLoading, setAssignmentDetailLoading] = useState(false);
 
   // 일정 변경 폼 상태
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -119,9 +130,48 @@ export function AssignDetailModal({ onClose, item, onSuccess }) {
       .finally(() => setAssignLoading(false));
   }, []);
 
+  // 배정 상세 조회 (assignmentId가 확정되면) — assignedAt/acceptedAt/statusLogs 확보
+  useEffect(() => {
+    if (!resolvedAssignmentId) return;
+    setAssignmentDetailLoading(true);
+    getAssignmentDetail(resolvedAssignmentId)
+      .then((res) => setAssignmentDetail(res.data))
+      .catch((e) => {
+        console.error("배정 상세 조회 실패:", e);
+        setAssignmentDetail(null);
+      })
+      .finally(() => setAssignmentDetailLoading(false));
+  }, [resolvedAssignmentId]);
+
   // ACCEPTED 여부 판단 (item 직접 prop 또는 조회 결과 기준)
   const isAccepted = resolvedAssignStatus === "ACCEPTED" || item.assignStatus === "ACCEPTED";
   const displayEngineerName = resolvedEngineerName ?? detail.engineerName;
+
+  // 담당 기사 카드에 보여줄 시간 (수락 전엔 배정 시각, 수락 후엔 수락 시각)
+  const assignedAtDisplay = formatDateTime(assignmentDetail?.assignedAt ?? detail.assignedAt);
+  const acceptedAtDisplay = formatDateTime(assignmentDetail?.acceptedAt);
+
+  // 처리 이력 — 고객 접수 → 대행사 배정 완료 → 기사 수락 완료 → (as_status_log) 방문대기~완료 순으로 병합
+  const historyItems = (() => {
+    const items = [];
+    if (detail.createdAt) {
+      items.push({ time: detail.createdAt, label: "고객 접수" });
+    }
+    if (assignmentDetail?.assignedAt) {
+      items.push({ time: assignmentDetail.assignedAt, label: "기사 배정 완료" });
+    }
+    if (assignmentDetail?.acceptedAt) {
+      items.push({ time: assignmentDetail.acceptedAt, label: "기사 수락 완료" });
+    }
+    (assignmentDetail?.statusLogs ?? []).forEach((log) => {
+      const time = log.createdAt ?? log.changedAt;
+      if (!time) return;
+      items.push({ time, label: STATUS_LOG_LABEL[log.toStatus] ?? log.toStatus });
+    });
+    return items
+      .filter((i) => i.time)
+      .sort((a, b) => new Date(a.time) - new Date(b.time));
+  })();
 
   // ── 일정 변경 ───────────────────────────
   const handleScheduleChange = () => {
@@ -215,7 +265,7 @@ export function AssignDetailModal({ onClose, item, onSuccess }) {
             <h3 className="am__section-title">접수 기본 정보</h3>
             <div className="am__grid">
               <div className="am__field"><span className="am__label">접수번호</span><span className="am__value am__value--id">{detail.requestId}</span></div>
-              <div className="am__field"><span className="am__label">접수일시</span><span className="am__value">{detail.createdAt}</span></div>
+              <div className="am__field"><span className="am__label">접수일시</span><span className="am__value">{formatDateTime(detail.createdAt)}</span></div>
               <div className="am__field">
                 <span className="am__label">현재 상태</span>
                 <span className={`am__status-badge am__status-badge--${item.status?.toLowerCase()}`}>
@@ -240,7 +290,7 @@ export function AssignDetailModal({ onClose, item, onSuccess }) {
                   <div className="am__current-meta">
                     <span className="am__meta-item">
                       <Clock size={11} />
-                      {isAccepted ? "수락 시간" : "배정 시간"}: {detail.assignedAt?.slice(5, 16).replace("-", ".") ?? "-"}
+                      {isAccepted ? "수락 시간" : "배정 시간"}: {isAccepted ? acceptedAtDisplay : assignedAtDisplay}
                     </span>
                   </div>
                 </div>
@@ -350,9 +400,11 @@ export function AssignDetailModal({ onClose, item, onSuccess }) {
           <section className="am__section">
             <h3 className="am__section-title">예상 수리 비용</h3>
             <div className="am__cost-box">
-              {detail.avgCost
-                ? <span className="am__cost-value">예상 평균 {detail.avgCost.toLocaleString()}원</span>
-                : <span className="am__cost-na">데이터 수집 중</span>
+              {assignmentDetail?.avgRepairCost != null
+                ? <span className="am__cost-value">예상 평균 {assignmentDetail.avgRepairCost.toLocaleString()}원</span>
+                : detail.avgCost
+                  ? <span className="am__cost-value">예상 평균 {detail.avgCost.toLocaleString()}원</span>
+                  : <span className="am__cost-na">데이터 수집 중</span>
               }
               <p className="am__cost-note">※ 실제 수리 결과에 따라 변동될 수 있습니다.</p>
             </div>
@@ -361,38 +413,55 @@ export function AssignDetailModal({ onClose, item, onSuccess }) {
           {/* 7. 이전 수리 이력 */}
           <section className="am__section">
             <h3 className="am__section-title">이전 수리 이력</h3>
-            {detail.repairHistory.length === 0
-              ? <p className="am__empty">수리 이력이 없습니다.</p>
-              : <div className="am__table">
-                  <div className="am__table-header">
-                    <span>날짜</span><span>증상</span><span>담당 기사</span><span>결과</span>
-                  </div>
-                  {detail.repairHistory.map((h, i) => (
-                    <div key={i} className="am__table-row">
-                      <span>{h.date}</span><span>{h.symptom}</span><span>{h.engineer}</span><span>{h.result}</span>
-                    </div>
-                  ))}
+            {assignmentDetail?.previousWorkReports?.length ? (
+              <div className="am__table">
+                <div className="am__table-header">
+                  <span>날짜</span><span>진단 결과</span><span>소요시간</span><span>금액</span>
                 </div>
-            }
+                {assignmentDetail.previousWorkReports.map((r) => (
+                  <div key={r.reportId} className="am__table-row">
+                    <span>{r.submittedAt?.slice(0, 10)}</span>
+                    <span>{r.diagnosisResult}</span>
+                    <span>{r.workDurationMin != null ? `${r.workDurationMin}분` : "-"}</span>
+                    <span>{r.finalAmount != null ? `${r.finalAmount.toLocaleString()}원` : "-"}</span>
+                  </div>
+                ))}
+              </div>
+            ) : detail.repairHistory.length === 0 ? (
+              <p className="am__empty">수리 이력이 없습니다.</p>
+            ) : (
+              <div className="am__table">
+                <div className="am__table-header">
+                  <span>날짜</span><span>증상</span><span>담당 기사</span><span>결과</span>
+                </div>
+                {detail.repairHistory.map((h, i) => (
+                  <div key={i} className="am__table-row">
+                    <span>{h.date}</span><span>{h.symptom}</span><span>{h.engineer}</span><span>{h.result}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* 8. 처리 이력 */}
+          {/* 8. 처리 이력 — 고객 접수 → 배정 완료 → 수락 완료 → (실제 진행 로그) 순서로 실데이터 표시 */}
           <section className="am__section">
             <h3 className="am__section-title">처리 이력</h3>
-            <div className="am__timeline">
-              {detail.statusLogs.map((log, i) => (
-                <div key={i} className="am__timeline-item">
-                  <div className="am__timeline-dot" />
-                  {i < detail.statusLogs.length - 1 && <div className="am__timeline-line" />}
-                  <span className="am__timeline-time">
-                    {log.created_at?.slice(5, 16).replace("-", ".")}
-                  </span>
-                  <span className="am__timeline-label">
-                    {log.to_status ? (STATUS_LOG_LABEL[log.to_status] ?? log.to_status) : log.memo}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {assignmentDetailLoading ? (
+              <p style={{ fontSize: "13px", color: "#aaa" }}>이력을 불러오는 중...</p>
+            ) : historyItems.length === 0 ? (
+              <p className="am__empty">처리 이력이 없습니다.</p>
+            ) : (
+              <div className="am__timeline">
+                {historyItems.map((h, i) => (
+                  <div key={i} className="am__timeline-item">
+                    <div className="am__timeline-dot" />
+                    {i < historyItems.length - 1 && <div className="am__timeline-line" />}
+                    <span className="am__timeline-time">{formatDateTime(h.time)}</span>
+                    <span className="am__timeline-label">{h.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
@@ -512,8 +581,6 @@ export function ReassignModal({ onClose, item, onSuccess }) {
       setSubmitting(false);
     }
   };
-
-  // recommendedEngineers 는 위 useEffect에서 API로 조회 (제거됨)
 
   return (
     <div className="am-overlay" onClick={onClose}>

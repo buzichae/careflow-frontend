@@ -19,3 +19,21 @@ export const getAgencyNotifications = ({ page = 0, size = 10, type } = {}) => {
   if (type && type !== "ALL") params.type = type;
   return api.get("/api/agency/notifications", { params });
 };
+
+/**
+ * 알림 단건 읽음 처리
+ * PATCH /api/agency/notifications/{notificationId}/read
+ * - 요청 바디 없음
+ * - 성공 시 204 No Content (응답 바디 없음)
+ */
+export const markNotificationAsRead = (notificationId) =>
+  api.patch(`/api/agency/notifications/${notificationId}/read`);
+
+/**
+ * 알림 전체 읽음 처리
+ * PATCH /api/agency/notifications/read-all
+ * - 요청 바디 없음 (JWT의 agencyId로 대상 범위 결정)
+ * - 성공 시 204 No Content (응답 바디 없음)
+ */
+export const markAllNotificationsAsRead = () =>
+  api.patch(`/api/agency/notifications/read-all`);
