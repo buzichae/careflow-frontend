@@ -193,21 +193,26 @@ export default function AgencyWorkMonitorTab() {
     }
   }, []);
 
-  // ── 전체 상태 변경 이력 조회 ──
+  // ── 전체 상태 변경 이력 조회 (좌측 상단 필터 재사용: date·상태·키워드) ──
   const fetchStatusLogs = useCallback(async () => {
     setStatusLogsLoading(true);
     setStatusLogsError(null);
     try {
-      const { data } = await getAgencyStatusLogs();
+      const { data } = await getAgencyStatusLogs({
+        date:     filters.date            || undefined,
+        toStatus: filters.latestLogStatus || undefined,
+        keyword:  filters.keyword         || undefined,
+      });
       setStatusLogs(data.logs ?? []);
       setStatusLogsTotal(data.totalCount ?? 0);
+      setStatusLogsVisible(20); // 필터 변경 시 "더보기" 노출 개수 초기화
     } catch (err) {
       console.error("상태 변경 이력 조회 실패:", err);
       setStatusLogsError("상태 변경 이력을 불러오는 데 실패했습니다.");
     } finally {
       setStatusLogsLoading(false);
     }
-  }, []);
+  }, [filters]);
 
   // 필터·페이지 변경 시 재조회
   useEffect(() => {
