@@ -11,7 +11,7 @@ import {
   downloadMonthlySettlementCsv,
 } from "../../apis/agencySettlement";
 
-// 백엔드 status 값 → UI 레이블/스타일 매핑 (APPROVED는 DDL v11에서 제거됨)
+// 백엔드 status 값 → UI 레이블/스타일 매핑 ([DDL v11] APPROVED 상태 제거됨)
 const STATUS_MAP = {
   PAID:     { label: "지급 완료", type: "success"  },
   PENDING:  { label: "지급 대기", type: "ready"    },
@@ -42,13 +42,18 @@ function formatSettlementId(id) {
 
 // 금액 포맷 (원화)
 function formatAmount(amount) {
-  return `₩${Number(amount ?? 0).toLocaleString()}`;
+  return `${Number(amount ?? 0).toLocaleString()}원`;
 }
 
-// settledAt(LocalDateTime) → 날짜 문자열
+// paidAt(LocalDateTime) → 날짜 문자열
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   return dateStr.replace("T", " ").slice(0, 16);
+}
+
+// 수수료율(비율, 예: 0.46) → 화면 표시용 퍼센트 숫자(46)
+function formatRate(rate) {
+  return (Number(rate ?? 0) * 100).toFixed(1).replace(/\.0$/, "");
 }
 
 function Avatar({ name, size = 32 }) {
@@ -108,7 +113,7 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
           {/* 기본 정보 */}
           <div className="asp-modal__section">
             <div className="asp-modal__row"><span className="asp-modal__label">기준 기간</span><span className="asp-modal__value">{item.periodStart} ~ {item.periodEnd}</span></div>
-            <div className="asp-modal__row"><span className="asp-modal__label">정산일</span><span className="asp-modal__value">{formatDate(item.settledAt)}</span></div>
+            <div className="asp-modal__row"><span className="asp-modal__label">계산일</span><span className="asp-modal__value">{formatDate(item.calculatedAt)}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">완료 건수</span><span className="asp-modal__value">{item.completedCount}건</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">총 정산 금액</span><span className="asp-modal__value asp-modal__value--amount">{formatAmount(item.grossAmount)}</span></div>
           </div>
@@ -122,11 +127,11 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
                 <span>{formatAmount(item.grossAmount)}</span>
               </div>
               <div className="asp-modal__amount-row asp-modal__amount-row--fee">
-                <span>CareFlow 수수료 ({Number(item.platformFeeRate)}%)</span>
+                <span>CareFlow 수수료 ({formatRate(item.platformFeeRate)}%)</span>
                 <span>-{formatAmount(item.platformFee)}</span>
               </div>
               <div className="asp-modal__amount-row asp-modal__amount-row--fee">
-                <span>대행사 수수료 ({Number(item.agencyFeeRate)}%)</span>
+                <span>대행사 수수료 ({formatRate(item.agencyFeeRate)}%)</span>
                 <span>-{item.agencyFee ? formatAmount(item.agencyFee) : "-"}</span>
               </div>
               <div className="asp-modal__amount-divider" />
@@ -147,7 +152,7 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
                 <div className="asp-modal__agency-icon--sm"><Building2 size={14} /></div>
                 <div>
                   <p className="asp-modal__agency-name">{item.agencyName}</p>
-                  <p className="asp-modal__agency-rate">수수료율 {Number(item.agencyFeeRate)}%</p>
+                  <p className="asp-modal__agency-rate">수수료율 {formatRate(item.agencyFeeRate)}%</p>
                 </div>
               </div>
             </div>
@@ -159,14 +164,14 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             <div className="asp-modal__row"><span className="asp-modal__label">지급 방식</span><span className="asp-modal__value">{item.payMethod ?? "-"}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">지급 계좌</span><span className="asp-modal__value">{item.bankAccount ?? "-"}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">지급 상태</span><span className={`asp-status-badge asp-status-badge--${status.type}`}>{status.label}</span></div>
-            {item.settledAt && (
-              <div className="asp-modal__row"><span className="asp-modal__label">지급일</span><span className="asp-modal__value">{formatDate(item.settledAt)}</span></div>
+            {item.paidAt && (
+              <div className="asp-modal__row"><span className="asp-modal__label">지급일</span><span className="asp-modal__value">{formatDate(item.paidAt)}</span></div>
             )}
           </div>
 
-          {/* 승인 처리 */}
+          {/* 승인 처리 — [DDL v11] APPROVED 제거: PENDING↔DISPUTED 자유, 둘 다 PAID로 바로 전이 가능 */}
           <div className="asp-modal__section">
-            <p className="asp-modal__section-label">승인 처리</p>
+            <p className="asp-modal__section-label">지급 처리</p>
             {item.status === "PAID" && (
               <div className="asp-modal__locked"><Lock size={13} /> 지급이 완료된 건입니다</div>
             )}
@@ -281,16 +286,24 @@ export default function AgencySettlementPage() {
     }
   };
 
+  // 필터가 하나라도 적용되어 있는지 (필터 적용 시 백엔드가 prevMonth 관련 필드를 null로 내려줌)
+  const isFiltered = Boolean(TAB_STATUS_MAP[activeTab] || keyword || dateFrom || dateTo);
+  const periodLabel = isFiltered ? "조회 기간" : "";
+
   // 통계 카드 구성 (목록 응답에 포함된 stats 사용)
   const statCards = stats
     ? [
         {
-          label: "총 정산 금액 (이번 달)",
+          label: `총 정산 금액 (${periodLabel})`,
           value: formatAmount(stats.thisMonthGrossAmount),
-          sub: stats.prevMonthGrossDiff >= 0
-            ? `전월 대비 +${formatAmount(stats.prevMonthGrossDiff)}`
-            : `전월 대비 ${formatAmount(stats.prevMonthGrossDiff)}`,
-          subType: stats.prevMonthGrossDiff >= 0 ? "up" : "down",
+          // 필터 적용 시 백엔드가 prevMonthGrossDiff를 null로 내려줌 → null 체크 없이 >= 0 비교하면
+          // null >= 0 이 true로 평가돼 "전월 대비 +0원"이 잘못 표시되므로, null이면 배지 자체를 숨김
+          sub: stats.prevMonthGrossDiff == null
+            ? ""
+            : stats.prevMonthGrossDiff >= 0
+              ? `전월 대비 +${formatAmount(stats.prevMonthGrossDiff)}`
+              : `전월 대비 ${formatAmount(stats.prevMonthGrossDiff)}`,
+          subType: stats.prevMonthGrossDiff == null ? "neutral" : (stats.prevMonthGrossDiff >= 0 ? "up" : "down"),
           icon: Wallet, color: "purple",
         },
         {
@@ -318,21 +331,24 @@ export default function AgencySettlementPage() {
           subType: "neutral", icon: Lock, color: "red",
         },
         {
-          label: "정산 건수 (이번 달)",
+          label: `정산 건수 (${periodLabel})`,
           value: `${Number(stats.thisMonthCount).toLocaleString()}건`,
-          sub: stats.prevMonthCountDiff >= 0
-            ? `전월 대비 +${stats.prevMonthCountDiff}건`
-            : `전월 대비 ${stats.prevMonthCountDiff}건`,
-          subType: stats.prevMonthCountDiff >= 0 ? "up" : "down",
+          // 동일하게 null 체크 — 필터 적용 시 배지 숨김
+          sub: stats.prevMonthCountDiff == null
+            ? ""
+            : stats.prevMonthCountDiff >= 0
+              ? `전월 대비 +${stats.prevMonthCountDiff}건`
+              : `전월 대비 ${stats.prevMonthCountDiff}건`,
+          subType: stats.prevMonthCountDiff == null ? "neutral" : (stats.prevMonthCountDiff >= 0 ? "up" : "down"),
           icon: FileText, color: "blue",
         },
       ]
     : [
-        { label: "총 정산 금액 (이번 달)", value: "-",  sub: "",  subType: "neutral", icon: Wallet,      color: "purple" },
+        { label: `총 정산 금액 (${periodLabel})`, value: "-",  sub: "",  subType: "neutral", icon: Wallet,      color: "purple" },
         { label: "지급 완료 금액",         value: "-",  sub: "",  subType: "neutral", icon: CheckCircle, color: "green"  },
         { label: "지급 대기 금액",         value: "-",  sub: "",  subType: "neutral", icon: Clock,       color: "orange" },
         { label: "보류 금액",              value: "-",  sub: "",  subType: "neutral", icon: Lock,        color: "red"    },
-        { label: "정산 건수 (이번 달)",    value: "-",  sub: "",  subType: "neutral", icon: FileText,    color: "blue"   },
+        { label: `정산 건수 (${periodLabel})`, value: "-",  sub: "",  subType: "neutral", icon: FileText,    color: "blue"   },
       ];
 
   // 정산 상태 변경 — 성공 시 목록 재조회 (통계도 같이 갱신되도록)
@@ -440,7 +456,7 @@ export default function AgencySettlementPage() {
             <span>대행사 수수료</span>
             <span>실 지급액</span>
             <span>상태</span>
-            <span>정산일</span>
+            <span>지급일</span>
             <span>관리</span>
           </div>
 
@@ -476,11 +492,11 @@ export default function AgencySettlementPage() {
                 <span className="asp-table__amount">{formatAmount(item.grossAmount)}</span>
                 <span className="asp-table__fee">
                   {formatAmount(item.platformFee)}
-                  <span className="asp-table__fee-rate">({Number(item.platformFeeRate)}%)</span>
+                  <span className="asp-table__fee-rate">({formatRate(item.platformFeeRate)}%)</span>
                 </span>
                 <span className="asp-table__fee">
                   {item.agencyFee ? formatAmount(item.agencyFee) : "-"}
-                  <span className="asp-table__fee-rate">({Number(item.agencyFeeRate)}%)</span>
+                  <span className="asp-table__fee-rate">({formatRate(item.agencyFeeRate)}%)</span>
                 </span>
                 <span className="asp-table__net">
                   {item.engineerNetAmount ? formatAmount(item.engineerNetAmount) : "-"}
@@ -488,7 +504,7 @@ export default function AgencySettlementPage() {
                 <span>
                   <span className={`asp-status-badge asp-status-badge--${status.type}`}>{status.label}</span>
                 </span>
-                <span className="asp-table__settled-at">{formatDate(item.settledAt)}</span>
+                <span className="asp-table__settled-at">{formatDate(item.paidAt)}</span>
                 <span>
                   <button
                     className="asp-detail-btn"

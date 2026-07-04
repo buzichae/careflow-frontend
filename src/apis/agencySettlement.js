@@ -10,12 +10,13 @@ import api from "./axiosInstance";
  */
 export const getAgencySettlements = ({ page, size, status, keyword, dateFrom, dateTo }) =>
   api.get("/api/agency/settlements", {
-    params: { page, size },
-    data: {
-      status: status || null,
-      keyword: keyword || null,
-      dateFrom: dateFrom || null,
-      dateTo: dateTo || null,
+    params: {
+      page,
+      size,
+      status: status || undefined,
+      keyword: keyword || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
     },
   });
 

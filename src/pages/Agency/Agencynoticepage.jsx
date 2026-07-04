@@ -6,7 +6,11 @@ import {
   ClipboardList, Wrench, ShieldCheck, GraduationCap,
 } from "lucide-react";
 import "../../styles/Agency/agency/Agencynoticepage.css";
-import { getAgencyNotifications } from "../../apis/agencyNotification";
+import {
+  getAgencyNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from "../../apis/agencyNotification";
 
 const NOTICE_TABS = [
   { key: "ALL",        label: "전체"      },
@@ -51,6 +55,7 @@ function formatCreatedAt(createdAt) {
 }
 
 // API 응답 NotificationItem → 컴포넌트 내부 형식으로 매핑
+// 백엔드가 isRead(boolean) 필드를 내려주므로 그대로 사용
 function mapItem(item) {
   return {
     id: item.notificationId,
@@ -61,7 +66,7 @@ function mapItem(item) {
     channel: item.channel,
     createdAt: formatCreatedAt(item.createdAt),
     timeAgo: computeTimeAgo(item.createdAt),
-    isRead: false, // 백엔드 미지원: 항상 읽지 않음으로 표시
+    isRead: item.isRead ?? false,
     detail: {
       content: item.body || item.title,
       confirmedAt: null,
@@ -103,6 +108,9 @@ export default function AgencyNoticePage() {
   const [totalPages,    setTotalPages]    = useState(1);
   const [loading,       setLoading]       = useState(false);
 
+  // 읽음/전체읽음 처리 중 중복 클릭 방지
+  const [markingAll, setMarkingAll] = useState(false);
+
   const timerRef = useRef(null);
 
   const fetchNotifications = useCallback(async () => {
@@ -139,6 +147,40 @@ export default function AgencyNoticePage() {
     setActiveTab(key);
     setCurrentPage(1);
     setSelectedItem(null);
+  };
+
+  // 알림 상세 열기 + 읽음 처리
+  // PATCH .../{id}/read 는 unreadCount를 내려주지 않으므로,
+  // 성공 후 목록을 재조회해서 최신 stats.unreadCount를 반영한다 (백엔드 확정 방식)
+  const handleSelectItem = async (item) => {
+    setSelectedItem(item);
+
+    if (item.isRead) return; // 이미 읽은 알림이면 API 호출 불필요
+
+    try {
+      await markNotificationAsRead(item.id);
+      await fetchNotifications();
+    } catch (err) {
+      console.error("알림 읽음 처리 실패:", err);
+      // 읽음 처리는 실패해도 상세보기 자체는 유지 (사용자 흐름 방해 X)
+    }
+  };
+
+  // 전체 읽음 처리
+  // 결과가 결정적(전체 읽음 → unreadCount는 반드시 0)이므로 재조회 없이 로컬에서 바로 갱신
+  const handleMarkAllRead = async () => {
+    if (markingAll) return;
+    setMarkingAll(true);
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setStats(prev => ({ ...prev, unreadCount: 0 }));
+    } catch (err) {
+      console.error("전체 읽음 처리 실패:", err);
+      alert("전체 읽음 처리에 실패했습니다.");
+    } finally {
+      setMarkingAll(false);
+    }
   };
 
   const statCards = [
@@ -196,7 +238,13 @@ export default function AgencyNoticePage() {
                 </button>
               ))}
             </div>
-            <button className="anp-action-btn"><CheckCheck size={13} /> 모두 읽음 처리</button>
+            <button
+              className="anp-action-btn"
+              onClick={handleMarkAllRead}
+              disabled={markingAll || stats.unreadCount === 0}
+            >
+              <CheckCheck size={13} /> {markingAll ? "처리 중..." : "모두 읽음 처리"}
+            </button>
           </div>
 
           <div className="anp-table">
@@ -238,7 +286,7 @@ export default function AgencyNoticePage() {
                   <span>
                     <button
                       className={`anp-detail-btn ${isSelected ? "anp-detail-btn--active" : ""}`}
-                      onClick={() => setSelectedItem(item)}
+                      onClick={() => handleSelectItem(item)}
                     >
                       상세
                     </button>
