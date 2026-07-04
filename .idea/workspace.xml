@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="62c343f6-e307-4229-a972-fa85ffb97bcb" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/src/pages/Agency/WorkTab/AgencyWorkMonitorTab.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Agency/WorkTab/AgencyWorkMonitorTab.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Agency/Agencysettlementpage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Agency/Agencysettlementpage.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,7 +40,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Refactor/agency__assignInProgreeFront&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/agencyAPI__DevelopAndFix__Front&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Pro2026/DeepProject/careflow-frontend&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
@@ -52,6 +52,28 @@
   }
 }</component>
   <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="careflow-frontend" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="careflow-frontend" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="careflow-frontend" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="careflow-frontend" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
     <configuration default="true" type="JetRunConfigurationType">
       <module name="careflow-frontend" />
       <method v="2">
@@ -75,6 +97,8 @@
       <workItem from="1782888335217" duration="521000" />
       <workItem from="1782888922059" duration="1590000" />
       <workItem from="1782892818506" duration="420000" />
+      <workItem from="1783064772900" duration="631000" />
+      <workItem from="1783149088291" duration="1350000" />
     </task>
     <servers />
   </component>

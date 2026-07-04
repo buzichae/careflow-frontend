@@ -118,6 +118,11 @@
   justify-content: space-between;
   overflow: hidden;
   min-height: 76px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.wmt-stat-card:hover {
+  box-shadow: 0 6px 18px rgba(91, 79, 245, 0.08);
+  transform: translateY(-1px);
 }
 .wmt-stat-card__text {
   display: flex;
@@ -150,7 +155,10 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.wmt-stat-card__icon svg { width: 100%; height: 100%; color: #e5e5ea; }
+.wmt-stat-card__icon svg { width: 100%; height: 100%; }
+
+/* 통계 카드 아이콘 색상*/
+.wmt-stat-card__icon--purple svg { color: #e3e1f5; }
 
 /* ===========================
    필터 바 (receipt-filters 톤)
@@ -255,41 +263,43 @@
 }
 
 /* ===========================
-   진행 작업 테이블
+   진행 작업 테이블 (컬럼 7개: 접수번호/고객/제품/기사/상태/업데이트/액션)
 =========================== */
 .wmt-table {
   background: #fff;
   border: 1px solid #e8e4ff;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(20, 20, 43, 0.03);
 }
 .wmt-table__header {
   display: grid;
-  grid-template-columns: 1fr 1.1fr 1.2fr 1.1fr 0.9fr 0.9fr 0.9fr 1fr;
-  padding: 10px 16px;
+  grid-template-columns: 1.1fr 1.2fr 1.3fr 1fr 1fr 1fr 1fr;
+  padding: 12px 18px;
   background: #f8f7ff;
   font-size: 11px;
-  color: #aaa;
-  font-weight: 600;
+  color: #9a97b3;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   border-bottom: 0.5px solid #e8e4ff;
 }
 .wmt-table__row {
   display: grid;
-  grid-template-columns: 1fr 1.1fr 1.2fr 1.1fr 0.9fr 0.9fr 0.9fr 1fr;
-  padding: 12px 16px;
+  grid-template-columns: 1.1fr 1.2fr 1.3fr 1fr 1fr 1fr 1fr;
+  padding: 14px 18px;
   border-bottom: 0.5px solid #f5f4ff;
   align-items: center;
-  font-size: 12px;
+  font-size: 12.5px;
   color: #444;
-  transition: background 0.1s;
+  transition: background 0.12s;
 }
 .wmt-table__row:last-child { border-bottom: none; }
 .wmt-table__row:hover { background: #fafaff; }
-.wmt-table__row--selected { background: #f5f3ff; }
+.wmt-table__row--selected { background: #f4f2ff; box-shadow: inset 3px 0 0 #5B4FF5; }
 
 .wmt-loading,
 .wmt-empty {
-  padding: 32px 16px;
+  padding: 36px 16px;
   text-align: center;
   font-size: 13px;
   color: #aaa;
@@ -300,14 +310,14 @@
 .wmt-table__product-col {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
-.wmt-table__id { font-size: 11px; color: #5B4FF5; font-weight: 700; }
-.wmt-table__date { font-size: 10px; color: #aaa; }
-.wmt-table__customer { font-weight: 600; color: #1a1a2e; }
-.wmt-table__phone { font-size: 11px; color: #888; }
-.wmt-table__product-name { font-weight: 600; color: #1a1a2e; font-size: 12px; }
-.wmt-table__model { font-size: 10px; color: #aaa; }
+.wmt-table__id { font-size: 11.5px; color: #5B4FF5; font-weight: 700; }
+.wmt-table__date { font-size: 10px; color: #b3b0c4; }
+.wmt-table__customer { font-weight: 700; color: #1a1a2e; }
+.wmt-table__phone { font-size: 11px; color: #9a97b3; }
+.wmt-table__product-name { font-weight: 600; color: #1a1a2e; font-size: 12.5px; }
+.wmt-table__model { font-size: 10px; color: #b3b0c4; }
 
 .wmt-table__engineer-col {
   display: flex;
@@ -316,9 +326,9 @@
   font-size: 12px;
   color: #444;
 }
+.wmt-table__engineer-name { font-weight: 600; color: #1a1a2e; white-space: nowrap; }
 .wmt-table__no-engineer { color: #ccc; font-size: 11px; }
 
-.wmt-table__step { font-size: 11px; color: #666; }
 .wmt-table__updated { font-size: 11px; color: #aaa; }
 
 .wmt-table__actions {
@@ -329,14 +339,15 @@
 .wmt-detail-btn {
   font-size: 11px;
   border: 0.5px solid #e0dcff;
-  border-radius: 6px;
-  padding: 4px 10px;
+  border-radius: 7px;
+  padding: 5px 11px;
   color: #5B4FF5;
   background: none;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
   font-family: inherit;
   white-space: nowrap;
+  transition: background 0.12s;
 }
 .wmt-detail-btn:hover { background: #f5f3ff; }
 .wmt-detail-btn--active { background: #5B4FF5; color: #fff; border-color: #5B4FF5; }
@@ -354,10 +365,10 @@
    상태 배지
 =========================== */
 .wmt-badge {
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 6px;
-  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 10px;
   white-space: nowrap;
   display: inline-block;
 }
@@ -434,7 +445,7 @@
 .wmt-logs-panel {
   background: #fff;
   border: 1px solid #e8e4ff;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 6px;
   display: flex;
   flex-direction: column;
@@ -503,7 +514,7 @@
 .wmt-detail {
   background: #fff;
   border: 1px solid #e8e4ff;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -558,7 +569,7 @@
 .wmt-detail__rating { font-size: 11px; color: #d97706; font-weight: 500; }
 .wmt-detail__engineer-phone { font-size: 11px; color: #888; margin-top: 2px; }
 
-/* 진행 현황 스텝 */
+/* 진행 현황 스텝 — 지나온 단계는 진한 보라, 현재 단계는 포인트 컬러+링, 이후 단계는 회색 */
 .wmt-steps {
   display: flex;
   flex-direction: column;
@@ -569,29 +580,37 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 0;
+  padding: 7px 0;
   padding-left: 4px;
 }
 .wmt-step-dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #e0dcff;
+  background: #e5e3ef;
   flex-shrink: 0;
   z-index: 1;
+  transition: background 0.15s, box-shadow 0.15s;
 }
-.wmt-step-dot--done { background: #b7aefc; }
-.wmt-step-dot--current { background: #5B4FF5; box-shadow: 0 0 0 4px #eeeaff; }
+.wmt-step-dot--done {
+  background: #5B4FF5;
+}
+.wmt-step-dot--current {
+  background: #5B4FF5;
+  box-shadow: 0 0 0 5px #eeeaff;
+}
 .wmt-step-line {
   position: absolute;
-  left: 8px;
-  top: 20px;
-  width: 1px;
+  left: 9px;
+  top: 22px;
+  width: 2px;
   height: 20px;
   background: #eee;
+  transition: background 0.15s;
 }
-.wmt-step-line--done { background: #b7aefc; }
-.wmt-step-label { font-size: 12px; color: #888; }
+.wmt-step-line--done { background: #5B4FF5; }
+.wmt-step-label { font-size: 12px; color: #b3b0c4; transition: color 0.15s; }
+.wmt-step-label--done { color: #7a72d1; font-weight: 500; }
 .wmt-step-label--current { color: #1a1a2e; font-weight: 700; }
 .wmt-step-time { margin-left: auto; font-size: 10px; color: #aaa; }
 

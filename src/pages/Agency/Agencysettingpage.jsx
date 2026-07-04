@@ -4,8 +4,27 @@ import "../../styles/Agency/Agencysettingpage.css";
 
 const BASE_URL = "http://localhost:8080";
 
+// 계좌 등록 시 선택 가능한 은행 목록 (드롭다운용)
+const BANK_LIST = [
+  { code: "WOORI",   name: "우리은행" },
+  { code: "KB",      name: "KB국민은행" },
+  { code: "SHINHAN", name: "신한은행" },
+  { code: "IBK",     name: "IBK기업은행" },
+  { code: "NH",      name: "NH농협은행" },
+  { code: "SC",      name: "SC제일은행" },
+  { code: "HANA",    name: "하나은행" },
+  { code: "KAKAO",   name: "카카오뱅크" },
+  { code: "TOSS",    name: "토스뱅크" },
+];
+
+// 계좌번호: 숫자와 '-'만 허용, 은행마다 자릿수가 달라 최소 자릿수만 느슨하게 체크
+function isValidAccountNumber(value) {
+  if (!value) return false;
+  return /^[0-9-]+$/.test(value) && value.replace(/-/g, "").length >= 10;
+}
+
 async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
@@ -13,22 +32,37 @@ async function apiFetch(path, options = {}) {
     },
     ...options,
   });
+
+  // 토큰 만료/미인증 처리: 세션 정리 후 로그인 페이지로 이동
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+    window.location.href = "/login"; // 실제 로그인 라우트 경로에 맞게 수정 필요
+    throw new Error("401");
+  }
+
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
 
 export default function AgencySettingPage() {
   // ── 대행사 정보 (3번 + 4번 API) ───────────────
-  // GET /api/agency/me → { agencyId, agencyName, agencyAddress }
-  // PUT /api/agency/me → { agencyName, agencyAddress }
+  // GET /api/agency/me → { agencyId, agencyName, agencyAddress, bankName, accountNumber }
+  // PUT /api/agency/me → { agencyName, agencyAddress, bankName, accountNumber }
   const [agencyName,  setAgencyName]  = useState("");
   const [address,     setAddress]     = useState("");
   const [infoLoading, setInfoLoading] = useState(true);
   const [infoSaving,  setInfoSaving]  = useState(false);
 
+  // ── 정산 계좌 정보 (신규 추가, 4번 API에 필드만 확장) ──
+  const [bankName,      setBankName]      = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountError,  setAccountError]  = useState("");
+
   // ── 수수료율 (5번 + 6번 API) ──────────────────
-  // GET /api/agencies/fee-rate → { agencyId, agencyName, agencyFeeRate }
-  // PATCH /api/agencies/fee-rate → { agencyFeeRate }
+  // GET /api/agencies/fee-rate → { agencyId, agencyName, agencyFeeRate }  (agencyFeeRate는 비율, 예: 0.1 = 10%)
+  // PATCH /api/agencies/fee-rate → { agencyFeeRate }  (요청도 동일하게 비율로 전달)
+  // 화면에는 사용자에게 익숙한 퍼센트 숫자로 표시 — API 응답/요청 시 100을 곱하거나 나눠 변환
   const [feeRate,      setFeeRate]      = useState("");
   const [feeLoading,   setFeeLoading]   = useState(true);
   const [feeSaving,    setFeeSaving]    = useState(false);
@@ -44,32 +78,53 @@ export default function AgencySettingPage() {
   // ── 초기 데이터 로드 ──────────────────────────
   useEffect(() => {
     // 3번: 대행사 내 정보 조회
-    // 응답: { agencyId, agencyName, agencyAddress }
+    // 응답: { agencyId, agencyName, agencyAddress, bankName, accountNumber }
     apiFetch("/api/agency/me")
       .then(data => {
         setAgencyName(data.agencyName ?? "");
         setAddress(data.agencyAddress ?? "");
+        setBankName(data.bankName ?? "");
+        setAccountNumber(data.accountNumber ?? "");
       })
       .catch(console.error)
       .finally(() => setInfoLoading(false));
 
     // 5번: 수수료율 조회
-    // 응답: { agencyId, agencyName, agencyFeeRate }
+    // 응답: { agencyId, agencyName, agencyFeeRate }  (agencyFeeRate는 비율 — 화면 표시용으로 100을 곱해 퍼센트로 변환)
     apiFetch("/api/agencies/fee-rate")
-      .then(data => setFeeRate(data.agencyFeeRate ?? ""))
+      .then(data => setFeeRate(data.agencyFeeRate != null ? data.agencyFeeRate * 100 : ""))
       .catch(console.error)
       .finally(() => setFeeLoading(false));
   }, []);
 
+  // 계좌번호 입력 시 숫자와 '-'만 허용
+  const handleAccountNumberChange = (e) => {
+    const value = e.target.value.replace(/[^0-9-]/g, "");
+    setAccountNumber(value);
+    if (accountError) setAccountError("");
+  };
+
   // ── 4번: 대행사 정보 수정 ─────────────────────
   // PUT /api/agency/me
-  // 요청: { agencyName, agencyAddress }
-  // 응답: { agencyId, agencyName, agencyAddress }
+  // 요청: { agencyName, agencyAddress, bankName, accountNumber }
+  // 응답: { agencyId, agencyName, agencyAddress, bankName, accountNumber }
   const handleSaveAgency = async () => {
     if (!agencyName.trim() || !address.trim()) {
       alert("대행사명과 주소를 입력해주세요.");
       return;
     }
+
+    // 계좌 정보는 필수 입력
+    if (!bankName) {
+      setAccountError("은행을 선택해주세요.");
+      return;
+    }
+    if (!isValidAccountNumber(accountNumber)) {
+      setAccountError("올바른 계좌번호 형식이 아닙니다.");
+      return;
+    }
+    setAccountError("");
+
     setInfoSaving(true);
     try {
       await apiFetch("/api/agency/me", {
@@ -77,6 +132,8 @@ export default function AgencySettingPage() {
         body: JSON.stringify({
           agencyName:    agencyName.trim(),
           agencyAddress: address.trim(),
+          bankName:      bankName || null,
+          accountNumber: accountNumber || null,
         }),
       });
       alert("대행사 정보가 저장되었습니다.");
@@ -90,21 +147,21 @@ export default function AgencySettingPage() {
 
   // ── 6번: 수수료율 수정 ────────────────────────
   // PATCH /api/agencies/fee-rate
-  // 요청: { agencyFeeRate: Double }
-  // 응답: { agencyId, agencyName, agencyFeeRate }
+  // 요청: { agencyFeeRate: Double }  (비율 — 화면에 입력된 퍼센트를 100으로 나눠 전달)
+  // 응답: { agencyId, agencyName, agencyFeeRate }  (비율 — 화면 표시용으로 다시 100을 곱해 퍼센트로 변환)
   const handleSaveFeeRate = async () => {
     const rate = Number(feeRate);
-    if (isNaN(rate) || rate < 0 || rate > 999.99) {
-      alert("유효한 수수료율을 입력해주세요.");
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      alert("유효한 수수료율을 입력해주세요. (0~100 사이)");
       return;
     }
     setFeeSaving(true);
     try {
       const data = await apiFetch("/api/agencies/fee-rate", {
         method: "PATCH",
-        body: JSON.stringify({ agencyFeeRate: rate }),
+        body: JSON.stringify({ agencyFeeRate: rate / 100 }),
       });
-      setFeeRate(data.agencyFeeRate);
+      setFeeRate(data.agencyFeeRate != null ? data.agencyFeeRate * 100 : "");
       alert("수수료율이 변경되었습니다.");
     } catch (e) {
       console.error(e);
@@ -141,28 +198,61 @@ export default function AgencySettingPage() {
             {infoLoading ? (
               <p style={{ color: "#aaa", fontSize: "13px", padding: "12px 0" }}>로딩 중...</p>
             ) : (
-              <div className="asp3-form-grid">
-                {/* 4번 API 수정 가능 필드: agencyName, agencyAddress */}
-                <div className="asp3-form-field">
-                  <label className="asp3-label">대행사명</label>
-                  <input
-                    className="asp3-input"
-                    value={agencyName}
-                    onChange={e => setAgencyName(e.target.value)}
-                    placeholder="대행사명을 입력하세요"
-                  />
+              <>
+                <div className="asp3-form-grid">
+                  {/* 4번 API 수정 가능 필드: agencyName, agencyAddress */}
+                  <div className="asp3-form-field">
+                    <label className="asp3-label">대행사명</label>
+                    <input
+                      className="asp3-input"
+                      value={agencyName}
+                      onChange={e => setAgencyName(e.target.value)}
+                      placeholder="대행사명을 입력하세요"
+                    />
+                  </div>
+                  {/* 주소 full width */}
+                  <div className="asp3-form-field asp3-form-field--full">
+                    <label className="asp3-label">주소</label>
+                    <input
+                      className="asp3-input"
+                      value={address}
+                      onChange={e => setAddress(e.target.value)}
+                      placeholder="대행사 소재지 주소를 입력하세요"
+                    />
+                  </div>
                 </div>
-                {/* 주소 full width */}
-                <div className="asp3-form-field asp3-form-field--full">
-                  <label className="asp3-label">주소</label>
-                  <input
-                    className="asp3-input"
-                    value={address}
-                    onChange={e => setAddress(e.target.value)}
-                    placeholder="대행사 소재지 주소를 입력하세요"
-                  />
+
+                {/* 정산 계좌 정보 - 신규 추가 */}
+                <div className="asp3-form-grid" style={{ marginTop: "16px" }}>
+                  <div className="asp3-form-field">
+                    <label className="asp3-label">정산 은행 <span style={{ color: "#dc2626" }}>*</span></label>
+                    <select
+                      className="asp3-input"
+                      value={bankName}
+                      onChange={e => { setBankName(e.target.value); if (accountError) setAccountError(""); }}
+                    >
+                      <option value="">은행을 선택하세요</option>
+                      {BANK_LIST.map(bank => (
+                        <option key={bank.code} value={bank.code}>{bank.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="asp3-form-field">
+                    <label className="asp3-label">계좌번호 <span style={{ color: "#dc2626" }}>*</span></label>
+                    <input
+                      className="asp3-input"
+                      value={accountNumber}
+                      onChange={handleAccountNumberChange}
+                      placeholder="'-' 없이 또는 포함하여 입력"
+                    />
+                  </div>
+                  {accountError && (
+                    <p className="asp3-hint" style={{ color: "#dc2626" }}>
+                      {accountError}
+                    </p>
+                  )}
                 </div>
-              </div>
+              </>
             )}
           </div>
 
@@ -190,7 +280,7 @@ export default function AgencySettingPage() {
                       className="asp3-input asp3-input--suffix"
                       type="number"
                       min={0}
-                      max={999}
+                      max={100}
                       step={0.01}
                       value={feeRate}
                       onChange={e => setFeeRate(e.target.value)}
