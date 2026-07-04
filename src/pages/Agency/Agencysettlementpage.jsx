@@ -113,6 +113,7 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
           {/* 기본 정보 */}
           <div className="asp-modal__section">
             <div className="asp-modal__row"><span className="asp-modal__label">기준 기간</span><span className="asp-modal__value">{item.periodStart} ~ {item.periodEnd}</span></div>
+            <div className="asp-modal__row"><span className="asp-modal__label">계산일</span><span className="asp-modal__value">{formatDate(item.calculatedAt)}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">완료 건수</span><span className="asp-modal__value">{item.completedCount}건</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">총 정산 금액</span><span className="asp-modal__value asp-modal__value--amount">{formatAmount(item.grossAmount)}</span></div>
           </div>
