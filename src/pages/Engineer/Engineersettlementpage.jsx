@@ -63,24 +63,32 @@ export default function EngineerSettlementPage() {
     setError(null);
 
     getSettlementSummary(dateFrom, dateTo)
-      .then((res) => {
-        if (!mounted) return;
-        const d = res.data;
-        // 실제 응답 필드명이 다르면 이 매핑만 고치면 됩니다.
-        setStats(d.stats ?? null);
-        setDailyTrend(d.dailyTrend ?? []);
-        setBrandDist(d.brandDist ?? []);
-        setStatusDist(d.statusDist ?? []);
-        setPerformanceList(d.performanceList ?? []);
-        setSettlementSummary(d.settlementSummary ?? null);
-      })
-      .catch((err) => {
-        console.error("실적 현황 조회 실패:", err);
-        if (mounted) setError("실적 정보를 불러오지 못했습니다.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+  .then((res) => {
+    if (!mounted) return;
+    const d = res.data;
+
+    // 평평한 필드들을 stats 객체로 직접 구성
+    setStats({
+      completedCount: d.totalCompletedCount ?? 0,
+      grossAmount: d.totalGrossAmount ?? 0,
+      avgRating: d.avgRating ?? 0,
+      satisfactionRate: d.customerSatisfaction ?? 0,
+      rejectedCount: d.rejectedCount ?? 0,
+    });
+
+    setDailyTrend(d.dailyTrends ?? []);
+    setBrandDist(d.brandDistributions ?? []);
+    setStatusDist(d.statusDistributions ?? []);
+    setPerformanceList(d.performanceList ?? []);
+    setSettlementSummary(d.settlementSummary ?? null);
+  })
+  .catch((err) => {
+    console.error("실적 현황 조회 실패:", err);
+    if (mounted) setError("실적 정보를 불러오지 못했습니다.");
+  })
+  .finally(() => {
+    if (mounted) setLoading(false);
+  });
 
     return () => { mounted = false; };
   }, [activeTab]);
