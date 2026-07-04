@@ -535,6 +535,7 @@ function ScoreGauge({ score, size = 110, strokeWidth = 9, color = "#7c5cf7" }) {
 /* ─── 진단서 패널 ─── */
 function DiagPanel({ diag, appliance }) {
   function handleDownload() {
+    if (!diag.isCertified) return;
     const gm = GRADE_META[diag.grade] || GRADE_META.E;
     const printWindow = window.open("", "_blank", "width=800,height=900");
 
@@ -627,7 +628,16 @@ function DiagPanel({ diag, appliance }) {
         </div>
         <div className="crh-diag-header__right">
           <span className="crh-diag-header__date">발급 {diag.issuedAt}</span>
-          <button className="crh-diag-dl-btn" onClick={handleDownload}>
+          <button
+            className="crh-diag-dl-btn"
+            onClick={handleDownload}
+            disabled={!diag.isCertified}
+            title={
+              !diag.isCertified
+                ? "CareFlow 인증(B등급 이상)을 받은 제품만 다운로드할 수 있어요."
+                : undefined
+            }
+          >
             <Download size={12} /> 다운로드
           </button>
         </div>
@@ -659,7 +669,7 @@ function DiagPanel({ diag, appliance }) {
             <div className="crh-diag-cert crh-diag-cert--no">
               <Shield size={12} /> 미인증
               <span className="crh-diag-cert__hint">
-                B등급·75점↑ 달성 시 자동 부여
+                B등급·75점↑ 달성 시 자동 부여 · 인증 제품만 다운로드 가능
               </span>
             </div>
           )}

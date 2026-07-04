@@ -187,6 +187,10 @@
   white-space: nowrap;
 }
 .crh-diag-dl-btn:hover { background: #7c5cf7; color: #fff; }
+.crh-diag-dl-btn:disabled {
+  border-color: #ccc; color: #aaa; cursor: not-allowed;
+}
+.crh-diag-dl-btn:disabled:hover { background: #fff; color: #aaa; }
 
 .crh-diag-hero { display: flex; align-items: center; gap: 14px; }
 .crh-diag-hero__info { display: flex; flex-direction: column; gap: 6px; }
