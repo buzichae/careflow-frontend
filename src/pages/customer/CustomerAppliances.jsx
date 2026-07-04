@@ -25,6 +25,7 @@ import {
 import "../../styles/Customer/CustomerAppliances.css";
 import "../../styles/Customer/CustomerRepairHistory.css";
 import ApplianceIcon from "./ApplianceIcon";
+import ReportModal from "./ReportModal";
 
 import {
   getMyAppliances,
@@ -33,6 +34,7 @@ import {
   getMyDetailAppliance,
   getHealthCertificate,
 } from "../../apis/appliances";
+import { getReport } from "../../apis/as";
 
 /* ─────────────────────────────────
    카테고리 데이터
@@ -828,7 +830,20 @@ function DetailView({ appliance, onBack, onUpdate }) {
   const [showEdit, setShowEdit] = useState(false);
   const [repairs, setRepairs] = useState([]);
   const [diag, setDiag] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
   const PER_PAGE = 5;
+
+  async function handleReportView(repair) {
+    try {
+      const res = await getReport(repair.reportId);
+      setReportTarget({
+        item: { appliance: `${appliance.brand} ${appliance.model}` },
+        report: res.data,
+      });
+    } catch (error) {
+      alert(error.response?.data?.message || "보고서를 불러오지 못했습니다.");
+    }
+  }
 
   useEffect(() => {
     getMyDetailAppliance(appliance.id)
@@ -855,6 +870,14 @@ function DetailView({ appliance, onBack, onUpdate }) {
             setShowEdit(false);
           }}
           onClose={() => setShowEdit(false)}
+        />
+      )}
+
+      {reportTarget && (
+        <ReportModal
+          item={reportTarget.item}
+          report={reportTarget.report}
+          onClose={() => setReportTarget(null)}
         />
       )}
 
@@ -1009,6 +1032,13 @@ function DetailView({ appliance, onBack, onUpdate }) {
                         ? r.finalAmount.toLocaleString() + "원"
                         : "—"}
                     </span>
+                    <button
+                      className="crh-repair-card__report-btn"
+                      onClick={() => handleReportView(r)}
+                      disabled={!r.reportId}
+                    >
+                      <FileText size={12} /> 수리 보고서 보기
+                    </button>
                   </div>
 
                   <div className="crh-repair-card__symptom-row">
