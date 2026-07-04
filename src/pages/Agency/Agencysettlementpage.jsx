@@ -45,10 +45,15 @@ function formatAmount(amount) {
   return `₩${Number(amount ?? 0).toLocaleString()}`;
 }
 
-// settledAt(LocalDateTime) → 날짜 문자열
+// paidAt(LocalDateTime) → 날짜 문자열
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   return dateStr.replace("T", " ").slice(0, 16);
+}
+
+// 수수료율(비율, 예: 0.46) → 화면 표시용 퍼센트 숫자(46)
+function formatRate(rate) {
+  return (Number(rate ?? 0) * 100).toFixed(1).replace(/\.0$/, "");
 }
 
 function Avatar({ name, size = 32 }) {
@@ -108,7 +113,6 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
           {/* 기본 정보 */}
           <div className="asp-modal__section">
             <div className="asp-modal__row"><span className="asp-modal__label">기준 기간</span><span className="asp-modal__value">{item.periodStart} ~ {item.periodEnd}</span></div>
-            <div className="asp-modal__row"><span className="asp-modal__label">정산일</span><span className="asp-modal__value">{formatDate(item.settledAt)}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">완료 건수</span><span className="asp-modal__value">{item.completedCount}건</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">총 정산 금액</span><span className="asp-modal__value asp-modal__value--amount">{formatAmount(item.grossAmount)}</span></div>
           </div>
@@ -122,11 +126,11 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
                 <span>{formatAmount(item.grossAmount)}</span>
               </div>
               <div className="asp-modal__amount-row asp-modal__amount-row--fee">
-                <span>CareFlow 수수료 ({Number(item.platformFeeRate)}%)</span>
+                <span>CareFlow 수수료 ({formatRate(item.platformFeeRate)}%)</span>
                 <span>-{formatAmount(item.platformFee)}</span>
               </div>
               <div className="asp-modal__amount-row asp-modal__amount-row--fee">
-                <span>대행사 수수료 ({Number(item.agencyFeeRate)}%)</span>
+                <span>대행사 수수료 ({formatRate(item.agencyFeeRate)}%)</span>
                 <span>-{item.agencyFee ? formatAmount(item.agencyFee) : "-"}</span>
               </div>
               <div className="asp-modal__amount-divider" />
@@ -147,7 +151,7 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
                 <div className="asp-modal__agency-icon--sm"><Building2 size={14} /></div>
                 <div>
                   <p className="asp-modal__agency-name">{item.agencyName}</p>
-                  <p className="asp-modal__agency-rate">수수료율 {Number(item.agencyFeeRate)}%</p>
+                  <p className="asp-modal__agency-rate">수수료율 {formatRate(item.agencyFeeRate)}%</p>
                 </div>
               </div>
             </div>
@@ -159,8 +163,8 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             <div className="asp-modal__row"><span className="asp-modal__label">지급 방식</span><span className="asp-modal__value">{item.payMethod ?? "-"}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">지급 계좌</span><span className="asp-modal__value">{item.bankAccount ?? "-"}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">지급 상태</span><span className={`asp-status-badge asp-status-badge--${status.type}`}>{status.label}</span></div>
-            {item.settledAt && (
-              <div className="asp-modal__row"><span className="asp-modal__label">지급일</span><span className="asp-modal__value">{formatDate(item.settledAt)}</span></div>
+            {item.paidAt && (
+              <div className="asp-modal__row"><span className="asp-modal__label">지급일</span><span className="asp-modal__value">{formatDate(item.paidAt)}</span></div>
             )}
           </div>
 
@@ -440,7 +444,7 @@ export default function AgencySettlementPage() {
             <span>대행사 수수료</span>
             <span>실 지급액</span>
             <span>상태</span>
-            <span>정산일</span>
+            <span>지급일</span>
             <span>관리</span>
           </div>
 
@@ -476,11 +480,11 @@ export default function AgencySettlementPage() {
                 <span className="asp-table__amount">{formatAmount(item.grossAmount)}</span>
                 <span className="asp-table__fee">
                   {formatAmount(item.platformFee)}
-                  <span className="asp-table__fee-rate">({Number(item.platformFeeRate)}%)</span>
+                  <span className="asp-table__fee-rate">({formatRate(item.platformFeeRate)}%)</span>
                 </span>
                 <span className="asp-table__fee">
                   {item.agencyFee ? formatAmount(item.agencyFee) : "-"}
-                  <span className="asp-table__fee-rate">({Number(item.agencyFeeRate)}%)</span>
+                  <span className="asp-table__fee-rate">({formatRate(item.agencyFeeRate)}%)</span>
                 </span>
                 <span className="asp-table__net">
                   {item.engineerNetAmount ? formatAmount(item.engineerNetAmount) : "-"}
@@ -488,7 +492,7 @@ export default function AgencySettlementPage() {
                 <span>
                   <span className={`asp-status-badge asp-status-badge--${status.type}`}>{status.label}</span>
                 </span>
-                <span className="asp-table__settled-at">{formatDate(item.settledAt)}</span>
+                <span className="asp-table__settled-at">{formatDate(item.paidAt)}</span>
                 <span>
                   <button
                     className="asp-detail-btn"
