@@ -279,12 +279,12 @@ export default function AdminQuizPage() {
 
             {/* ── OX퀴즈 매트릭스 ── */}
             {innerTab === "matrix" && !loading && !error && (
-                <div className="lms-matrix" style={{ marginTop: 16 }}>
+                <div className="quiz-matrix">
                     {/* 헤더 */}
-                    <div className="lms-matrix__row lms-matrix__row--header">
-                        <div className="lms-matrix__cell lms-matrix__cell--label" />
+                    <div className="quiz-matrix__header">
+                        <div className="quiz-matrix__header-label" />
                         {LEVELS.map((l) => (
-                            <div key={l.key} className="lms-matrix__cell lms-matrix__cell--head">
+                            <div key={l.key} className="quiz-matrix__header-cell">
                                 {l.label}
                             </div>
                         ))}
@@ -292,13 +292,13 @@ export default function AdminQuizPage() {
 
                     {/* 데이터 행 */}
                     {CATEGORIES.map((cat) => (
-                        <div key={cat.id} className="lms-matrix__row">
-                            <div className="lms-matrix__cell lms-matrix__cell--label">{cat.name}</div>
+                        <div key={cat.id} className="quiz-matrix__row">
+                            <div className="quiz-matrix__label">{cat.name}</div>
                             {LEVELS.map((l) => {
                                 const count = getQuestionCount(cat.id, l.key);
                                 const tierQuestions = getQuestions(cat.id, l.key);
                                 return (
-                                    <div key={l.key} className="lms-matrix__cell lms-matrix__cell--course">
+                                    <div key={l.key} className="quiz-matrix__cell">
                                         {/* 등록 현황 배지 */}
                                         <div
                                             className={`admin-quiz-tier-badge ${getTierBadgeClass(count)}`}

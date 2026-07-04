@@ -25,12 +25,155 @@ const CAREER_LEVELS = [
 const careerLabel  = (key) => CAREER_LEVELS.find((cl) => cl.key === key)?.label ?? key;
 const categoryName = (id)  => CATEGORIES.find((c) => c.id === id)?.name ?? "-";
 
+/* ── 기사 상세 모달 ── */
+function EngineerDetailModal({
+    engineer, confirmations, quizAttempts,
+    yearFilter, onYearChange, onClose, onNotify, loading,
+}) {
+    const selectedQuizPassed = quizAttempts.some(
+        (a) => a.isPassed && a.quizYear === yearFilter
+    );
+
+    return (
+        <div className="alms-modal-overlay" onClick={onClose}>
+            <div className="alms-modal" onClick={(e) => e.stopPropagation()}>
+
+                {/* 모달 헤더 */}
+                <div className="alms-modal__header">
+                    <div className="alms-modal__title-wrap">
+                        <p className="alms-modal__name">{engineer.name} 기사</p>
+                        <p className="alms-modal__sub">
+                            {categoryName(engineer.categoryId)} · {careerLabel(engineer.skillLevel)}
+                        </p>
+                    </div>
+                    <div className="alms-modal__header-actions">
+                        {!engineer.isCompleted && (
+                            <button
+                                className="agency-lms__notify-btn"
+                                onClick={(e) => onNotify(e, engineer)}
+                            >
+                                알림 발송
+                            </button>
+                        )}
+                        <select
+                            className="agency-lms__select"
+                            value={yearFilter}
+                            onChange={(e) => onYearChange(Number(e.target.value))}
+                        >
+                            {[2026, 2025, 2024].map((y) => (
+                                <option key={y} value={y}>{y}년</option>
+                            ))}
+                        </select>
+                        <button className="alms-modal__close" onClick={onClose}>
+                            <X size={18} />
+                        </button>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <p className="alms-modal__loading">불러오는 중...</p>
+                ) : (
+                    <div className="alms-modal__body">
+
+                        {/* ── 콘텐츠 이수 내역 ── */}
+                        <div className="alms-modal__section">
+                            <p className="alms-modal__section-title">콘텐츠 이수 내역</p>
+                            {confirmations.length > 0 ? (
+                                <table className="alms-modal__table">
+                                    <thead>
+                                        <tr>
+                                            <th>콘텐츠 제목</th>
+                                            <th>버전</th>
+                                            <th>이수 일시</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {confirmations.map((c) => (
+                                            <tr key={c.confirmationId}>
+                                                <td>{c.content?.title}</td>
+                                                <td>v{c.confirmedVersion}</td>
+                                                <td>
+                                                    {c.confirmedAt
+                                                        ? new Date(c.confirmedAt).toLocaleDateString("ko-KR")
+                                                        : "-"}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p className="alms-modal__empty">{yearFilter}년 이수 내역이 없습니다.</p>
+                            )}
+                        </div>
+
+                        {/* ── OX퀴즈 응시 현황 ── */}
+                        <div className="alms-modal__section">
+                            <p className="alms-modal__section-title">
+                                <Trophy size={13} />
+                                OX퀴즈 응시 현황
+                            </p>
+
+                            {/* 합격 요약 배지 */}
+                            <div className="alms-modal__quiz-summary">
+                                {selectedQuizPassed ? (
+                                    <span className="agency-lms__status-badge agency-lms__status-badge--done">
+                                        <CheckCircle size={13} /> {yearFilter}년 합격
+                                    </span>
+                                ) : quizAttempts.length > 0 ? (
+                                    <span className="agency-lms__status-badge agency-lms__status-badge--pending">
+                                        <Circle size={13} /> 미합격 ({quizAttempts.length}회 응시)
+                                    </span>
+                                ) : (
+                                    <span className="agency-lms__status-badge agency-lms__status-badge--pending">
+                                        <Circle size={13} /> 미응시
+                                    </span>
+                                )}
+                            </div>
+
+                            {quizAttempts.length > 0 ? (
+                                <table className="alms-modal__table">
+                                    <thead>
+                                        <tr>
+                                            <th>회차</th>
+                                            <th>결과</th>
+                                            <th>응시 일시</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {quizAttempts.map((a, i) => (
+                                            <tr key={a.attemptId}>
+                                                <td>{quizAttempts.length - i}회차</td>
+                                                <td>
+                                                    {a.isPassed
+                                                        ? <span className="agency-lms__status-badge agency-lms__status-badge--done">합격</span>
+                                                        : <span className="agency-lms__status-badge agency-lms__status-badge--pending">불합격</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    {new Date(a.attemptedAt).toLocaleDateString("ko-KR")}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p className="alms-modal__empty">{yearFilter}년 응시 이력이 없습니다.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/* ── 메인 ── */
 export default function AgencyLmsPage() {
     const [engineers, setEngineers]               = useState([]);
     const [filtered, setFiltered]                 = useState([]);
     const [selectedEngineer, setSelectedEngineer] = useState(null);
     const [confirmations, setConfirmations]       = useState([]);
-    const [quizAttempts, setQuizAttempts]         = useState([]);  // 신규
+    const [quizAttempts, setQuizAttempts]         = useState([]);
     const [search, setSearch]                     = useState("");
     const [statusFilter, setStatusFilter]         = useState("ALL");
     const [yearFilter, setYearFilter]             = useState(new Date().getFullYear());
@@ -38,8 +181,8 @@ export default function AgencyLmsPage() {
     const [detailLoading, setDetailLoading]       = useState(false);
     const [error, setError]                       = useState(null);
 
-    const token   = localStorage.getItem("token");
-    const decoded = token ? jwtDecode(token) : null;
+    const token    = localStorage.getItem("token");
+    const decoded  = token ? jwtDecode(token) : null;
     const agencyId = decoded?.agencyId ?? null;
 
     useEffect(() => { if (agencyId) fetchEngineers(); }, [agencyId]);
@@ -60,15 +203,17 @@ export default function AgencyLmsPage() {
 
     function applyFilter() {
         let result = [...engineers];
-        if (search) result = result.filter((e) => e.name.includes(search));
-        if (statusFilter === "DONE")    result = result.filter((e) => e.isCompleted);
+        if (search)                  result = result.filter((e) => e.name.includes(search));
+        if (statusFilter === "DONE") result = result.filter((e) => e.isCompleted);
         if (statusFilter === "PENDING") result = result.filter((e) => !e.isCompleted);
         setFiltered(result);
     }
 
-    // 기사 클릭 → LMS 이수 상세 + OX퀴즈 응시 이력 동시 조회
+    /* 기사 행 클릭 → 모달 오픈 + 상세 데이터 조회 */
     async function handleSelectEngineer(engineer) {
         setSelectedEngineer(engineer);
+        setConfirmations([]);
+        setQuizAttempts([]);
         try {
             setDetailLoading(true);
             const [confirmRes, quizRes] = await Promise.all([
@@ -85,17 +230,7 @@ export default function AgencyLmsPage() {
         }
     }
 
-    async function handleSendNotification(e, engineer) {
-        e.stopPropagation();
-        try {
-            await sendLmsNotification(agencyId, engineer.userId);
-            alert(`${engineer.name} 기사에게 LMS 이수 독려 알림을 발송했습니다.`);
-        } catch (err) {
-            const msg = err.response?.data?.message;
-            alert(msg || "알림 발송에 실패했습니다.");
-        }
-    }
-
+    /* 모달 내 연도 변경 */
     async function handleYearChange(year) {
         setYearFilter(year);
         if (!selectedEngineer) return;
@@ -115,18 +250,25 @@ export default function AgencyLmsPage() {
         }
     }
 
-    // 퀴즈 합격 여부 (현재 연도 기준)
-    function isQuizPassed(engineer) {
-        // 목록 데이터에는 퀴즈 합격 여부가 없으므로
-        // selectedEngineer의 quizAttempts로만 판단 (목록에서는 "-"로 표시)
-        return null;
+    function handleCloseModal() {
+        setSelectedEngineer(null);
+        setConfirmations([]);
+        setQuizAttempts([]);
+    }
+
+    async function handleSendNotification(e, engineer) {
+        e.stopPropagation();
+        try {
+            await sendLmsNotification(agencyId, engineer.userId);
+            alert(`${engineer.name} 기사에게 LMS 이수 독려 알림을 발송했습니다.`);
+        } catch (err) {
+            const msg = err.response?.data?.message;
+            alert(msg || "알림 발송에 실패했습니다.");
+        }
     }
 
     const completedCount = engineers.filter((e) => e.isCompleted).length;
     const totalCount     = engineers.length;
-
-    // 현재 선택된 기사의 퀴즈 합격 여부
-    const selectedQuizPassed = quizAttempts.some((a) => a.isPassed && a.quizYear === yearFilter);
 
     return (
         <div className="agency-lms">
@@ -156,215 +298,102 @@ export default function AgencyLmsPage() {
             <div className="agency-lms__filters">
                 <div className="agency-lms__search">
                     <Search size={14} color="#aaa" />
-                    <input type="text" placeholder="기사 이름 검색"
-                           value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <input
+                        type="text"
+                        placeholder="기사 이름 검색"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
                 </div>
-                <select className="agency-lms__select" value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}>
+                <select
+                    className="agency-lms__select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                >
                     <option value="ALL">이수 전체</option>
                     <option value="DONE">이수 완료</option>
                     <option value="PENDING">미이수</option>
                 </select>
             </div>
 
-            {loading && <p style={{ padding: 40 }}>불러오는 중...</p>}
+            {loading && <p style={{ padding: 40, color: "#aaa" }}>불러오는 중...</p>}
             {error   && <p style={{ padding: 40, color: "red" }}>{error}</p>}
 
             {!loading && !error && (
-                <div className="agency-lms__body">
-                    {/* 기사 목록 */}
-                    <div className="agency-lms__list">
-                        <table className="agency-lms__table">
-                            <thead>
-                            <tr>
-                                <th>기사명</th>
-                                <th>전문 카테고리</th>
-                                <th>기술 등급</th>
-                                <th>이수 현황</th>
-                                <th>이수 상태</th>
-                                <th>미이수 알림</th>
-                                <th></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {filtered.map((engineer) => {
-                                const isSelected = selectedEngineer?.userId === engineer.userId;
-                                return (
-                                    <tr key={engineer.userId}
-                                        className={isSelected ? "agency-lms__row--selected" : ""}
-                                        onClick={() => handleSelectEngineer(engineer)}
-                                        style={{ cursor: "pointer" }}
-                                    >
-                                        <td style={{ fontWeight: 600 }}>{engineer.name}</td>
-                                        <td>{categoryName(engineer.categoryId)}</td>
-                                        <td>
-                        <span className={`agency-lms__level-badge agency-lms__level-badge--${engineer.skillLevel?.toLowerCase()}`}>
-                          {careerLabel(engineer.skillLevel)}
-                        </span>
-                                        </td>
-                                        <td>{engineer.completedCount} / {engineer.totalCount}개</td>
-                                        <td>
-                                            {engineer.isCompleted
-                                                ? <span className="agency-lms__status-badge agency-lms__status-badge--done">
-                              <CheckCircle size={13} /> 이수 완료
-                            </span>
-                                                : <span className="agency-lms__status-badge agency-lms__status-badge--pending">
-                              <Circle size={13} /> 미이수
-                            </span>
-                                            }
-                                        </td>
-                                        <td>
-                                            {!engineer.isCompleted && (
-                                                <button className="agency-lms__notify-btn"
-                                                        onClick={(e) => handleSendNotification(e, engineer)}>
-                                                    알림 발송
-                                                </button>
-                                            )}
-                                        </td>
-                                        <td><ChevronRight size={14} color="#aaa" /></td>
-                                    </tr>
-                                );
-                            })}
-                            {filtered.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#aaa" }}>
-                                        조회된 기사가 없습니다.
-                                    </td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* 기사 이수 상세 패널 */}
-                    {selectedEngineer && (
-                        <aside className="agency-lms__detail">
-                            <div className="agency-lms__detail-header">
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <p className="agency-lms__detail-name">{selectedEngineer.name} 기사</p>
-                                    {!selectedEngineer.isCompleted && (
-                                        <button className="agency-lms__notify-btn"
-                                                onClick={(e) => handleSendNotification(e, selectedEngineer)}>
+                /* 기사 목록 — 우측 패널 없이 전체 너비 사용 */
+                <table className="agency-lms__table agency-lms__table--full">
+                    <thead>
+                        <tr>
+                            <th>기사명</th>
+                            <th>전문 카테고리</th>
+                            <th>기술 등급</th>
+                            <th>이수 현황</th>
+                            <th>이수 상태</th>
+                            <th>미이수 알림</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filtered.map((engineer) => (
+                            <tr
+                                key={engineer.userId}
+                                className="agency-lms__row--clickable"
+                                onClick={() => handleSelectEngineer(engineer)}
+                            >
+                                <td style={{ fontWeight: 600 }}>{engineer.name}</td>
+                                <td>{categoryName(engineer.categoryId)}</td>
+                                <td>
+                                    <span className={`agency-lms__level-badge agency-lms__level-badge--${engineer.skillLevel?.toLowerCase()}`}>
+                                        {careerLabel(engineer.skillLevel)}
+                                    </span>
+                                </td>
+                                <td>{engineer.completedCount} / {engineer.totalCount}개</td>
+                                <td>
+                                    {engineer.isCompleted
+                                        ? <span className="agency-lms__status-badge agency-lms__status-badge--done">
+                                            <CheckCircle size={13} /> 이수 완료
+                                          </span>
+                                        : <span className="agency-lms__status-badge agency-lms__status-badge--pending">
+                                            <Circle size={13} /> 미이수
+                                          </span>
+                                    }
+                                </td>
+                                <td>
+                                    {!engineer.isCompleted && (
+                                        <button
+                                            className="agency-lms__notify-btn"
+                                            onClick={(e) => handleSendNotification(e, engineer)}
+                                        >
                                             알림 발송
                                         </button>
                                     )}
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <select className="agency-lms__select" value={yearFilter}
-                                            onChange={(e) => handleYearChange(Number(e.target.value))}>
-                                        {[2026, 2025, 2024].map((y) => (
-                                            <option key={y} value={y}>{y}년</option>
-                                        ))}
-                                    </select>
-                                    <button className="agency-lms__detail-close"
-                                            onClick={() => { setSelectedEngineer(null); setConfirmations([]); setQuizAttempts([]); }}>
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            </div>
+                                </td>
+                                <td><ChevronRight size={14} color="#aaa" /></td>
+                            </tr>
+                        ))}
+                        {filtered.length === 0 && (
+                            <tr>
+                                <td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#aaa" }}>
+                                    조회된 기사가 없습니다.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            )}
 
-                            <p className="agency-lms__detail-sub">
-                                {categoryName(selectedEngineer.categoryId)} · {careerLabel(selectedEngineer.skillLevel)}
-                            </p>
-
-                            {detailLoading ? (
-                                <p style={{ padding: 20, color: "#aaa" }}>불러오는 중...</p>
-                            ) : (
-                                <>
-                                    {/* ── 콘텐츠 이수 섹션 ── */}
-                                    <div className="agency-lms__section">
-                                        <p className="agency-lms__section-title">콘텐츠 이수 내역</p>
-                                        {confirmations.length > 0 ? (
-                                            <table className="agency-lms__table">
-                                                <thead>
-                                                <tr>
-                                                    <th>콘텐츠 제목</th>
-                                                    <th>버전</th>
-                                                    <th>이수 일시</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                {confirmations.map((c) => (
-                                                    <tr key={c.confirmationId}>
-                                                        <td>{c.content?.title}</td>
-                                                        <td>{c.confirmedVersion}</td>
-                                                        <td style={{ color: "#666" }}>
-                                                            {c.confirmedAt
-                                                                ? new Date(c.confirmedAt).toLocaleDateString("ko-KR")
-                                                                : "-"}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                </tbody>
-                                            </table>
-                                        ) : (
-                                            <p style={{ padding: "12px 0", color: "#aaa", textAlign: "center" }}>
-                                                {yearFilter}년 이수 내역이 없습니다.
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* ── OX퀴즈 섹션 (신규) ── */}
-                                    <div className="agency-lms__section">
-                                        <p className="agency-lms__section-title">
-                                            <Trophy size={14} style={{ marginRight: 4 }} />
-                                            OX퀴즈 응시 현황
-                                        </p>
-
-                                        {/* 합격 여부 요약 */}
-                                        <div className="agency-lms__quiz-summary">
-                                            {selectedQuizPassed
-                                                ? <span className="agency-lms__status-badge agency-lms__status-badge--done">
-                            <CheckCircle size={13} /> {yearFilter}년 합격
-                          </span>
-                                                : quizAttempts.length > 0
-                                                    ? <span className="agency-lms__status-badge agency-lms__status-badge--pending">
-                              <Circle size={13} /> 미합격 ({quizAttempts.length}회 응시)
-                            </span>
-                                                    : <span className="agency-lms__status-badge agency-lms__status-badge--pending">
-                              <Circle size={13} /> 미응시
-                            </span>
-                                            }
-                                        </div>
-
-                                        {/* 응시 이력 목록 */}
-                                        {quizAttempts.length > 0 ? (
-                                            <table className="agency-lms__table">
-                                                <thead>
-                                                <tr>
-                                                    <th>회차</th>
-                                                    <th>결과</th>
-                                                    <th>응시 일시</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                {quizAttempts.map((a, i) => (
-                                                    <tr key={a.attemptId}>
-                                                        <td>{quizAttempts.length - i}회차</td>
-                                                        <td>
-                                                            {a.isPassed
-                                                                ? <span className="agency-lms__status-badge agency-lms__status-badge--done">합격</span>
-                                                                : <span className="agency-lms__status-badge agency-lms__status-badge--pending">불합격</span>
-                                                            }
-                                                        </td>
-                                                        <td style={{ color: "#666" }}>
-                                                            {new Date(a.attemptedAt).toLocaleDateString("ko-KR")}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                </tbody>
-                                            </table>
-                                        ) : (
-                                            <p style={{ padding: "8px 0", color: "#aaa", textAlign: "center" }}>
-                                                {yearFilter}년 응시 이력이 없습니다.
-                                            </p>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </aside>
-                    )}
-                </div>
+            {/* 기사 상세 모달 */}
+            {selectedEngineer && (
+                <EngineerDetailModal
+                    engineer={selectedEngineer}
+                    confirmations={confirmations}
+                    quizAttempts={quizAttempts}
+                    yearFilter={yearFilter}
+                    onYearChange={handleYearChange}
+                    onClose={handleCloseModal}
+                    onNotify={handleSendNotification}
+                    loading={detailLoading}
+                />
             )}
         </div>
     );

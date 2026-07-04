@@ -1,5 +1,5 @@
 /* =====================================================
-   AdminQuizPage.css
+   AdminQuizPage.css v2
    관리자용 OX퀴즈 문항 관리 페이지 스타일
    기존 Admin.css 클래스(.admin-*)와 함께 사용
 ===================================================== */
@@ -26,7 +26,81 @@
 }
 
 /* ─────────────────────────────────────────────
-   매트릭스 셀 내 문항 행
+   OX퀴즈 전용 매트릭스 (lms-matrix 미사용)
+   3컬럼(초급/중급/고급) 전용 그리드
+───────────────────────────────────────────── */
+.quiz-matrix {
+  width: 100%;
+  border: 1px solid #e8e4ff;
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 12px;
+  margin-top: 16px;
+}
+
+/* 헤더 행 */
+.quiz-matrix__header {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr;
+  background: #f3f1ff;
+  border-bottom: 1px solid #e8e4ff;
+}
+
+.quiz-matrix__header-label {
+  padding: 10px 12px;
+  font-weight: 700;
+  color: #5B4FF5;
+  font-size: 11px;
+  border-right: 1px solid #e8e4ff;
+}
+
+.quiz-matrix__header-cell {
+  padding: 10px 12px;
+  text-align: center;
+  font-weight: 700;
+  color: #5B4FF5;
+  font-size: 11px;
+  border-right: 1px solid #e8e4ff;
+}
+.quiz-matrix__header-cell:last-child { border-right: none; }
+
+/* 데이터 행 */
+.quiz-matrix__row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr;
+  border-bottom: 1px solid #f0f0f8;
+  align-items: stretch;
+}
+.quiz-matrix__row:last-child { border-bottom: none; }
+
+/* 카테고리 라벨 셀 */
+.quiz-matrix__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  font-weight: 700;
+  color: #1a1a2e;
+  font-size: 12px;
+  background: #f9f9fc;
+  border-right: 1px solid #e8e4ff;
+  text-align: center;
+  word-break: keep-all;
+}
+
+/* 문항 데이터 셀 */
+.quiz-matrix__cell {
+  padding: 10px 10px;
+  border-right: 1px solid #f0f0f8;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0; /* overflow 방지 */
+}
+.quiz-matrix__cell:last-child { border-right: none; }
+
+/* ─────────────────────────────────────────────
+   등록 현황 배지
 ───────────────────────────────────────────── */
 .admin-quiz-tier-badge {
   display: inline-flex;
@@ -34,10 +108,11 @@
   gap: 4px;
   padding: 3px 8px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   white-space: nowrap;
+  align-self: flex-start;
 }
 
 .admin-quiz-tier--done {
@@ -58,32 +133,35 @@
   border: 1px solid #e5e7eb;
 }
 
-/* 문항 행 */
+/* ─────────────────────────────────────────────
+   문항 행
+───────────────────────────────────────────── */
 .admin-quiz-question-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 28px 1fr 20px auto;
   align-items: center;
-  gap: 6px;
-  padding: 5px 6px;
-  border-radius: 8px;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 6px;
   background: #f9f9fc;
   border: 1px solid #f0f0f8;
-  margin-bottom: 4px;
-  font-size: 11px;
+  min-width: 0;
 }
 
 .admin-quiz-question-num {
   font-weight: 700;
   color: #5B4FF5;
   flex-shrink: 0;
-  min-width: 22px;
+  font-size: 11px;
 }
 
 .admin-quiz-question-text {
-  flex: 1;
   color: #444;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 11px;
+  min-width: 0;
 }
 
 /* O/X 정답 배지 */
@@ -91,10 +169,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   flex-shrink: 0;
 }
@@ -112,7 +190,7 @@
 /* 문항 액션 버튼 묶음 */
 .admin-quiz-question-actions {
   display: flex;
-  gap: 3px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
@@ -122,12 +200,12 @@
   align-items: center;
   gap: 4px;
   width: 100%;
-  padding: 5px 8px;
+  padding: 4px 6px;
   background: none;
   border: 1px dashed #c8c0f0;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #8b7fe8;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -182,7 +260,7 @@
    기존 admin-btn에 xs 사이즈 추가
 ───────────────────────────────────────────── */
 .admin-btn--xs {
-  padding: 3px 7px;
+  padding: 3px 6px;
   font-size: 10px;
   border-radius: 5px;
 }
