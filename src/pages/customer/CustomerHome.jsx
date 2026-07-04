@@ -64,12 +64,13 @@ const mockAlerts = [
 ];
 
 function buildDiagModal(certData) {
-  const { cert, applianceId, applianceName, applianceBrand } = certData;
+  const { cert, applianceId, applianceName, applianceBrand, serialNumber } = certData;
   return {
     certId: cert.certId,
     applianceId,
     applianceName,
     applianceBrand,
+    serialNumber,
     grade: cert.grade,
     score: cert.score,
     isCertified: cert.isCertified,
@@ -247,6 +248,8 @@ function DiagnosticModal({ diag, onClose }) {
         <table>
           <thead><tr><th colspan="2">진단서 정보</th></tr></thead>
           <tbody>
+            <tr><td>대상 가전</td><td>${diag.applianceBrand ?? "—"}</td></tr>
+            <tr><td>시리얼 넘버</td><td>${diag.serialNumber ?? "—"}</td></tr>
             <tr><td>최초 발급일</td><td>${fmt(diag.issuedAt)}</td></tr>
             <tr><td>최근 갱신일</td><td>${fmt(diag.updatedAt)}</td></tr>
           </tbody>
@@ -404,6 +407,10 @@ function DiagnosticModal({ diag, onClose }) {
                 <td>대상 가전</td>
                 <td>{diag.applianceBrand}</td>
               </tr>
+              <tr>
+                <td>시리얼 넘버</td>
+                <td>{diag.serialNumber ?? "—"}</td>
+              </tr>
               {/* <tr>
                 <td>CareFlow 인증</td>
                 <td>
@@ -534,6 +541,7 @@ export default function CustomerHome() {
                 applianceId: a.applianceId,
                 applianceName: getCategoryName(a.categoryId),
                 applianceBrand: `${a.brand} ${a.modelName}`,
+                serialNumber: a.serialNumber,
               }))
               .catch(() => null),
           ),

@@ -313,7 +313,6 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
                   />
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -379,7 +378,10 @@ function ApplianceRegisterFlow({ onClose, onCreated }) {
           <p className="car-step-sub">새로운 가전이 목록에 추가되었습니다.</p>
 
           <div className="car-complete-card">
-            <div className="car-confirm-preview" style={{ alignItems: "center" }}>
+            <div
+              className="car-confirm-preview"
+              style={{ alignItems: "center" }}
+            >
               <ApplianceIcon name={previewName} size={88} radius={16} />
               <p className="car-confirm-preview-name">{form.modelName}</p>
               <p className="car-confirm-preview-model">{form.serialNumber}</p>
@@ -423,12 +425,41 @@ function mapCertToView(cert) {
     grade: cert.grade,
     score: cert.score,
     isCertified: cert.isCertified,
-    issuedAt: cert.issuedAt ? cert.issuedAt.slice(0, 10).replace(/-/g, ".") : "—",
+    issuedAt: cert.issuedAt
+      ? cert.issuedAt.slice(0, 10).replace(/-/g, ".")
+      : "—",
+    updatedAt: cert.updatedAt
+      ? cert.updatedAt.slice(0, 10).replace(/-/g, ".")
+      : "—",
     scoreItems: [
-      { label: "수리 횟수", score: cert.repairCountScore, max: 25, condition: cert.repairCountCondition, icon: <Wrench size={13} /> },
-      { label: "사용 기간", score: cert.usagePeriodScore, max: 25, condition: cert.usagePeriodCondition, icon: <Calendar size={13} /> },
-      { label: "교체 부품 중요도", score: cert.partImportanceScore, max: 25, condition: cert.partImportanceCondition, icon: <Settings size={13} /> },
-      { label: "최근 수리 일시", score: cert.lastRepairedScore, max: 25, condition: cert.lastRepairedCondition, icon: <Clock size={13} /> },
+      {
+        label: "수리 횟수",
+        score: cert.repairCountScore,
+        max: 25,
+        condition: cert.repairCountCondition,
+        icon: <Wrench size={13} />,
+      },
+      {
+        label: "사용 기간",
+        score: cert.usagePeriodScore,
+        max: 25,
+        condition: cert.usagePeriodCondition,
+        icon: <Calendar size={13} />,
+      },
+      {
+        label: "교체 부품 중요도",
+        score: cert.partImportanceScore,
+        max: 25,
+        condition: cert.partImportanceCondition,
+        icon: <Settings size={13} />,
+      },
+      {
+        label: "최근 수리 일시",
+        score: cert.lastRepairedScore,
+        max: 25,
+        condition: cert.lastRepairedCondition,
+        icon: <Clock size={13} />,
+      },
     ],
   };
 }
@@ -507,19 +538,23 @@ function DiagPanel({ diag, appliance }) {
     const gm = GRADE_META[diag.grade] || GRADE_META.E;
     const printWindow = window.open("", "_blank", "width=800,height=900");
 
-    const iconWrench   = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;
+    const iconWrench = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;
     const iconCalendar = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     const iconSettings = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
-    const iconClock    = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
-    const iconHouse    = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>`;
+    const iconClock = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    const iconHouse = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#734bcf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>`;
     const SCORE_ICONS = [iconWrench, iconCalendar, iconSettings, iconClock];
 
-    const scoreRows = diag.scoreItems.map((item, i) => `
+    const scoreRows = diag.scoreItems
+      .map(
+        (item, i) => `
       <tr>
         <td><span class="row-icon">${SCORE_ICONS[i]}</span>${item.label}</td>
         <td>${item.score} / ${item.max}</td>
         <td>${item.condition ?? "—"}</td>
-      </tr>`).join("");
+      </tr>`,
+      )
+      .join("");
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -550,7 +585,10 @@ function DiagPanel({ diag, appliance }) {
         <table>
           <thead><tr><th colspan="2">진단서 정보</th></tr></thead>
           <tbody>
+            <tr><td>제품명</td><td>${appliance?.name ?? "—"}</td></tr>
+            <tr><td>시리얼 번호</td><td>${appliance?.serialNumber ?? "—"}</td></tr>
             <tr><td>최초 발급일</td><td>${diag.issuedAt}</td></tr>
+            <tr><td>최근 갱신일</td><td>${diag.updatedAt}</td></tr>
           </tbody>
         </table>
         <p class="footer">본 진단서는 CareFlow에서 자동 발급된 문서입니다.</p>
@@ -1203,13 +1241,21 @@ export default function CustomerAppliances() {
                   <div className="ca-empty__left">
                     <ApplianceIcon name="" size={56} radius={14} />
                     <div className="ca-empty__text">
-                      <p className="ca-empty__title">아직 등록된 가전이 없어요</p>
-                      <p className="ca-empty__sub">가전을 등록하면 상태, 수리 이력, 건강 진단서를<br />한눈에 관리할 수 있어요.</p>
+                      <p className="ca-empty__title">
+                        아직 등록된 가전이 없어요
+                      </p>
+                      <p className="ca-empty__sub">
+                        가전을 등록하면 상태, 수리 이력, 건강 진단서를
+                        <br />
+                        한눈에 관리할 수 있어요.
+                      </p>
                     </div>
                   </div>
                   <div className="ca-empty__right">
                     <span className="ca-empty__arrow">↓</span>
-                    <span className="ca-empty__hint">아래 카드를 눌러 시작해보세요</span>
+                    <span className="ca-empty__hint">
+                      아래 카드를 눌러 시작해보세요
+                    </span>
                   </div>
                 </div>
               )}
@@ -1312,7 +1358,9 @@ export default function CustomerAppliances() {
               <p className="ca-side-card__title">가전 현황</p>
               <div className="ca-stat-list">
                 <div className="ca-stat-row">
-                  <span className="ca-stat-icon ca-stat-icon--gray"><Package size={14} /></span>
+                  <span className="ca-stat-icon ca-stat-icon--gray">
+                    <Package size={14} />
+                  </span>
                   <span className="ca-stat-label">전체 가전</span>
                   <span className="ca-stat-value">{appliances.length} 대</span>
                 </div>
