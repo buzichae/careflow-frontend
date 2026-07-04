@@ -263,11 +263,6 @@ export default function AgencyCustomerPage() {
                     <span className={`acp-status-badge acp-status-badge--${status.type}`}>{status.label}</span>
                   </span>
 
-                  <span>
-                    <span className="acp-grade-badge acp-grade-badge--normal">
-                      {grade.label} {grade.icon}
-                    </span>
-                  </span>
                   <span className="acp-table__count">{item.applianceCount}대</span>
                   <span className="acp-table__active">{formatDate(item.lastLoginAt)}</span>
                   <span className="acp-table__actions">
