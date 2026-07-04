@@ -45,7 +45,7 @@ function formatAmount(amount) {
   return `${Number(amount ?? 0).toLocaleString()}원`;
 }
 
-// paidAt(LocalDateTime) → 날짜 문자열
+// settledAt(LocalDateTime) → 날짜 문자열
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   return dateStr.replace("T", " ").slice(0, 16);
@@ -113,7 +113,6 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
           {/* 기본 정보 */}
           <div className="asp-modal__section">
             <div className="asp-modal__row"><span className="asp-modal__label">기준 기간</span><span className="asp-modal__value">{item.periodStart} ~ {item.periodEnd}</span></div>
-            <div className="asp-modal__row"><span className="asp-modal__label">계산일</span><span className="asp-modal__value">{formatDate(item.calculatedAt)}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">완료 건수</span><span className="asp-modal__value">{item.completedCount}건</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">총 정산 금액</span><span className="asp-modal__value asp-modal__value--amount">{formatAmount(item.grossAmount)}</span></div>
           </div>
@@ -164,8 +163,8 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             <div className="asp-modal__row"><span className="asp-modal__label">지급 방식</span><span className="asp-modal__value">{item.payMethod ?? "-"}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">지급 계좌</span><span className="asp-modal__value">{item.bankAccount ?? "-"}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">지급 상태</span><span className={`asp-status-badge asp-status-badge--${status.type}`}>{status.label}</span></div>
-            {item.paidAt && (
-              <div className="asp-modal__row"><span className="asp-modal__label">지급일</span><span className="asp-modal__value">{formatDate(item.paidAt)}</span></div>
+            {item.settledAt && (
+              <div className="asp-modal__row"><span className="asp-modal__label">지급일</span><span className="asp-modal__value">{formatDate(item.settledAt)}</span></div>
             )}
           </div>
 
@@ -504,7 +503,7 @@ export default function AgencySettlementPage() {
                 <span>
                   <span className={`asp-status-badge asp-status-badge--${status.type}`}>{status.label}</span>
                 </span>
-                <span className="asp-table__settled-at">{formatDate(item.paidAt)}</span>
+                <span className="asp-table__settled-at">{formatDate(item.settledAt)}</span>
                 <span>
                   <button
                     className="asp-detail-btn"
@@ -539,7 +538,7 @@ export default function AgencySettlementPage() {
         <div className="asp-page-size">{PAGE_SIZE}개씩 보기 <ChevronDown size={13} /></div>
       </div>
 
-      <p className="asp-footnote">* 실 지급액은 기사의 경우만 표시됩니다. 승인/보류 등 상태 변경은 상세보기에서 진행합니다. 지급 방식/계좌 정보는 현재 백엔드 미구현으로 항상 "-"로 표시됩니다.</p>
+      <p className="asp-footnote">* 실 지급액은 기사의 경우만 표시됩니다. 승인/보류 등 상태 변경은 상세보기에서 진행합니다.</p>
 
       {/* 상세 정보 모달 */}
       {selectedItem && (
