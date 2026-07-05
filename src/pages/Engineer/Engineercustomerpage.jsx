@@ -82,12 +82,18 @@ export default function EngineerCustomerPage() {
   // region/addressDetail 조합 (address 단일 필드는 응답에 없음)
   const fullAddress = [c.region, c.addressDetail].filter(Boolean).join(" ");
 
-  // ⚠ totalAs/doneAs/inProgressAs/cancelledAs/totalPayment 집계값은 여전히
-  // 응답에 없어서, 이미 받은 asHistory로 직접 계산 (asHistory가 비어있으면 실제 0건)
-  const totalAsCount      = asHistory.length;
-  const doneAsCount       = asHistory.filter(a => DONE_STATUSES.includes(a.status)).length;
-  const inProgressAsCount = asHistory.filter(a => IN_PROGRESS_STATUSES.includes(a.status)).length;
+  // [확정] 백엔드 회신: asHistory는 "수리 완료 + 보고서 작성까지 끝난 건"만 포함.
+  // 진행 중인 건은 애초에 이 배열에 안 들어가고 inProgressWork로 별도 제공됨
+  // (finalAmount, diagnosisResult 등은 완료 시점에만 존재하는 데이터라서 설계상 그럼).
+  // → asHistory.length는 "완료 건수"로 써야 정확하고, "진행 중"은 inProgressWork
+  //   존재 여부로 판단 (상세 API 특성상 진행 중 건은 최대 1건으로 간주).
+  // ⚠ "총 A/S 건수"는 이 페이지의 asHistory+inProgressWork만으로는 취소/거절
+  //   이력까지 포함한 완전한 값을 만들 수 없음 — 목록 API의 totalAsCount가
+  //   더 정확하지만 이 상세 화면에는 그 값이 없어 근사치로 계산함.
+  const doneAsCount       = asHistory.length; // asHistory는 정의상 전부 완료 건
+  const inProgressAsCount = c.inProgressWork ? 1 : 0;
   const cancelledAsCount  = asHistory.filter(a => a.status === "CANCELLED").length;
+  const totalAsCount      = doneAsCount + inProgressAsCount + cancelledAsCount;
   const totalPayment      = asHistory
     .filter(a => a.finalAmount != null)
     .reduce((sum, a) => sum + a.finalAmount, 0);
@@ -195,7 +201,15 @@ export default function EngineerCustomerPage() {
               })}
               {filteredAs.length === 0 && (
                 <p style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>
-                  A/S 이력이 없습니다.
+                  {/* [확정] 백엔드 회신: asHistory는 완료(보고서 작성 완료)된 건만
+                      포함하도록 설계됨. "진행 중"/"취소" 탭은 이 배열에 해당
+                      데이터가 원래 없어서 항상 비어있는 게 정상 — 진행 중인 작업은
+                      위쪽 "진행 중인 작업" 패널에서 확인 가능. */}
+                  {asTab === "진행 중"
+                    ? "진행 중인 작업은 위의 \"진행 중인 작업\" 패널에서 확인해주세요."
+                    : asTab === "취소"
+                      ? "취소/거절 이력은 현재 이 화면에서 제공되지 않습니다."
+                      : "A/S 이력이 없습니다."}
                 </p>
               )}
             </div>

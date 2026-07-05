@@ -16,6 +16,13 @@ export const getEngineerCustomers = (params) => {
   return api.get("/api/engineer/customers", { params });
 };
 
+// [신규 — 백엔드 확인 필요] 담당 고객들이 보유한 가전 브랜드 목록 (중복 제거)
+// brand 컬럼이 ENUM이 아니라 자유 텍스트(VARCHAR)라 마스터 테이블이 없음.
+// 실제 등록된 값 기준으로 드롭다운을 채우려면 이런 distinct 조회 API가 필요합니다.
+// 예시 응답: ["삼성", "LG", "소니", "월풀"]
+export const getEngineerCustomerBrands = () =>
+  api.get("/api/engineer/customers/brands");
+
 // 대시보드 전체 데이터 (기사 정보 + 오늘 일정 + 실적 + 알림)
 export const getEngineerDashboard = () => api.get("/api/engineer/dashboard");
 
