@@ -279,6 +279,10 @@
 .asp-modal__section { padding: 14px 0; border-bottom: 0.5px solid #f5f4ff; }
 .asp-modal__section:last-child { border-bottom: none; }
 .asp-modal__section-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 8px; }
+.asp-modal__section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.asp-modal__section-header .asp-modal__section-label { margin-bottom: 0; }
 
 .asp-modal__row {
   display: flex; align-items: center; justify-content: space-between;

@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../apis/auth";
-import { getAgencyMe } from "../../apis/agency"; 
+import { getAgencyMe } from "../../apis/agency";
+import { getIsRepresentativeFromToken } from "../../utils/auth";
 import "../../styles/Agency/AgencyNavbar.css"
 
 export default function AgencyNavbar() {
@@ -16,9 +17,11 @@ export default function AgencyNavbar() {
   async function fetchAgency() {
     try {
       const data = await getAgencyMe();
+      // JWT의 isRepresentative 클레임으로 슈퍼 계정(대표 담당자) 여부 판별
+      const isRepresentative = getIsRepresentativeFromToken();
       setAgency({
         name: data.agencyName,
-        role: "대행사 관리자", // 응답에 role 필드가 없으므로 고정 텍스트 사용
+        role: isRepresentative ? "대행사 슈퍼 관리자" : "대행사 관리자",
       });
     } catch (err) {
       console.error("대행사 정보를 불러오지 못했습니다.", err);

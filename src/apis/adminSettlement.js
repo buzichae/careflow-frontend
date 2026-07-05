@@ -27,3 +27,23 @@ export const approveAdminSettlement = (agencyId, year, month) =>
  */
 export const approveAllAdminSettlements = (year, month) =>
     api.patch("/api/admin/settlements/approve-all", null, { params: { year, month } });
+
+/**
+ * 건별 정산 상태 변경 (보류/재검토 — CareFlow→대행사 지급 상태)
+ * PATCH /api/admin/settlements/{settlementId}/status
+ * body: { status: "DISPUTED" | "PENDING" }
+ * - PAID는 approveAdminSettlement/approveAllAdminSettlements의 배치 승인 전용, 이 API로는 불가
+ * - 이미 PAID인 건은 어떤 변경도 불가
+ */
+export const updateAdminSettlementStatus = (settlementId, status) =>
+    api.patch(`/api/admin/settlements/${settlementId}/status`, { status });
+
+/**
+ * 배치 단위 정산 상태 변경 (보류/재검토 — platform_settlements 배치 자체)
+ * PATCH /api/admin/settlements/{agencyId}/batch-status?year=&month=
+ * body: { status: "DISPUTED" | "PENDING" }
+ * - PAID는 approveAdminSettlement/approveAllAdminSettlements 전용, 이 API로는 불가
+ * - 이미 PAID인 배치는 어떤 변경도 불가(실제 송금이 끝난 불변 기록)
+ */
+export const updateAdminBatchStatus = (agencyId, year, month, status) =>
+    api.patch(`/api/admin/settlements/${agencyId}/batch-status`, { status }, { params: { year, month } });

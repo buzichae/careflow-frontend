@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import "../../styles/Admin/Admin.css";
 import {
   getAdminSettlements,
   getAdminSettlementDetails,
   approveAdminSettlement,
   approveAllAdminSettlements,
+  updateAdminSettlementStatus,
+  updateAdminBatchStatus,
 } from "../../apis/adminSettlement";
 
 /* 최근 N개월 선택 옵션 생성 (당월부터 과거순) */
@@ -34,6 +36,13 @@ const STATUS_META = {
   NONE:    { label: "내역 없음", badge: "gray" },
 };
 
+// 건별 정산 상태(CareFlow→대행사) 배지 — PENDING/PAID/DISPUTED
+const ITEM_STATUS_META = {
+  PENDING:  { label: "지급 대기", badge: "orange" },
+  PAID:     { label: "지급 완료", badge: "green" },
+  DISPUTED: { label: "보류",     badge: "red" },
+};
+
 export default function AdminSettlementPage() {
   const monthOptions = useMemo(() => getRecentMonths(6), []);
   const [selected, setSelected] = useState(monthOptions[0]);
@@ -47,6 +56,8 @@ export default function AdminSettlementPage() {
 
   const [approvingId, setApprovingId] = useState(null);
   const [approvingAll, setApprovingAll] = useState(false);
+  const [updatingItemId, setUpdatingItemId] = useState(null);
+  const [updatingBatchId, setUpdatingBatchId] = useState(null);
 
   const fetchSummary = () => {
     setLoading(true);
@@ -104,6 +115,34 @@ export default function AdminSettlementPage() {
       alert("일괄 승인 처리 중 오류가 발생했습니다.");
     } finally {
       setApprovingAll(false);
+    }
+  };
+
+  // 건별 정산 상태 변경(보류/재검토) — CareFlow→대행사 지급 상태는 ADMIN만 변경 가능
+  const updateItemStatus = async (agencyId, settlementId, status) => {
+    setUpdatingItemId(settlementId);
+    try {
+      await updateAdminSettlementStatus(settlementId, status);
+      const res = await getAdminSettlementDetails(agencyId, selected.year, selected.month);
+      setDetails((prev) => ({ ...prev, [agencyId]: res.data ?? [] }));
+      fetchSummary(); // 대행사별 미지급 건수 등 요약 통계도 함께 갱신
+    } catch {
+      alert("정산 상태 변경 중 오류가 발생했습니다.");
+    } finally {
+      setUpdatingItemId(null);
+    }
+  };
+
+  // 배치 단위 정산 상태 변경(보류/재검토) — platform_settlements 배치 자체를 CareFlow 자체 판단으로 잠금/해제
+  const updateBatchStatus = async (agencyId, status) => {
+    setUpdatingBatchId(agencyId);
+    try {
+      await updateAdminBatchStatus(agencyId, selected.year, selected.month, status);
+      fetchSummary();
+    } catch {
+      alert("배치 상태 변경 중 오류가 발생했습니다.");
+    } finally {
+      setUpdatingBatchId(null);
     }
   };
 
@@ -182,6 +221,7 @@ export default function AdminSettlementPage() {
                 <th>CareFlow 수수료</th>
                 <th>대행사 지급액</th>
                 <th>지급 상태</th>
+                <th>지급 계좌</th>
                 <th>처리</th>
                 <th></th>
               </tr>
@@ -189,11 +229,11 @@ export default function AdminSettlementPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="admin-empty">불러오는 중...</td>
+                  <td colSpan={9} className="admin-empty">불러오는 중...</td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="admin-empty">정산 데이터가 없습니다.</td>
+                  <td colSpan={9} className="admin-empty">정산 데이터가 없습니다.</td>
                 </tr>
               ) : (
                 rows.map((r) => {
@@ -209,18 +249,46 @@ export default function AdminSettlementPage() {
                         <td style={{ color: "#734bcf", fontWeight: 600 }}>{fmt(r.careflowFee)}</td>
                         <td style={{ fontWeight: 700 }}>{fmt(r.agencyPay)}</td>
                         <td>
-                          <span className={`admin-badge admin-badge--${sm.badge}`}>{sm.label}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span className={`admin-badge admin-badge--${sm.badge}`}>{sm.label}</span>
+                            {r.platformSettlementStatus === "DISPUTED" && (
+                              <span title="CareFlow가 이 배치 자체를 보류 처리했습니다(집계 오류 등)" style={{ display: "inline-flex", color: "#dc2626" }}>
+                                <AlertTriangle size={15} />
+                              </span>
+                            )}
+                          </div>
                         </td>
+                        <td style={{ fontSize: 12, color: "#666" }}>{r.paidBankAccount ?? "—"}</td>
                         <td>
-                          {r.status === "PENDING" && (
-                            <button
-                              className="admin-btn admin-btn--approve admin-btn--sm"
-                              onClick={() => approveAgency(r.agencyId)}
-                              disabled={approvingId === r.agencyId}
-                            >
-                              {approvingId === r.agencyId ? "처리 중..." : "지급 승인"}
-                            </button>
-                          )}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+                            {r.status === "PENDING" && (
+                              <button
+                                className="admin-btn admin-btn--approve admin-btn--sm"
+                                onClick={() => approveAgency(r.agencyId)}
+                                disabled={approvingId === r.agencyId}
+                              >
+                                {approvingId === r.agencyId ? "처리 중..." : "지급 승인"}
+                              </button>
+                            )}
+                            {r.platformSettlementStatus === "PENDING" && (
+                              <button
+                                className="admin-btn admin-btn--danger admin-btn--sm"
+                                disabled={updatingBatchId === r.agencyId}
+                                onClick={() => updateBatchStatus(r.agencyId, "DISPUTED")}
+                              >
+                                {updatingBatchId === r.agencyId ? "처리 중..." : "배치 보류"}
+                              </button>
+                            )}
+                            {r.platformSettlementStatus === "DISPUTED" && (
+                              <button
+                                className="admin-btn admin-btn--outline admin-btn--sm"
+                                disabled={updatingBatchId === r.agencyId}
+                                onClick={() => updateBatchStatus(r.agencyId, "PENDING")}
+                              >
+                                {updatingBatchId === r.agencyId ? "처리 중..." : "배치 재검토"}
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td style={{ textAlign: "center" }}>
                           {r.asCount > 0 && (
@@ -239,7 +307,7 @@ export default function AdminSettlementPage() {
                       {/* 건별 내역 인라인 펼침 */}
                       {isExpanded && (
                         <tr key={`${r.agencyId}-detail`}>
-                          <td colSpan={8} style={{ padding: 0, background: "#faf9ff", borderBottom: "1px solid #ebebf0" }}>
+                          <td colSpan={9} style={{ padding: 0, background: "#faf9ff", borderBottom: "1px solid #ebebf0" }}>
                             <div style={{ padding: "12px 20px 16px" }}>
                               <p style={{ fontSize: 12, color: "#734bcf", fontWeight: 700, marginBottom: 10 }}>
                                 {r.agencyName} · {selected.label} · 건별 내역
@@ -254,29 +322,58 @@ export default function AdminSettlementPage() {
                                     <th>총액</th>
                                     <th>CareFlow 수수료</th>
                                     <th>대행사 지급액</th>
+                                    <th>정산 상태</th>
+                                    <th>처리</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {detailsLoadingId === r.agencyId ? (
                                     <tr>
-                                      <td colSpan={7} className="admin-empty">불러오는 중...</td>
+                                      <td colSpan={9} className="admin-empty">불러오는 중...</td>
                                     </tr>
                                   ) : detailRows.length === 0 ? (
                                     <tr>
-                                      <td colSpan={7} className="admin-empty">건별 내역이 없습니다.</td>
+                                      <td colSpan={9} className="admin-empty">건별 내역이 없습니다.</td>
                                     </tr>
                                   ) : (
-                                    detailRows.map((d) => (
-                                      <tr key={d.settlementId}>
-                                        <td style={{ fontSize: 11, color: "#aaa" }}>{d.settlementId}</td>
-                                        <td style={{ fontSize: 12, color: "#888" }}>{d.completedAt}</td>
-                                        <td>{d.applianceName}</td>
-                                        <td>{d.customerName}</td>
-                                        <td style={{ fontWeight: 600 }}>{fmt(d.totalAmount)}</td>
-                                        <td style={{ color: "#734bcf" }}>{fmt(d.careflowFee)}</td>
-                                        <td style={{ fontWeight: 700 }}>{fmt(d.agencyPay)}</td>
-                                      </tr>
-                                    ))
+                                    detailRows.map((d) => {
+                                      const ism = ITEM_STATUS_META[d.status] ?? { label: d.status, badge: "gray" };
+                                      const isUpdating = updatingItemId === d.settlementId;
+                                      return (
+                                        <tr key={d.settlementId}>
+                                          <td style={{ fontSize: 11, color: "#aaa" }}>{d.settlementCode}</td>
+                                          <td style={{ fontSize: 12, color: "#888" }}>{d.completedAt}</td>
+                                          <td>{d.applianceName}</td>
+                                          <td>{d.customerName}</td>
+                                          <td style={{ fontWeight: 600 }}>{fmt(d.totalAmount)}</td>
+                                          <td style={{ color: "#734bcf" }}>{fmt(d.careflowFee)}</td>
+                                          <td style={{ fontWeight: 700 }}>{fmt(d.agencyPay)}</td>
+                                          <td>
+                                            <span className={`admin-badge admin-badge--${ism.badge}`}>{ism.label}</span>
+                                          </td>
+                                          <td>
+                                            {d.status === "PENDING" && (
+                                              <button
+                                                className="admin-btn admin-btn--danger admin-btn--sm"
+                                                disabled={isUpdating}
+                                                onClick={() => updateItemStatus(r.agencyId, d.settlementId, "DISPUTED")}
+                                              >
+                                                {isUpdating ? "처리 중..." : "보류"}
+                                              </button>
+                                            )}
+                                            {d.status === "DISPUTED" && (
+                                              <button
+                                                className="admin-btn admin-btn--outline admin-btn--sm"
+                                                disabled={isUpdating}
+                                                onClick={() => updateItemStatus(r.agencyId, d.settlementId, "PENDING")}
+                                              >
+                                                {isUpdating ? "처리 중..." : "재검토"}
+                                              </button>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })
                                   )}
                                 </tbody>
                               </table>

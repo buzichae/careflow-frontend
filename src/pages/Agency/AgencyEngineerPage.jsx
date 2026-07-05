@@ -475,6 +475,8 @@ export default function AgencyEngineerPage() {
   const token    = localStorage.getItem("token");
   const decoded  = token ? jwtDecode(token) : null;
   const agencyId = decoded?.agencyId ?? null;
+  // 슈퍼 계정(대표 담당자)만 기사 가입 신청을 승인/반려할 수 있으므로 버튼도 슈퍼 계정에게만 노출
+  const isRepresentative = decoded?.isRepresentative ?? false;
 
   const fetchEngineers = useCallback(() => {
     setListLoading(true);
@@ -603,9 +605,11 @@ export default function AgencyEngineerPage() {
         <button className="aep-reset-btn" onClick={() => setSearchQuery("")}>
           <RefreshCw size={13} /> 필터 초기화
         </button>
-        <button className="aep-invite-btn" onClick={() => setIsApprovalModalOpen(true)}>
-          <UserPlus size={14} /> 가입 신청 관리
-        </button>
+        {isRepresentative && (
+          <button className="aep-invite-btn" onClick={() => setIsApprovalModalOpen(true)}>
+            <UserPlus size={14} /> 가입 신청 관리
+          </button>
+        )}
       </div>
 
       <div className="aep-body">

@@ -21,17 +21,22 @@ export const getAgencySettlements = ({ page, size, status, keyword, dateFrom, da
   });
 
 /**
- * 정산 상태 변경
- * PATCH /api/agency/settlements/{settlementId}/status
- * body: { status: "APPROVED" | "DISPUTED" | "PENDING" | "PAID" }
- *
- * 전이 규칙 (서버 검증):
- * - PAID 는 최종 상태 → 변경 불가
- * - PAID 로 변경은 APPROVED 상태에서만 허용
- * - 그 외 PENDING / APPROVED / DISPUTED 간은 자유롭게 전이
+ * 대행사→기사 지급 완료 처리
+ * PATCH /api/agency/engineer-payouts/{engineerPayoutId}/pay
+ * - CareFlow는 이 자금을 집행하지 않으므로 계좌 등록 여부를 검증하지 않는다(대행사 자체 신고)
+ * - 이미 PAID인 배치를 다시 호출해도 에러 없이 204(멱등)
  */
-export const updateSettlementStatus = (settlementId, status) =>
-  api.patch(`/api/agency/settlements/${settlementId}/status`, { status });
+export const payEngineerPayout = (engineerPayoutId) =>
+  api.patch(`/api/agency/engineer-payouts/${engineerPayoutId}/pay`);
+
+/**
+ * 대행사→기사 지급 건별 상태 변경 (보류/재검토 — 대행사 자체 판단)
+ * PATCH /api/agency/engineer-payouts/{engineerPayoutId}/status
+ * body: { status: "DISPUTED" | "PENDING" }
+ * - PAID는 payEngineerPayout() 전용, 이미 PAID인 건은 어떤 변경도 불가(409)
+ */
+export const updateEngineerPayoutStatus = (engineerPayoutId, status) =>
+  api.patch(`/api/agency/engineer-payouts/${engineerPayoutId}/status`, { status });
 
 /**
  * 대행사 소속 기사별 실적 리포트 (월 단위 집계)

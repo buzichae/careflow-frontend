@@ -31,6 +31,7 @@ import AdminMembersPage from "./pages/Admin/AdminMembersPage.jsx";
 import AdminServicePage from "./pages/Admin/AdminServicePage.jsx";
 import AdminLMSPage from "./pages/Admin/AdminLMSPage.jsx";
 import AdminSettlementPage from "./pages/Admin/AdminSettlementPage.jsx";
+import AdminEngineerPayoutPage from "./pages/Admin/AdminEngineerPayoutPage.jsx";
 
 import EngineerDashboard from "../src/pages/Engineer/Engineerdashboard.jsx"
 import EngineerSchedulePage from "../src/pages/Engineer/EngineerSchedulePage.jsx"
@@ -138,6 +139,7 @@ export default function App() {
           <Route path="/admin/service"   element={<AdminServicePage />} />
           <Route path="/admin/lms"        element={<AdminLMSPage />} />
           <Route path="/admin/settlement" element={<AdminSettlementPage />} />
+          <Route path="/admin/engineer-payouts" element={<AdminEngineerPayoutPage />} />
 
           {/* 기사 */}
           <Route path="/engineer/dashboard" element={<EngineerDashboard  title="기사 - 대시보드" />} />
