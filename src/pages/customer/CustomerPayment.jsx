@@ -1,7 +1,22 @@
 import { useState, useEffect } from "react";
 import { CreditCard, Wallet, AlertTriangle, CheckCircle, ClipboardList } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 import "../../styles/Customer/CustomerPayment.css";
-import { getMyAS, getReport, processPayment, getPaymentSummary } from "../../apis/as";
+import {
+  getMyAS,
+  getReport,
+  processPayment,
+  getPaymentSummary,
+  getMonthlyPayments,
+} from "../../apis/as";
 
 function fmt(dateStr) {
   return dateStr ? String(dateStr).slice(0, 10).replace(/-/g, ".") : "—";
@@ -12,6 +27,11 @@ function fmtWon(amount) {
 }
 function productName(r) {
   return [r.brand, r.modelName].filter(Boolean).join(" ") || "—";
+}
+function fmtMonthLabel(yearMonth) {
+  // "2026-07" -> "7월"
+  const m = Number(String(yearMonth).slice(5, 7));
+  return `${m}월`;
 }
 
 /* 결제 대기 카드 */
@@ -71,20 +91,23 @@ export default function CustomerPayment() {
   const [asList,   setAsList]   = useState([]);
   const [reports,  setReports]  = useState({});
   const [summary,  setSummary]  = useState(null);
+  const [monthly,  setMonthly]  = useState([]);
   const [loading,  setLoading]  = useState(true);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [asRes, summaryRes] = await Promise.all([
+      const [asRes, summaryRes, monthlyRes] = await Promise.all([
         getMyAS(),
         getPaymentSummary().catch(() => ({ data: null })),
+        getMonthlyPayments().catch(() => ({ data: [] })),
       ]);
 
       const list = asRes.data?.content ?? asRes.data ?? [];
       const arr  = Array.isArray(list) ? list : [];
       setAsList(arr);
       setSummary(summaryRes.data);
+      setMonthly(Array.isArray(monthlyRes.data) ? monthlyRes.data : []);
 
       // reportId 있는 건 병렬 fetch (결제 내역 테이블용 기사명/금액)
       const withReport = arr.filter((r) => r.reportId);
@@ -140,6 +163,41 @@ export default function CustomerPayment() {
           </div>
         ))}
       </div>
+
+      {/* 월별 결제액 추이 */}
+      {!loading && monthly.length > 0 && (
+        <div className="cp-card">
+          <div className="cp-card__header">
+            <h2>월별 결제 추이</h2>
+            <span className="cp-card__sub">최근 6개월</span>
+          </div>
+          <div style={{ width: "100%", height: 220 }}>
+            <ResponsiveContainer>
+              <LineChart data={monthly} margin={{ top: 12, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="yearMonth" tickFormatter={fmtMonthLabel} fontSize={12} />
+                <YAxis
+                  tickFormatter={(v) => `${Math.round(v / 10000)}만`}
+                  fontSize={12}
+                  width={48}
+                />
+                <Tooltip
+                  formatter={(value) => [fmtWon(value), "결제액"]}
+                  labelFormatter={fmtMonthLabel}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* 결제 대기 Action Cards */}
       {!loading && pending.map((req) => (
