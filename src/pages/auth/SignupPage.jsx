@@ -249,8 +249,6 @@ function SignupForm({ roleKey, onBack }) {
     setAgencyLookup({ status: "loading", message: "" });
     try {
       const { data } = await getAgencyByName(name);
-      // ※ 응답이 Agencies 엔티티 그대로라 필드명은 추정치입니다.
-      //    실제 엔티티 필드명 확인 후 아래 매핑을 맞춰주세요.
       setFormData((prev) => ({
         ...prev,
         flag: 1,
@@ -260,7 +258,8 @@ function SignupForm({ roleKey, onBack }) {
       }));
       setAgencyLookup({
         status: "found",
-        message: "등록된 대행사 정보를 찾았습니다. 정보가 자동으로 입력됩니다.",
+        // 부분 일치 검색이라 실제로 어떤 대행사의 정보를 가져왔는지 이름을 명시해서 알려줌
+        message: `'${data.agencyName}'의 정보를 찾았습니다. 정보가 자동으로 입력됩니다.`,
       });
     } catch (error) {
       // 404(NoSuchElementException) 등 조회 실패 → 신규 등록으로 처리
@@ -481,6 +480,76 @@ function SignupForm({ roleKey, onBack }) {
               {/* ── Step 1: 필수 계정 정보 ── */}
               {step === 1 && (
                 <>
+                  {/* 대행사: 기존 등록 여부를 가장 먼저 확인 — 대행사명 조회 UI를 최상단에 배치 */}
+                  {roleKey === "agency" && (
+                    <div className="auth-input-wrap">
+                      <label className="auth-label">대행사명</label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <div className="auth-input-box" style={{ flex: 1 }}>
+                          <input
+                            className="auth-input"
+                            type="text"
+                            placeholder="대행사명을 입력해주세요"
+                            value={formData.agencyName}
+                            onChange={(e) => handleAgencyNameChange(e.target.value)}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="auth-link"
+                          style={{
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "0 14px",
+                            border: "1px solid #ddd",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                          disabled={!formData.agencyName.trim() || agencyLookup.status === "loading"}
+                          onClick={handleAgencyLookup}
+                        >
+                          {agencyLookup.status === "loading"
+                            ? <Loader2 size={14} className="auth-spin" />
+                            : <Search size={14} />}
+                          조회
+                        </button>
+                      </div>
+                      {agencyLookup.status === "found" && (
+                        <p
+                          className="auth-agency-lookup-msg"
+                          style={{ color: "#16a34a", display: "flex", alignItems: "center", gap: 4 }}
+                        >
+                          <CheckCircle2 size={13} /> {agencyLookup.message}
+                        </p>
+                      )}
+                      {agencyLookup.status === "notfound" && (
+                        <p className="auth-agency-lookup-msg" style={{ color: "#888" }}>
+                          {agencyLookup.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {roleKey === "agency" && (
+                    <>
+                      <AuthInput
+                        label="사업자등록번호"
+                        placeholder="000-00-00000 형식으로 입력해주세요"
+                        value={formData.businessNumber}
+                        onChange={handleBusinessNumberChange("businessNumber")}
+                        readOnly={formData.flag === 1}
+                      />
+                      {formData.businessNumber && !businessNumberValid && (
+                        <p className="auth-field-error">
+                          사업자번호는 000-00-00000 형식으로 입력해주세요.
+                        </p>
+                      )}
+                    </>
+                  )}
+
                   {/* 고객: 이름을 필수로 Step 1에서 수집 */}
                   {isCustomer && (
                     <AuthInput
@@ -563,69 +632,6 @@ function SignupForm({ roleKey, onBack }) {
                           전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
                         </p>
                       )}
-                      <AuthInput
-                        label="사업자등록번호"
-                        placeholder="000-00-00000 형식으로 입력해주세요"
-                        value={formData.businessNumber}
-                        onChange={handleBusinessNumberChange("businessNumber")}
-                        readOnly={formData.flag === 1}
-                      />
-                      {formData.businessNumber && !businessNumberValid && (
-                        <p className="auth-field-error">
-                          사업자번호는 000-00-00000 형식으로 입력해주세요.
-                        </p>
-                      )}
-
-                      {/* 대행사명 + 조회 버튼 (GET /api/agencies/agency) */}
-                      <div className="auth-input-wrap">
-                        <label className="auth-label">대행사명</label>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <div className="auth-input-box" style={{ flex: 1 }}>
-                            <input
-                              className="auth-input"
-                              type="text"
-                              placeholder="대행사명을 입력해주세요"
-                              value={formData.agencyName}
-                              onChange={(e) => handleAgencyNameChange(e.target.value)}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            className="auth-link"
-                            style={{
-                              flexShrink: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
-                              padding: "0 14px",
-                              border: "1px solid #ddd",
-                              borderRadius: 8,
-                              fontSize: 13,
-                              fontWeight: 600,
-                            }}
-                            disabled={!formData.agencyName.trim() || agencyLookup.status === "loading"}
-                            onClick={handleAgencyLookup}
-                          >
-                            {agencyLookup.status === "loading"
-                              ? <Loader2 size={14} className="auth-spin" />
-                              : <Search size={14} />}
-                            조회
-                          </button>
-                        </div>
-                        {agencyLookup.status === "found" && (
-                          <p
-                            className="auth-agency-lookup-msg"
-                            style={{ color: "#16a34a", display: "flex", alignItems: "center", gap: 4 }}
-                          >
-                            <CheckCircle2 size={13} /> {agencyLookup.message}
-                          </p>
-                        )}
-                        {agencyLookup.status === "notfound" && (
-                          <p className="auth-agency-lookup-msg" style={{ color: "#888" }}>
-                            {agencyLookup.message}
-                          </p>
-                        )}
-                      </div>
                     </>
                   )}
                   {roleKey === "engineer" && (
