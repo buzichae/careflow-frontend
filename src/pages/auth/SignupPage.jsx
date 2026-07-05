@@ -24,6 +24,7 @@ import {
   BUSINESS_NUMBER_REGEX,
   formatPhoneInput,
   formatBusinessNumberInput,
+  getPasswordError,
 } from "../../utils/validators";
 
 function TopNav({ showBack, onBack }) {
@@ -286,6 +287,13 @@ function SignupForm({ roleKey, onBack }) {
   const pwMatch =
     !formData.passwordConfirm || formData.password === formData.passwordConfirm;
 
+  /* 비밀번호 규칙 검증 (백엔드와 동일 규칙 — 8~64자, 영문+숫자 조합, 아이디/이름/휴대폰번호 포함 금지) */
+  const passwordError = getPasswordError(formData.password, {
+    email: formData.email,
+    name: formData.name,
+    phone: formData.phone,
+  });
+
   /* 전화번호 / 사업자번호 형식 검증 (값이 비어있으면 필수 여부 체크에서 걸러짐) */
   const phoneValid = !formData.phone || PHONE_REGEX.test(formData.phone);
   const businessNumberValid =
@@ -303,12 +311,14 @@ function SignupForm({ roleKey, onBack }) {
         !formData.name ||
         !formData.password ||
         !formData.passwordConfirm ||
-        !pwMatch
+        !pwMatch ||
+        !!passwordError
       );
     if (roleKey === "agency")
       return (
         !formData.email ||
         !formData.password ||
+        !!passwordError ||
         !formData.name ||
         !formData.phone ||
         !PHONE_REGEX.test(formData.phone) ||
@@ -320,13 +330,14 @@ function SignupForm({ roleKey, onBack }) {
       return (
         !formData.email ||
         !formData.password ||
+        !!passwordError ||
         !formData.name ||
         !formData.phone ||
         !PHONE_REGEX.test(formData.phone) ||
         !formData.agencyBusinessNumber ||
         !BUSINESS_NUMBER_REGEX.test(formData.agencyBusinessNumber)
       );
-    return !formData.email || !formData.password;
+    return !formData.email || !formData.password || !!passwordError;
   })();
 
   const step2Disabled = (() => {
@@ -491,7 +502,7 @@ function SignupForm({ roleKey, onBack }) {
                   <AuthInput
                     label="비밀번호"
                     type={showPw ? "text" : "password"}
-                    placeholder="비밀번호를 입력해주세요"
+                    placeholder="영문+숫자 조합 8자 이상 입력해주세요"
                     value={formData.password}
                     onChange={handleChange("password")}
                     rightEl={
@@ -504,6 +515,9 @@ function SignupForm({ roleKey, onBack }) {
                       </button>
                     }
                   />
+                  {formData.password && passwordError && (
+                    <p className="auth-field-error">{passwordError}</p>
+                  )}
                   {isCustomer && (
                     <>
                       <AuthInput
