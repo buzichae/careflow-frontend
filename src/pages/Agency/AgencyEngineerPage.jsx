@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
+import { jwtDecode } from "jwt-decode";
 import {
   Users, Circle, BookCheck, ClipboardList, Star,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw,
   Phone, Mail, Building2, X, UserPlus, Pencil, Plus, Save, Loader2,
+  CheckCircle,
 } from "lucide-react";
 import "../../styles/Agency/agency/AgencyEngineerPage.css";
 import "../../styles/Agency/agency/Agencyengineerpage.edit form.css"
 import EngineerApprovalModal from "../../pages/Agency/Modal/Engineerapprovalmodal";
+import { getAgencyEngineersLmsStatus } from "../../apis/lms";
 
 export const BASE_URL = "http://localhost:8080";
 
@@ -68,6 +71,39 @@ function previewSkillLevel(startYear) {
   if (years >= 11) return "EXPERT";
   if (years >= 6) return "INTERMEDIATE";
   return "BEGINNER";
+}
+
+/**
+ * LMS 이수 상태 배지
+ *
+ * [v10 설계] 콘텐츠를 전부 이수해도 OX퀴즈 합격 전까지 lmsCompleted=false 유지.
+ * 이 페이지의 기존 기사 목록 API(/api/agency/engineers)는 lmsCompleted만 내려줘서
+ * "콘텐츠는 다 읽었는데 퀴즈만 안 봄" 상태를 구분할 수 없었음.
+ * → getAgencyEngineersLmsStatus()를 별도로 호출해 completedCount/totalCount를 병합,
+ *   AgencyLmsPage와 동일한 3단계 배지 로직을 적용.
+ * lmsDetail이 아직 없거나(로딩 전) 매칭 실패 시엔 기존처럼 lmsCompleted만으로 표시(폴백).
+ *
+ * [버그 수정] 이 페이지는 원래 item.isLmsCompleted를 참조했지만, 백엔드 응답의
+ * 실제 필드명은 lmsCompleted다 (Java boolean getter isLmsCompleted()가
+ * Jackson 직렬화 시 "is" 접두사가 제거되어 lmsCompleted로 나감).
+ * 존재하지 않는 필드를 읽어 항상 undefined(=falsy)가 되면서, 실제로는 이수 완료한
+ * 기사도 "미이수"로 잘못 표시되던 버그였음.
+ */
+function LmsStatusBadge({ isCompleted, lmsDetail }) {
+  if (isCompleted) {
+    return <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>;
+  }
+
+  const contentDone =
+    lmsDetail &&
+    lmsDetail.totalCount > 0 &&
+    lmsDetail.completedCount === lmsDetail.totalCount;
+
+  if (contentDone) {
+    return <span className="aep-lms-badge aep-lms-badge--quiz-pending">콘텐츠 완료 · 퀴즈 대기</span>;
+  }
+
+  return <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>;
 }
 
 function Avatar({ name, profileImg, size = 36 }) {
@@ -415,6 +451,10 @@ export default function AgencyEngineerPage() {
   const [engineerList, setEngineerList] = useState([]);
   const [listLoading, setListLoading]   = useState(true);
 
+  // ── LMS 상세 현황(콘텐츠 완료/퀴즈 대기 구분용) ──────────
+  // key: userId(=engineerUserId), value: { completedCount, totalCount, isCompleted }
+  const [lmsDetailMap, setLmsDetailMap] = useState({});
+
   // ── 12번: 기사 상세 ──────────────────────────
   const [selectedItem, setSelectedItem]   = useState(null);
   const [detailData, setDetailData]       = useState(null);
@@ -432,6 +472,10 @@ export default function AgencyEngineerPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 15;
 
+  const token    = localStorage.getItem("token");
+  const decoded  = token ? jwtDecode(token) : null;
+  const agencyId = decoded?.agencyId ?? null;
+
   const fetchEngineers = useCallback(() => {
     setListLoading(true);
     apiFetch("/api/agency/engineers")
@@ -440,7 +484,21 @@ export default function AgencyEngineerPage() {
       .finally(() => setListLoading(false));
   }, []);
 
+  // LMS 콘텐츠/퀴즈 상세 현황을 별도로 받아와 userId 기준으로 매핑
+  // (이 값이 없으면 LmsStatusBadge는 lmsCompleted만으로 기존처럼 표시됨)
+  const fetchLmsDetail = useCallback(() => {
+    if (!agencyId) return;
+    getAgencyEngineersLmsStatus(agencyId)
+      .then((res) => {
+        const map = {};
+        (res.data ?? []).forEach((e) => { map[e.userId] = e; });
+        setLmsDetailMap(map);
+      })
+      .catch(console.error);
+  }, [agencyId]);
+
   useEffect(() => { fetchEngineers(); }, [fetchEngineers]);
+  useEffect(() => { fetchLmsDetail(); }, [fetchLmsDetail]);
 
   const handleSelectEngineer = useCallback(async (engineer) => {
     setSelectedItem(engineer);
@@ -463,7 +521,8 @@ export default function AgencyEngineerPage() {
     setIsEditMode(false);
     // 목록의 요약 정보(전문 가전 등)도 최신 상태를 반영하도록 새로고침
     fetchEngineers();
-  }, [fetchEngineers]);
+    fetchLmsDetail();
+  }, [fetchEngineers, fetchLmsDetail]);
 
   const filteredList = engineerList.filter(e =>
     !searchQuery ||
@@ -506,7 +565,7 @@ export default function AgencyEngineerPage() {
         <div className="aep-stat-card">
           <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">
-              {listLoading ? "..." : engineerList.filter(e => e.isLmsCompleted).length}
+              {listLoading ? "..." : engineerList.filter(e => e.lmsCompleted).length}
               <span>명</span>
             </p>
             <p className="aep-stat-card__label">교육 이수 완료</p>
@@ -571,6 +630,7 @@ export default function AgencyEngineerPage() {
                 const skill    = SKILL_MAP[item.skillLevel] ?? { label: item.skillLevel, type: "beginner", en: item.skillLevel };
                 const schedule = SCHEDULE_STATUS_MAP[item.currentWorkStatus] ?? { label: "-", type: "off" };
                 const isSelected = selectedItem?.engineerUserId === item.engineerUserId;
+                const lmsDetail = lmsDetailMap[item.engineerUserId];
                 return (
                   <div key={item.engineerUserId} className={`aep-table__row ${isSelected ? "aep-table__row--selected" : ""}`}>
                     <span><input type="checkbox" /></span>
@@ -589,10 +649,7 @@ export default function AgencyEngineerPage() {
                       </div>
                     </span>
                     <span>
-                      {item.isLmsCompleted
-                        ? <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>
-                        : <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>
-                      }
+                      <LmsStatusBadge isCompleted={item.lmsCompleted} lmsDetail={lmsDetail} />
                     </span>
                     <span>
                       <span className={`aep-status-badge aep-status-badge--${schedule.type}`}>{schedule.label}</span>
@@ -742,14 +799,28 @@ export default function AgencyEngineerPage() {
                       <div className="aep-detail__lms-section">
                         <p className="aep-detail__section-label">LMS 교육 상태</p>
                         <div className="aep-detail__lms-row">
-                          {detailData.isLmsCompleted
-                            ? <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>
-                            : <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>
-                          }
+                          <LmsStatusBadge
+                            isCompleted={detailData.lmsCompleted}
+                            lmsDetail={lmsDetailMap[selectedItem.engineerUserId]}
+                          />
                         </div>
-                        {!detailData.isLmsCompleted && (
-                          <p className="aep-detail__lms-warn">⚠ LMS 미이수 — 배차 불가 상태</p>
-                        )}
+                        {(() => {
+                          const lmsDetail = lmsDetailMap[selectedItem.engineerUserId];
+                          const contentDone =
+                            lmsDetail &&
+                            lmsDetail.totalCount > 0 &&
+                            lmsDetail.completedCount === lmsDetail.totalCount;
+
+                          if (detailData.lmsCompleted) return null;
+
+                          return contentDone ? (
+                            <p className="aep-detail__lms-warn aep-detail__lms-warn--info">
+                              콘텐츠는 모두 이수했지만 OX퀴즈 합격 전까지 배차가 제한됩니다.
+                            </p>
+                          ) : (
+                            <p className="aep-detail__lms-warn">⚠ LMS 미이수 — 배차 불가 상태</p>
+                          );
+                        })()}
                       </div>
 
                       <div className="aep-detail__month-section">

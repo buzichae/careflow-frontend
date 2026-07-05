@@ -1,39 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Bell, Truck, GraduationCap, ShieldCheck, Wrench,
-  Search, ChevronLeft, ChevronRight, MoreVertical, CheckCheck,
+  Search, ChevronLeft, ChevronRight, MoreVertical,
 } from "lucide-react";
 import "../../styles/Engineer/EngineerNoticePage.css";
+import { getMyNotifications, getNotificationSummary } from "../../apis/engineersNotifications";
 
-// ──────────────────────────────────────────
-// TODO: API 연동
-// GET /api/engineer/notifications?type=&page=0&size=10
-// notifications WHERE user_id = 로그인기사
-// ORDER BY created_at DESC
-//
-// DB notifications 컬럼:
-//   notification_id, user_id, type, title, body, channel, created_at
-//
-// type ENUM: AS_STATUS / CONSUMABLE / WARRANTY / LMS
-//
-// ⚠ DB에 없어서 제거한 항목:
-//   - is_read (v7에서 삭제됨) → 읽음/안읽음 상태 없음
-//   - 정산 알림 타입 → DB ENUM에 없음
-//   - 시스템 알림 타입 → DB ENUM에 없음
-//   - 알림 설정 토글 → DB에 없음
-//   - 중요 알림 섹션 → DB에 없음
-// ──────────────────────────────────────────
-
-// DB type ENUM 기준 탭
-const TABS = [
-  { key: "ALL",       label: "전체",    count: 12 },
-  { key: "AS_STATUS", label: "작업/배정", count: 5  },
-  { key: "LMS",       label: "교육",    count: 3  },
-  { key: "CONSUMABLE",label: "소모품",  count: 2  },
-  { key: "WARRANTY",  label: "무상기간", count: 2  },
+const TAB_DEFS = [
+  { key: "ALL",        label: "전체"    },
+  { key: "AS_STATUS",  label: "작업/배정" },
+  { key: "LMS",        label: "교육"    },
+  { key: "CONSUMABLE", label: "소모품"  },
+  { key: "WARRANTY",   label: "무상기간" },
 ];
 
-// DB type → 아이콘/색상 매핑
 const TYPE_MAP = {
   AS_STATUS:  { label: "작업/배정", icon: Truck,         color: "purple", bg: "#eeeaff" },
   LMS:        { label: "교육",     icon: GraduationCap, color: "green",  bg: "#eaf3de" },
@@ -41,65 +21,16 @@ const TYPE_MAP = {
   WARRANTY:   { label: "무상기간", icon: ShieldCheck,   color: "blue",   bg: "#e6f1fb" },
 };
 
-// 더미 데이터 - notifications.title, body, type, channel, created_at 기준
-const notificationList = [
-  {
-    id: 1, notificationId: "NOT-20240618-001",
-    type: "AS_STATUS",
-    title: "새로운 작업이 배정되었습니다.",
-    body: "냉장고 수리 (AS-20240618-0001) 작업이 배정되었습니다.",
-    channel: "SSE",
-    createdAt: "2024.06.18 09:30",
-  },
-  {
-    id: 2, notificationId: "NOT-20240617-002",
-    type: "LMS",
-    title: "2024년 필수 LMS 교육을 이수해주세요.",
-    body: "미이수 시 배차 제한이 적용될 수 있습니다.",
-    channel: "PUSH",
-    createdAt: "2024.06.17 14:20",
-  },
-  {
-    id: 3, notificationId: "NOT-20240617-003",
-    type: "AS_STATUS",
-    title: "작업 일정 변경 알림",
-    body: "내일 오전 작업 시간이 변경되었습니다.",
-    channel: "SSE",
-    createdAt: "2024.06.17 11:05",
-  },
-  {
-    id: 4, notificationId: "NOT-20240616-004",
-    type: "AS_STATUS",
-    title: "작업 보고서 작성 항목이 변경되었습니다.",
-    body: "6월부터 보고서 제출 항목이 변경됩니다.",
-    channel: "SSE",
-    createdAt: "2024.06.16 16:40",
-  },
-  {
-    id: 5, notificationId: "NOT-20240616-005",
-    type: "CONSUMABLE",
-    title: "소모품 교체 주기 알림",
-    body: "담당 고객 에어컨 필터 교체 주기가 도래했습니다.",
-    channel: "PUSH",
-    createdAt: "2024.06.16 09:00",
-  },
-  {
-    id: 6, notificationId: "NOT-20240615-006",
-    type: "WARRANTY",
-    title: "무상 A/S 기간 만료 임박 알림",
-    body: "홍길동 고객의 LG 에어컨 무상기간이 30일 남았습니다.",
-    channel: "SSE",
-    createdAt: "2024.06.15 18:30",
-  },
-];
+const STAT_COLOR_MAP = {
+  ALL: "purple", AS_STATUS: "blue", LMS: "green", CONSUMABLE: "orange", WARRANTY: "teal",
+};
 
-const statCards = [
-  { key: "ALL",       label: "전체 알림",  value: 12, icon: Bell,          color: "purple" },
-  { key: "AS_STATUS", label: "작업/배정",  value: 5,  icon: Truck,         color: "blue"   },
-  { key: "LMS",       label: "교육",      value: 3,  icon: GraduationCap, color: "green"  },
-  { key: "CONSUMABLE",label: "소모품",    value: 2,  icon: Wrench,        color: "orange" },
-  { key: "WARRANTY",  label: "무상기간",  value: 2,  icon: ShieldCheck,   color: "teal"   },
-];
+function formatDate(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function NotifIcon({ type }) {
   const t = TYPE_MAP[type];
@@ -112,13 +43,44 @@ function NotifIcon({ type }) {
 }
 
 export default function EngineerNoticePage() {
-  const [activeTab, setActiveTab] = useState("ALL");
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 2;
+  const [activeTab, setActiveTab]     = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages]   = useState(1);
+  const [list, setList]               = useState([]);
+  const [summary, setSummary]         = useState({});
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
 
-  const filteredList = activeTab === "ALL"
-    ? notificationList
-    : notificationList.filter(n => n.type === activeTab);
+  const fetchSummary = useCallback(async () => {
+    try {
+      const res = await getNotificationSummary();
+      setSummary(res.data);
+    } catch (e) {
+      console.error("알림 요약 조회 실패", e);
+    }
+  }, []);
+
+  const fetchList = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await getMyNotifications({ type: activeTab, page: currentPage, size: 10 });
+      setList(res.data.content ?? []);
+      setTotalPages(res.data.totalPages ?? 1);
+    } catch (e) {
+      setError("알림을 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, currentPage]);
+
+  useEffect(() => { fetchSummary(); }, [fetchSummary]);
+  useEffect(() => { fetchList(); }, [fetchList]);
+
+  function handleTabChange(key) {
+    setActiveTab(key);
+    setCurrentPage(0);
+  }
 
   return (
     <div className="enp">
@@ -130,37 +92,43 @@ export default function EngineerNoticePage() {
 
       {/* 통계 카드 */}
       <div className="enp-stats">
-        {statCards.map((s) => (
-          <div key={s.key} className="enp-stat-card" onClick={() => setActiveTab(s.key)}>
-            <div className={`enp-stat-card__icon enp-stat-card__icon--${s.color}`}><s.icon size={20} /></div>
-            <div>
-              <p className="enp-stat-card__label">{s.label}</p>
-              <p className="enp-stat-card__value">{s.value}<span>건</span></p>
+        {TAB_DEFS.map((s) => {
+          const Icon = s.key === "ALL" ? Bell : TYPE_MAP[s.key].icon;
+          return (
+            <div key={s.key} className="enp-stat-card" onClick={() => handleTabChange(s.key)}>
+              <div className="enp-stat-card__text">
+                <p className="enp-stat-card__value">{summary[s.key] ?? 0}<span>건</span></p>
+                <p className="enp-stat-card__label">{s.label}</p>
+              </div>
+              <div className={`enp-stat-card__icon enp-stat-card__icon--${STAT_COLOR_MAP[s.key]}`}>
+                <Icon size={40} strokeWidth={1} />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 탭 + 필터 */}
       <div className="enp-tab-bar">
         <div className="enp-tabs">
-          {TABS.map(tab => (
+          {TAB_DEFS.map((tab) => (
             <button
               key={tab.key}
               className={`enp-tab ${activeTab === tab.key ? "enp-tab--active" : ""}`}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
             >
               {tab.label}
-              <span className={`enp-tab__count ${activeTab === tab.key ? "enp-tab__count--active" : ""}`}>{tab.count}</span>
+              <span className={`enp-tab__count ${activeTab === tab.key ? "enp-tab__count--active" : ""}`}>
+                {summary[tab.key] ?? 0}
+              </span>
             </button>
           ))}
         </div>
         <div className="enp-tab-actions">
           <div className="enp-search">
             <Search size={13} color="#aaa" />
-            <input type="text" placeholder="알림 제목 검색" />
+            <input type="text" placeholder="알림 제목 검색" disabled />
           </div>
-          <button className="enp-read-all-btn"><CheckCheck size={13} /> 모두 읽음 처리</button>
         </div>
       </div>
 
@@ -175,10 +143,13 @@ export default function EngineerNoticePage() {
           <span></span>
         </div>
 
-        {filteredList.map((item) => {
+        {loading && <p style={{ padding: 24, textAlign: "center", color: "#aaa" }}>불러오는 중...</p>}
+        {error   && <p style={{ padding: 24, textAlign: "center", color: "red" }}>{error}</p>}
+
+        {!loading && !error && list.map((item) => {
           const typeInfo = TYPE_MAP[item.type];
           return (
-            <div key={item.id} className="enp-table__row">
+            <div key={item.notificationId} className="enp-table__row">
               <span><input type="checkbox" /></span>
               <span className="enp-table__content-col">
                 <NotifIcon type={item.type} />
@@ -191,22 +162,39 @@ export default function EngineerNoticePage() {
                 <span className={`enp-type-badge enp-type-badge--${typeInfo.color}`}>{typeInfo.label}</span>
               </span>
               <span className="enp-table__channel">{item.channel}</span>
-              <span className="enp-table__time">{item.createdAt}</span>
+              <span className="enp-table__time">{formatDate(item.createdAt)}</span>
               <span>
                 <button className="enp-more-btn"><MoreVertical size={14} /></button>
               </span>
             </div>
           );
         })}
+
+        {!loading && !error && list.length === 0 && (
+          <p style={{ padding: 24, textAlign: "center", color: "#aaa" }}>알림이 없습니다.</p>
+        )}
       </div>
 
       {/* 페이지네이션 */}
       <div className="enp-pagination">
-        <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-        {[1, 2].map(p => (
-          <button key={p} className={currentPage === p ? "enp-pagination__active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
+        <button onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
+          <ChevronLeft size={14} />
+        </button>
+        {Array.from({ length: totalPages }, (_, i) => i).map((p) => (
+          <button
+            key={p}
+            className={currentPage === p ? "enp-pagination__active" : ""}
+            onClick={() => setCurrentPage(p)}
+          >
+            {p + 1}
+          </button>
         ))}
-        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+          disabled={currentPage >= totalPages - 1}
+        >
+          <ChevronRight size={14} />
+        </button>
       </div>
     </div>
   );

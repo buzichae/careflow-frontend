@@ -19,6 +19,12 @@ import { signupAgency, signupCustomer, signupEngineer } from "../../apis/auth";
 import { getAgencyByName } from "../../apis/agency";
 
 import { REGIONS } from "../../constants/regions";
+import {
+  PHONE_REGEX,
+  BUSINESS_NUMBER_REGEX,
+  formatPhoneInput,
+  formatBusinessNumberInput,
+} from "../../utils/validators";
 
 function TopNav({ showBack, onBack }) {
   const navigate = useNavigate();
@@ -207,6 +213,19 @@ function SignupForm({ roleKey, onBack }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePhoneChange = (value) => {
+    setFormError("");
+    setFormData((prev) => ({ ...prev, phone: formatPhoneInput(value) }));
+  };
+
+  const handleBusinessNumberChange = (field) => (value) => {
+    setFormError("");
+    setFormData((prev) => ({
+      ...prev,
+      [field]: formatBusinessNumberInput(value),
+    }));
+  };
+
   // 대행사명이 바뀌면 기존 조회 결과는 무효화 (다시 조회해야 함)
   const handleAgencyNameChange = (value) => {
     setFormError("");
@@ -267,6 +286,14 @@ function SignupForm({ roleKey, onBack }) {
   const pwMatch =
     !formData.passwordConfirm || formData.password === formData.passwordConfirm;
 
+  /* 전화번호 / 사업자번호 형식 검증 (값이 비어있으면 필수 여부 체크에서 걸러짐) */
+  const phoneValid = !formData.phone || PHONE_REGEX.test(formData.phone);
+  const businessNumberValid =
+    !formData.businessNumber || BUSINESS_NUMBER_REGEX.test(formData.businessNumber);
+  const agencyBusinessNumberValid =
+    !formData.agencyBusinessNumber ||
+    BUSINESS_NUMBER_REGEX.test(formData.agencyBusinessNumber);
+
   /* 스텝별 제출 버튼 활성화 조건 */
   const step1Disabled = (() => {
     if (!agree) return true;
@@ -284,7 +311,9 @@ function SignupForm({ roleKey, onBack }) {
         !formData.password ||
         !formData.name ||
         !formData.phone ||
+        !PHONE_REGEX.test(formData.phone) ||
         !formData.businessNumber ||
+        !BUSINESS_NUMBER_REGEX.test(formData.businessNumber) ||
         !formData.agencyName
       );
     if (roleKey === "engineer")
@@ -293,7 +322,9 @@ function SignupForm({ roleKey, onBack }) {
         !formData.password ||
         !formData.name ||
         !formData.phone ||
-        !formData.agencyBusinessNumber
+        !PHONE_REGEX.test(formData.phone) ||
+        !formData.agencyBusinessNumber ||
+        !BUSINESS_NUMBER_REGEX.test(formData.agencyBusinessNumber)
       );
     return !formData.email || !formData.password;
   })();
@@ -301,7 +332,10 @@ function SignupForm({ roleKey, onBack }) {
   const step2Disabled = (() => {
     if (isCustomer)
       return (
-        !formData.regionParent || !formData.regionId || !formData.addressDetail
+        !formData.regionParent ||
+        !formData.regionId ||
+        !formData.addressDetail ||
+        !phoneValid
       );
     if (roleKey === "agency") {
       return (
@@ -506,17 +540,27 @@ function SignupForm({ roleKey, onBack }) {
                       />
                       <AuthInput
                         label="연락처"
-                        placeholder="010 - 없이 숫자만 입력해주세요"
+                        placeholder="'-' 없이 숫자 11자리를 입력해주세요"
                         value={formData.phone}
-                        onChange={handleChange("phone")}
+                        onChange={handlePhoneChange}
                       />
+                      {formData.phone && !phoneValid && (
+                        <p className="auth-field-error">
+                          전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
+                        </p>
+                      )}
                       <AuthInput
                         label="사업자등록번호"
-                        placeholder="- 없이 숫자만 입력해주세요"
+                        placeholder="000-00-00000 형식으로 입력해주세요"
                         value={formData.businessNumber}
-                        onChange={handleChange("businessNumber")}
+                        onChange={handleBusinessNumberChange("businessNumber")}
                         readOnly={formData.flag === 1}
                       />
+                      {formData.businessNumber && !businessNumberValid && (
+                        <p className="auth-field-error">
+                          사업자번호는 000-00-00000 형식으로 입력해주세요.
+                        </p>
+                      )}
 
                       {/* 대행사명 + 조회 버튼 (GET /api/agencies/agency) */}
                       <div className="auth-input-wrap">
@@ -580,16 +624,26 @@ function SignupForm({ roleKey, onBack }) {
                       />
                       <AuthInput
                         label="연락처"
-                        placeholder="010 - 없이 숫자만 입력해주세요"
+                        placeholder="'-' 없이 숫자 11자리를 입력해주세요"
                         value={formData.phone}
-                        onChange={handleChange("phone")}
+                        onChange={handlePhoneChange}
                       />
+                      {formData.phone && !phoneValid && (
+                        <p className="auth-field-error">
+                          전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
+                        </p>
+                      )}
                       <AuthInput
                         label="소속 대행사 사업자등록번호"
-                        placeholder="소속 대행사의 사업자등록번호를 입력해주세요"
+                        placeholder="000-00-00000 형식으로 입력해주세요"
                         value={formData.agencyBusinessNumber}
-                        onChange={handleChange("agencyBusinessNumber")}
+                        onChange={handleBusinessNumberChange("agencyBusinessNumber")}
                       />
+                      {formData.agencyBusinessNumber && !agencyBusinessNumberValid && (
+                        <p className="auth-field-error">
+                          사업자번호는 000-00-00000 형식으로 입력해주세요.
+                        </p>
+                      )}
                     </>
                   )}
 
@@ -622,10 +676,15 @@ function SignupForm({ roleKey, onBack }) {
                     <>
                       <AuthInput
                         label="연락처 (선택)"
-                        placeholder="- 없이 숫자만 입력해주세요"
+                        placeholder="'-' 없이 숫자 11자리를 입력해주세요"
                         value={formData.phone}
-                        onChange={handleChange("phone")}
+                        onChange={handlePhoneChange}
                       />
+                      {formData.phone && !phoneValid && (
+                        <p className="auth-field-error">
+                          전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
+                        </p>
+                      )}
 
                       {/* 거주지 안내 배너 */}
                       <div className="auth-addr-banner">

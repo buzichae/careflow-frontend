@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar, CheckCircle, Star, Wallet,
@@ -7,7 +7,7 @@ import {
   Shield,
 } from "lucide-react";
 
-import { getEngineerDashboard, updateAssignmentStatus, getSettlementSummary, getEngineerReviewStats } from "../../apis/engineers";
+import { getEngineerDashboard, updateAssignmentStatus, getSettlementSummary, getEngineerReviewStats, getEngineerAssignments } from "../../apis/engineers";
 import "../../styles/Engineer/Engineerdashboard.css";
 
 const WORK_STATUS_STEPS = [
@@ -40,9 +40,10 @@ export default function EngineerDashboard() {
   });
   const [workStatus, setWorkStatus] = useState(null);
 
-  // 백엔드가 명시적으로 계산해서 내려주는 "현재 진행 중(또는 다음 대기) 작업"의 requestId.
-  // 오늘 진행/대기 작업이 하나도 없으면 null로 옴 → 이 경우 빠른 액션 버튼 비활성화.
+  // 상태 변경 API(/tasks/{requestId}/status)에 쓸 진짜 AsRequest PK
   const [currentRequestId, setCurrentRequestId] = useState(null);
+  // 작업관리 페이지로 이동/식별할 때 쓸 AsAssignment PK
+  const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
 
   const [todaySchedule, setTodaySchedule] = useState([]);
 
@@ -78,9 +79,11 @@ useEffect(() => {
         completedTodayCount: d.todayCompletedCount ?? 0,
         monthlyEarnings: d.thisMonthExpectedEarning ?? 0,
       });
-      setWorkStatus(d.currentWorkStatus ?? null);
-      setTodaySchedule(d.todaySchedules ?? []);
-      setCurrentRequestId(d.currentRequestId ?? null);
+      // ⚠ workStatus / currentRequestId / todaySchedule은 더 이상 이 요약 API 값을
+      // 쓰지 않음 — 작업관리(EngineerWorkPage)와 동일한 소스(getEngineerAssignments)에서
+      // 가져오도록 아래 fetchCurrentWork()로 대체함. (요약 API가 "오늘" 기준으로만
+      // 내려주거나 값을 제대로 못 내려주는 경우, 작업관리엔 있는데 대시보드엔 안 보이는
+      // 불일치가 생겼었음)
       setNotices(d.notices ?? []);
     })
     .catch((err) => {
@@ -93,6 +96,41 @@ useEffect(() => {
 
   return () => { mounted = false; };
 }, []);
+
+  // 현재 작업 상태 / 빠른 액션 / 작업 일정 — 작업관리(EngineerWorkPage)와 동일하게
+  // getEngineerAssignments("ACCEPTED")를 조회해서 두 화면의 데이터가 항상 일치하도록 함.
+  const fetchCurrentWork = useCallback(() => {
+    return getEngineerAssignments("ACCEPTED")
+      .then((res) => {
+        const d = res.data;
+        const list = (d.content ?? d.list ?? []).map((item) => ({
+          ...item,
+          visitTime: `${item.scheduledDate ?? ""} ${item.scheduledTime ?? ""}`.trim(),
+        }));
+
+        // 예정 일시가 가장 빠른 작업을 "현재 작업"으로 사용
+        const sorted = [...list].sort((a, b) =>
+          `${a.scheduledDate}${a.scheduledTime}`.localeCompare(`${b.scheduledDate}${b.scheduledTime}`)
+        );
+
+        setTodaySchedule(sorted);
+
+        const current = sorted[0] ?? null;
+        // ⚠ 상태 변경 API는 asRequestId(AsRequest PK)를, 페이지 이동/식별은
+        // assignmentId(AsAssignment PK)를 써야 함 — 서로 다른 테이블의 PK라 섞어 쓰면
+        // "ACCEPTED 상태에서만 출발 처리할 수 있습니다" 403 에러가 남.
+        setCurrentRequestId(current?.asRequestId ?? null);
+        setCurrentAssignmentId(current?.assignmentId ?? null);
+        setWorkStatus(current?.logStatus ?? null);
+      })
+      .catch((err) => {
+        console.error("진행 중인 작업 조회 실패:", err);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetchCurrentWork();
+  }, [fetchCurrentWork]);
 
   // 개인 실적 및 정산 — 별도 API로 이번 달 요약 조회 (engineer 정보 세팅 이후 실행)
   useEffect(() => {
@@ -189,7 +227,7 @@ useEffect(() => {
         <div className="ed-stat-card">
           <div className="ed-stat-card__text">
             <p className="ed-stat-card__value">{stats.todayCount}<span>건</span></p>
-            <p className="ed-stat-card__label">오늘 예정 작업</p>
+            <p className="ed-stat-card__label">예정 작업</p>
             <button
              className="ed-stat-card__link"
              onClick={() => navigate("/engineer/schedule")}
@@ -228,7 +266,15 @@ useEffect(() => {
       <div className="ed-body">
         <div className="ed-left">
           <div className="ed-section">
-            <h2 className="ed-section__title">현재 작업 상태</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 className="ed-section__title">현재 작업 상태</h2>
+              <button
+                className="ed-panel__link"
+                onClick={() => navigate("/engineer/work", { state: { assignmentId: currentAssignmentId } })}
+              >
+                작업 관리에서 보기 ›
+              </button>
+            </div>
             <div className="ed-work-steps">
               {WORK_STATUS_STEPS.map((step, i) => {
                 const isDone = i <= currentStepIdx;
@@ -288,15 +334,15 @@ useEffect(() => {
           </div>
 
           <div className="ed-section">
-            <h2 className="ed-section__title">오늘의 작업 일정</h2>
+            <h2 className="ed-section__title">작업 일정</h2>
             <div className="ed-schedule-list">
               {todaySchedule.length === 0 && (
-                <p style={{ padding: "16px", color: "#aaa", fontSize: 13 }}>오늘 예정된 작업이 없습니다.</p>
+                <p style={{ padding: "16px", color: "#aaa", fontSize: 13 }}>예정된 작업이 없습니다.</p>
               )}
               {todaySchedule.map((item) => (
                 <div key={item.requestId ?? item.assignmentId} className="ed-schedule-item">
                   <div className="ed-schedule-item__time">
-                    <span className="ed-schedule-item__hour">{item.time}</span>
+                    <span className="ed-schedule-item__hour">{item.scheduledTime}</span>
                     <span className="ed-schedule-item__badge">예정</span>
                   </div>
                   <div className="ed-schedule-item__dot" />
@@ -313,7 +359,7 @@ useEffect(() => {
                   <div className="ed-schedule-item__actions">
                     <button
                       className="ed-schedule-detail-btn"
-                      onClick={() => navigate("/engineer/work", { state: { assignmentId: item.requestId } })}
+                      onClick={() => navigate("/engineer/work", { state: { assignmentId: item.assignmentId } })}
                     >
                       상세 보기
                     </button>
@@ -370,7 +416,7 @@ useEffect(() => {
                 </div>
                 <div className="ed-customer-detail__row">
                   <span className="ed-customer-detail__label">접수 내용(증상)</span>
-                  <span>{nextCustomer.symptom}</span>
+                  <span>{nextCustomer.symptomDesc ?? nextCustomer.symptom}</span>
                 </div>
                 <div className="ed-customer-detail__row">
                   <span className="ed-customer-detail__label">요청 사항</span>
@@ -392,7 +438,12 @@ useEffect(() => {
               <div className="ed-panel__period">{performance.period} <ChevronDown size={12} /></div>
             </div>
             <div className="ed-perf-grid">
-              <div className="ed-perf-card">
+              <div
+                className="ed-perf-card"
+                onClick={() => navigate("/engineer/work")}
+                style={{ cursor: "pointer" }}
+                title="작업 관리에서 전체 내역 보기"
+              >
                 <p className="ed-perf-card__label">작업 건수</p>
                 <p className="ed-perf-card__value-big">{performance.workCount.total}<span>건</span></p>
                 <div className="ed-perf-card__counts">
@@ -405,7 +456,7 @@ useEffect(() => {
               <div className="ed-perf-card">
                 <p className="ed-perf-card__label">정산 금액</p>
                 <p className="ed-perf-card__amount">{performance.settlement.current.toLocaleString()}원</p>
-                <p className="ed-perf-card__sub2">이번 달 예정 금액</p>
+                <p className="ed-perf-card__sub2">예정 금액</p>
                 <p className="ed-perf-card__prev">지난 달 {performance.settlement.previous.toLocaleString()}원</p>
               </div>
 

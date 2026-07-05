@@ -741,7 +741,7 @@
   background: #fff;
   border-radius: 18px;
   width: 100%;
-  max-width: 480px;
+  max-width: 600px;
   max-height: 88vh;
   overflow-y: auto;
   display: flex;
@@ -899,10 +899,16 @@
 
 .ch-modal__footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
   padding: 14px 22px 18px;
   border-top: 1px solid #f0f0f8;
+}
+.ch-modal__footer-note {
+  margin-right: auto;
+  font-size: 12px;
+  color: #dc2626;
 }
 .ch-modal__footer-btn {
   display: flex;
@@ -918,6 +924,8 @@
 .ch-modal__footer-btn--outline  { background: #f5f5fb; border: 1px solid #e8e8f0; color: #555; }
 .ch-modal__footer-btn--download { background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; }
 .ch-modal__footer-btn--primary  { background: #7c5cf7; border: none; color: #fff; }
+.ch-modal__footer-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ch-modal__footer-btn:disabled:hover { opacity: .5; }
 
 /* 내 가전 상태 — 빈 상태 */
 /* 내 가전 상태 — 빈 상태 (가로 레이아웃) */
