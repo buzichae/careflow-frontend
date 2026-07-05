@@ -75,7 +75,8 @@ export default function EngineerCustomerPage() {
 
   const asHistory = c.asHistory ?? [];
   const appliances = c.appliances ?? [];
-  // ⚠ memos(상담 메모) 필드는 여전히 응답에 없음 — 백엔드 추가 필요
+  // [확정] 백엔드 회신: memos는 DB에 대응 테이블이 없어 영구적으로 빈 배열로 내려옴
+  // (고객 레벨의 상담 메모 개념 자체가 스키마에 없음 — 추후 추가 예정도 아님)
   const memos = c.memos ?? [];
 
   // region/addressDetail 조합 (address 단일 필드는 응답에 없음)
@@ -119,8 +120,11 @@ export default function EngineerCustomerPage() {
               <div className="ecp-profile__info">
                 <div className="ecp-profile__name-row">
                   <span className="ecp-profile__name">{c.name} 고객님</span>
-                  {/* ⚠ grade, status 필드는 여전히 응답에 없어 배지가 표시되지 않습니다.
-                      백엔드에 추가 요청이 필요합니다. */}
+                  {/* [확정] 백엔드 회신: grade(고객 등급/tier)는 users 테이블에
+                      대응 컬럼이 없어 영구적으로 null입니다. HealthCertificate의
+                      grade(가전 건강등급 A~E)와 이름만 같을 뿐 다른 개념이라
+                      혼용 금지. status는 User에 실제 존재하는 컬럼이므로
+                      이 API가 나중에 내려줄 수 있어 조건부 렌더링 유지. */}
                   {c.grade && <span className="ecp-grade-badge">{c.grade}</span>}
                   {c.status && (
                     <span className={`ecp-status-badge ecp-status-badge--${c.status?.toLowerCase()}`}>
@@ -137,7 +141,10 @@ export default function EngineerCustomerPage() {
               <div className="ecp-info-row"><Mail size={13} color="#aaa" /><span className="ecp-info-label">이메일</span><span className="ecp-info-value">{c.email || "-"}</span></div>
               <div className="ecp-info-row"><MapPin size={13} color="#aaa" /><span className="ecp-info-label">주소</span><span className="ecp-info-value">{fullAddress || "-"}</span></div>
               <div className="ecp-info-row"><Clock size={13} color="#aaa" /><span className="ecp-info-label">회원가입일</span><span className="ecp-info-value">{c.joinedAt || "-"}</span></div>
-              {/* ⚠ preferredContactTime, memo 필드는 여전히 응답에 없음 */}
+              {/* [확정] 백엔드 회신: preferredContactTime, memo는 users 테이블에
+                  대응 컬럼이 없어 영구적으로 빈 값입니다 (추후 추가 예정 아님).
+                  memo 개념 자체는 WorkReport/AsStatusLog에만 존재하고
+                  고객(User) 레벨엔 스키마상 존재하지 않습니다. */}
               <div className="ecp-info-row"><Clock size={13} color="#aaa" /><span className="ecp-info-label">선호 연락 시간</span><span className="ecp-info-value">{c.preferredContactTime || "-"}</span></div>
               <div className="ecp-info-row"><FileText size={13} color="#aaa" /><span className="ecp-info-label">메모</span><span className="ecp-info-value">{c.memo || "-"}</span></div>
             </div>
@@ -226,20 +233,36 @@ export default function EngineerCustomerPage() {
 
           <div className="ecp-panel">
             <h3 className="ecp-panel__title">진행 중인 작업</h3>
-            {/* [수정] inProgressWork(객체)가 아니라 inProgressRequestId(숫자 ID)만 내려옴.
-                제품명/증상/방문일 같은 상세 정보가 없어서, 지금은 ID만 보여주고
-                "상세 보기"를 누르면 작업 관리 페이지로 이동하도록 최소한으로 처리.
-                풍부한 카드(제품/증상/방문일 등)를 보여주려면 백엔드가 inProgressWork를
-                객체(productName, symptom, visitDate, progressStatus, status 포함)로
-                내려주도록 확장해야 합니다. */}
-            {c.inProgressRequestId ? (
+            {/* [연동] PR로 inProgressWork가 객체로 확장됨:
+                { requestId, productName, symptom, visitDate, progressStatus, status }
+                기존 inProgressRequestId(숫자만)는 더 이상 안 씀. */}
+            {c.inProgressWork ? (
               <div className="ecp-inprogress-card">
                 <div className="ecp-inprogress-card__header">
-                  <span className="ecp-inprogress-card__id">요청 ID: {c.inProgressRequestId}</span>
+                  <span className="ecp-inprogress-card__id">{c.inProgressWork.requestId}</span>
+                  <span className={`ecp-as-badge ecp-as-badge--${AS_STATUS_MAP[c.inProgressWork.status]?.type ?? "pending"}`}>
+                    {AS_STATUS_MAP[c.inProgressWork.status]?.label ?? c.inProgressWork.status}
+                  </span>
                 </div>
-                <p style={{ padding: "8px 0", fontSize: 12, color: "#888" }}>
-                  진행 중인 작업이 있습니다. 자세한 내용은 작업 관리에서 확인하세요.
-                </p>
+                <div className="ecp-inprogress-card__body">
+                  <ApplianceImg imageUrl={null} size={44} />
+                  <div>
+                    <p className="ecp-inprogress-card__product">{c.inProgressWork.productName}</p>
+                    <p className="ecp-inprogress-card__symptom">{c.inProgressWork.symptom}</p>
+                  </div>
+                </div>
+                <div className="ecp-inprogress-card__detail">
+                  <div className="ecp-inprogress-card__row">
+                    <Clock size={12} color="#aaa" />
+                    <span className="ecp-inprogress-card__label">방문 예정일</span>
+                    <span>{c.inProgressWork.visitDate ?? "-"}</span>
+                  </div>
+                  <div className="ecp-inprogress-card__row">
+                    <ChevronRight size={12} color="#aaa" />
+                    <span className="ecp-inprogress-card__label">진행 상태</span>
+                    <span>{c.inProgressWork.progressStatus ?? "-"}</span>
+                  </div>
+                </div>
                 <button
                   className="ecp-inprogress-card__btn"
                   onClick={() => navigate("/engineer/work")}
@@ -259,7 +282,9 @@ export default function EngineerCustomerPage() {
               <h3 className="ecp-panel__title">최근 상담/메모</h3>
               <button className="ecp-panel__link">전체 보기 <ChevronRight size={12} /></button>
             </div>
-            {/* ⚠ memos 필드는 여전히 응답에 없어 항상 빈 목록입니다. */}
+            {/* [확정] 백엔드 회신: memos는 DB에 대응 테이블이 없어 영구적으로
+                빈 배열입니다. 고객 레벨 상담 메모 기능 자체가 스키마에 없어
+                추후에도 채워질 가능성이 없습니다 (기능 자체를 없애는 것도 검토 가능). */}
             <div className="ecp-memo-list">
               {memos.map((m, i) => (
                 <div key={i} className="ecp-memo-item">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getEngineerCustomers  } from "../../apis/engineers"
+import { getRegions } from "../../apis/regions";
 import {
   Search,
   SlidersHorizontal,
@@ -27,6 +28,27 @@ export default function EngineerCustomerListPage() {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(20);
   const [total, setTotal] = useState(0);
+
+  // [연동] 구 단위 지역 목록 — 하드코딩된 시/도 대신 실제 API에서 받아온 구 목록으로 채움
+  const [regionOptions, setRegionOptions] = useState([]);
+  const [regionsLoading, setRegionsLoading] = useState(true);
+  const [regionsError, setRegionsError] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    getRegions(2) // depth=2 → 구 단위
+      .then((res) => {
+        if (mounted) setRegionOptions(res.data ?? []);
+      })
+      .catch((err) => {
+        console.error("지역 목록 조회 실패:", err);
+        if (mounted) setRegionsError(true);
+      })
+      .finally(() => {
+        if (mounted) setRegionsLoading(false);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   // =========================
   // API
@@ -130,14 +152,16 @@ export default function EngineerCustomerListPage() {
             setRegionFilter(e.target.value);
             setPage(1);
           }}
+          disabled={regionsLoading}
         >
           <option>거주 지역 선택</option>
-          <option value="서울">서울</option>
-          <option value="경기">경기</option>
-          <option value="인천">인천</option>
-          <option value="부산">부산</option>
-          <option value="대전">대전</option>
-          <option value="광주">광주</option>
+          {/* [수정] 예전엔 "서울/경기/인천" 같은 시/도 단위로 하드코딩되어 있었는데,
+              실제 고객 데이터의 region 값은 "강동구/종로구" 같은 구 단위라 필터링이
+              전혀 안 맞았음. 이제 실제 구 목록 API(depth=2)로 채움. */}
+          {regionOptions.map((r) => (
+            <option key={r.regionId} value={r.name}>{r.name}</option>
+          ))}
+          {regionsError && <option disabled>지역 목록을 불러오지 못했습니다</option>}
         </select>
 
         <select

@@ -43,12 +43,12 @@ export const createEngineerProfile = (data) =>
 export const updateEngineerProfile = (data) =>
   api.put("/api/engineer/profile", data);
 
-// [신규] 비밀번호 변경
-// ⚠ 실제 엔드포인트/요청 필드명이 백엔드와 맞는지 확인 필요합니다.
-// 로그인/회원 공통 인증 API(예: apis/auth.js)에 이미 비밀번호 변경 함수가
-// 있다면 이 함수 대신 그쪽을 재사용하는 것이 맞을 수 있습니다.
+// [수정] PR로 실제 엔드포인트 확정됨 — 기사 전용이 아니라 전 역할 공용 API.
+// PUT /api/auth/password
+// body: { currentPassword, newPassword }
+// 응답: 200 성공 / 400 현재 비밀번호 불일치·새 비밀번호 규칙 위반·현재와 동일 / 403 소셜 로그인 전용 계정
 export const changePassword = (currentPassword, newPassword) =>
-  api.put("/api/engineer/profile/password", { currentPassword, newPassword });
+  api.put("/api/auth/password", { currentPassword, newPassword });
 
 
 // ── 근무표 (engineerSchedule.md) — "내 근무표 보기"에서 사용 ──

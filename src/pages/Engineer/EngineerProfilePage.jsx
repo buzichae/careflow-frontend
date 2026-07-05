@@ -27,7 +27,12 @@ export default function EngineerProfilePage() {
   const [profile, setProfile] = useState(null);
 
   // ── 편집 모드 상태 (기본 정보 + 전문 정보 공용) ──
-  const [isEditing, setIsEditing] = useState(false);
+  // [수정] 기존엔 isEditing 하나로 "기본 정보"와 "전문 정보" 편집을 같이 켰다 껐다 해서,
+  // 전문 정보 수정 버튼을 눌러도 기본 정보 카드까지 같이 편집 모드로 바뀌는 문제가 있었음.
+  // → 어느 섹션을 편집 중인지 구분하는 editSection('basic' | 'spec' | null)으로 분리.
+  const [editSection, setEditSection] = useState(null);
+  const isEditingBasic = editSection === "basic";
+  const isEditingSpec  = editSection === "spec";
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [editData, setEditData] = useState(null);
@@ -59,7 +64,7 @@ export default function EngineerProfilePage() {
     return () => { mounted = false; };
   }, []);
 
-  const startEdit = () => {
+  const startEdit = (section) => {
     setSaveError("");
     setEditData({
       phone: profile.phone ?? "",
@@ -69,11 +74,11 @@ export default function EngineerProfilePage() {
       expertBrands: (profile.expertBrands ?? []).join(", "),
       categoryName: profile.categoryName ?? "",
     });
-    setIsEditing(true);
+    setEditSection(section);
   };
 
   const cancelEdit = () => {
-    setIsEditing(false);
+    setEditSection(null);
     setEditData(null);
     setSaveError("");
   };
@@ -106,7 +111,7 @@ export default function EngineerProfilePage() {
 
       await updateEngineerProfile(payload);
       await fetchProfile();
-      setIsEditing(false);
+      setEditSection(null);
       setEditData(null);
     } catch (err) {
       console.error("프로필 수정 실패:", err);
@@ -145,8 +150,9 @@ export default function EngineerProfilePage() {
       setPwError("새 비밀번호가 일치하지 않습니다.");
       return;
     }
-    if (newPassword.length < 8) {
-      setPwError("새 비밀번호는 8자 이상이어야 합니다.");
+    // [수정] PR 확정 규칙: 영문+숫자 포함 8~64자
+    if (!/^(?=.*[A-Za-z])(?=.*\d).{8,64}$/.test(newPassword)) {
+      setPwError("새 비밀번호는 영문과 숫자를 포함해 8~64자로 입력해주세요.");
       return;
     }
     if (currentPassword === newPassword) {
@@ -164,7 +170,19 @@ export default function EngineerProfilePage() {
       setIsChangingPw(false);
     } catch (err) {
       console.error("비밀번호 변경 실패:", err);
-      setPwError(err.response?.data?.message || "비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.");
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.message;
+
+      // [연동] PUT /api/auth/password 확정 응답:
+      // - 400: 현재 비밀번호 불일치 / 새 비밀번호 규칙 위반 / 현재와 동일
+      // - 403: 소셜 로그인 전용 계정 (비밀번호 자체가 없어 변경 불가)
+      if (status === 403) {
+        setPwError(serverMsg ?? "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
+      } else if (status === 400) {
+        setPwError(serverMsg ?? "현재 비밀번호를 확인해주세요.");
+      } else {
+        setPwError(serverMsg ?? "비밀번호 변경에 실패했습니다.");
+      }
     } finally {
       setPwSaving(false);
     }
@@ -189,11 +207,11 @@ export default function EngineerProfilePage() {
           <h1 className="epp-title">기사 프로필 관리</h1>
           <p className="epp-sub">기사 기본 정보와 근무 정보를 확인 및 수정할 수 있습니다.</p>
         </div>
-        {!isEditing ? (
-          <button className="epp-edit-btn" onClick={startEdit}>
+        {editSection === null ? (
+          <button className="epp-edit-btn" onClick={() => startEdit("basic")}>
             <Pencil size={13} /> 프로필 수정
           </button>
-        ) : (
+        ) : editSection === "basic" ? (
           <div style={{ display: "flex", gap: 8 }}>
             <button className="epp-edit-btn" onClick={cancelEdit} disabled={saving}>
               <X size={13} /> 취소
@@ -202,7 +220,7 @@ export default function EngineerProfilePage() {
               <Check size={13} /> {saving ? "저장 중..." : "저장"}
             </button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {saveError && (
@@ -245,7 +263,7 @@ export default function EngineerProfilePage() {
 
             <div className="epp-info-row">
               <span className="epp-info-label">연락처</span>
-              {isEditing ? (
+              {isEditingBasic ? (
                 <input
                   className="epp-edit-input"
                   value={editData.phone}
@@ -258,7 +276,7 @@ export default function EngineerProfilePage() {
 
             <div className="epp-info-row">
               <span className="epp-info-label">경력 시작 연도</span>
-              {isEditing ? (
+              {isEditingBasic ? (
                 <input
                   className="epp-edit-input"
                   type="number"
@@ -272,7 +290,7 @@ export default function EngineerProfilePage() {
 
             <div className="epp-info-row">
               <span className="epp-info-label">활동 지역</span>
-              {isEditing ? (
+              {isEditingBasic ? (
                 <input
                   className="epp-edit-input"
                   placeholder="쉼표로 구분 (예: 강남구, 서초구)"
@@ -291,7 +309,7 @@ export default function EngineerProfilePage() {
 
             <div className="epp-info-row">
               <span className="epp-info-label">전문 가전 카테고리</span>
-              {isEditing ? (
+              {isEditingBasic ? (
                 <input
                   className="epp-edit-input"
                   value={editData.categoryName}
@@ -304,7 +322,7 @@ export default function EngineerProfilePage() {
 
             <div className="epp-info-row">
               <span className="epp-info-label">전문 브랜드</span>
-              {isEditing ? (
+              {isEditingBasic ? (
                 <input
                   className="epp-edit-input"
                   placeholder="쉼표로 구분 (예: 삼성, LG)"
@@ -333,13 +351,13 @@ export default function EngineerProfilePage() {
             <h3 className="epp-mid-card__title">전문 정보</h3>
           </div>
 
-          {/* [연동] 전문 정보 항목(주요 수리 분야/카테고리, 전문 브랜드, 활동 경력)은
-              상단 "기본 정보" 편집 항목과 동일한 필드라서 같은 편집 모드(isEditing)를
-              공유합니다. 편집 중일 때는 여기서도 바로 입력할 수 있게 인풋을 보여줍니다. */}
+          {/* [수정] 전문 정보 항목(주요 수리 분야/카테고리, 전문 브랜드, 활동 경력)은
+              기본 정보와 같은 필드를 쓰지만, editSection으로 분리되어 있어
+              "전문 정보 수정"을 눌러도 기본 정보 카드는 편집 모드로 바뀌지 않습니다. */}
           <div className="epp-spec-list">
             <div className="epp-spec-row">
               <span className="epp-spec-label">주요 수리 분야</span>
-              {isEditing ? (
+              {isEditingSpec ? (
                 <input
                   className="epp-edit-input"
                   value={editData.categoryName}
@@ -352,7 +370,7 @@ export default function EngineerProfilePage() {
             </div>
             <div className="epp-spec-row">
               <span className="epp-spec-label">전문 브랜드</span>
-              {isEditing ? (
+              {isEditingSpec ? (
                 <input
                   className="epp-edit-input"
                   placeholder="쉼표로 구분 (예: 삼성, LG)"
@@ -365,7 +383,7 @@ export default function EngineerProfilePage() {
             </div>
             <div className="epp-spec-row">
               <span className="epp-spec-label">활동 경력</span>
-              {isEditing ? (
+              {isEditingSpec ? (
                 <input
                   className="epp-edit-input"
                   type="number"
@@ -379,14 +397,24 @@ export default function EngineerProfilePage() {
             </div>
           </div>
 
-          {!isEditing && (
-            <button className="epp-mid-card__btn" onClick={startEdit}>
+          {editSection === null && (
+            <button className="epp-mid-card__btn" onClick={() => startEdit("spec")}>
               <Pencil size={13} /> 전문 정보 수정
             </button>
           )}
-          {isEditing && (
+          {isEditingSpec && (
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button className="epp-mid-card__btn" onClick={cancelEdit} disabled={saving}>
+                <X size={13} /> 취소
+              </button>
+              <button className="epp-mid-card__btn" onClick={handleSave} disabled={saving}>
+                <Check size={13} /> {saving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          )}
+          {isEditingBasic && (
             <p style={{ fontSize: 12, color: "#888", marginTop: 8 }}>
-              상단의 "저장" 또는 "취소" 버튼으로 반영됩니다.
+              기본 정보 편집이 진행 중입니다. 완료 후 전문 정보를 수정해주세요.
             </p>
           )}
         </div>
@@ -464,7 +492,7 @@ export default function EngineerProfilePage() {
                 <input
                   type="password"
                   className="epp-edit-input"
-                  placeholder="새 비밀번호 (8자 이상)"
+                  placeholder="새 비밀번호 (영문+숫자 8~64자)"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />

@@ -37,3 +37,4 @@ export const markNotificationAsRead = (notificationId) =>
  */
 export const markAllNotificationsAsRead = () =>
   api.patch(`/api/agency/notifications/read-all`);
+

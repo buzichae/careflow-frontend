@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search, ChevronDown, ChevronRight, X,
@@ -91,6 +91,12 @@ export default function EngineerWorkPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [selectedItem, setSelectedItem] = useState(null);
 
+  // [버그 수정] 검색/지역/날짜 필터가 전부 state 없는 장식용 UI였음
+  const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("전체 지역");
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
+
   useEffect(() => {
     const targetTab = location.state?.initialTab;
     if (targetTab && TAB_LABELS[targetTab] && targetTab !== activeTab) {
@@ -129,6 +135,36 @@ export default function EngineerWorkPage() {
   useEffect(() => {
     fetchList();
   }, [fetchList]);
+
+  // [버그 수정] 검색어/지역/날짜 필터를 실제 목록에 적용 (클라이언트 사이드)
+  const filteredWorkList = useMemo(() => {
+    return workList.filter((item) => {
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const haystack = [item.customerName, item.customerPhone, item.modelNo, item.address]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (regionFilter !== "전체 지역" && !item.address?.includes(regionFilter)) return false;
+      if (item.scheduledDate) {
+        if (dateStart && item.scheduledDate < dateStart) return false;
+        if (dateEnd && item.scheduledDate > dateEnd) return false;
+      }
+      return true;
+    });
+  }, [workList, search, regionFilter, dateStart, dateEnd]);
+
+  // 지역 필터 옵션 — 별도 마스터 API 없이 현재 목록의 주소에서 구 단위 추출
+  const regionOptions = useMemo(() => {
+    const set = new Set();
+    workList.forEach((item) => {
+      const match = item.address?.match(/\S+구|\S+시|\S+군/);
+      if (match) set.add(match[0]);
+    });
+    return Array.from(set);
+  }, [workList]);
 
   const handleAccept = async (id) => {
     try {
@@ -207,12 +243,39 @@ export default function EngineerWorkPage() {
       <div className="ewp-filters">
         <div className="ewp-search">
           <Search size={13} color="#aaa" />
-          <input type="text" placeholder="고객명, 연락처, 모델명, 주소 검색" />
+          <input
+            type="text"
+            placeholder="고객명, 연락처, 모델명, 주소 검색"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-        <div className="ewp-filter-select"><span>전체 상태</span><ChevronDown size={13} /></div>
-        <div className="ewp-filter-select"><span>전체 지역</span><ChevronDown size={13} /></div>
-        <div className="ewp-filter-select"><span>전체 날짜</span><ChevronDown size={13} /></div>
-        <div className="ewp-filter-date"><span>2024.06.01 ~ 2024.06.30</span></div>
+        {/* [주의] "전체 상태"는 상단 탭(배정대기/진행중/완료/취소)이 이미 상태별
+            필터링 역할을 하고 있어서 별도 상태 드롭다운은 만들지 않았습니다. */}
+        <select
+          className="ewp-filter-select"
+          value={regionFilter}
+          onChange={(e) => setRegionFilter(e.target.value)}
+          style={{ border: "none", background: "none", font: "inherit", color: "inherit", cursor: "pointer" }}
+        >
+          <option value="전체 지역">전체 지역</option>
+          {regionOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <div className="ewp-filter-date" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <input
+            type="date"
+            value={dateStart}
+            onChange={(e) => setDateStart(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+          <span>~</span>
+          <input
+            type="date"
+            value={dateEnd}
+            onChange={(e) => setDateEnd(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+        </div>
         <button className="ewp-schedule-btn" onClick={() => navigate("/engineer/my-schedule")}>
           📋 내 근무표 보기
         </button>
@@ -237,12 +300,12 @@ export default function EngineerWorkPage() {
 
           <div className="ewp-center">
             <div className="ewp-list-header">
-              <span className="ewp-list-count">작업 목록 ({workList.length})</span>
+              <span className="ewp-list-count">작업 목록 ({filteredWorkList.length})</span>
               <div className="ewp-sort-select">최신순 <ChevronDown size={13} /></div>
             </div>
 
             <div className="ewp-list">
-              {workList.map((item) => {
+              {filteredWorkList.map((item) => {
                 const aStatus = ASSIGN_STATUS_MAP[item.assignStatus];
                 const lStatus = LOG_STATUS_MAP[item.logStatus];
                 const isSelected = selectedItem?.assignmentId === item.assignmentId;
@@ -282,6 +345,11 @@ export default function EngineerWorkPage() {
                   </div>
                 );
               })}
+              {filteredWorkList.length === 0 && (
+                <p style={{ padding: 24, textAlign: "center", color: "#aaa" }}>
+                  조건에 맞는 작업이 없습니다.
+                </p>
+              )}
             </div>
           </div>
 
