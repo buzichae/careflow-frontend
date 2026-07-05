@@ -1220,6 +1220,12 @@
 /* 취소 완료 후 사유 표시 */
 .cas-item__cancel-reason {
   font-size: 11px;
-  color: #ef4444;
+  line-height: 1.5;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 9px;
   margin-top: 4px;
+  word-break: break-word;
 }

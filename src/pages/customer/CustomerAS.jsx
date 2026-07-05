@@ -31,7 +31,10 @@ import {
   processPayment,
 } from "../../apis/as";
 import { getMyAppliances } from "../../apis/appliances";
-import { getAvailableEngineers, getEngineerAvailability } from "../../apis/engineers";
+import {
+  getAvailableEngineers,
+  getEngineerAvailability,
+} from "../../apis/engineers";
 import { getUserInfo } from "../../apis/auth";
 import { REGIONS, findRegionById } from "../../constants/regions";
 
@@ -488,7 +491,6 @@ function ASRequestFlow({ onClose, onSuccess }) {
       .catch((e) => console.error("가전 목록 로드 실패", e));
   }, []);
 
-
   /* 수동 배정: 조건(지역/브랜드/보유기술) 필터링된 후보 기사 조회 */
   useEffect(() => {
     if (assignType !== "MANUAL" || !regionId || !customerId) {
@@ -496,7 +498,12 @@ function ASRequestFlow({ onClose, onSuccess }) {
       return;
     }
     setEngLoading(true);
-    getAvailableEngineers(customerId, regionId, engBrand || undefined, engSkill || undefined)
+    getAvailableEngineers(
+      customerId,
+      regionId,
+      engBrand || undefined,
+      engSkill || undefined,
+    )
       .then((res) => setEngineers(res.data ?? res))
       .catch((e) => {
         console.error("기사 목록 조회 실패", e);
@@ -595,7 +602,8 @@ function ASRequestFlow({ onClose, onSuccess }) {
     } catch (e) {
       console.error("A/S 접수 실패", e);
       setSubmitError(
-        e?.response?.data?.message ?? "A/S 접수에 실패했습니다. 다시 시도해주세요.",
+        e?.response?.data?.message ??
+          "A/S 접수에 실패했습니다. 다시 시도해주세요.",
       );
     } finally {
       setSubmitting(false);
@@ -854,7 +862,9 @@ function ASRequestFlow({ onClose, onSuccess }) {
                   className="cas-region-select"
                   value={regionId ?? ""}
                   onChange={(e) => {
-                    const found = subRegions.find((r) => String(r.id) === e.target.value);
+                    const found = subRegions.find(
+                      (r) => String(r.id) === e.target.value,
+                    );
                     if (found) handleRegionSub(found);
                   }}
                   disabled={!regionParent}
@@ -984,7 +994,9 @@ function ASRequestFlow({ onClose, onSuccess }) {
                   </span>
                 </h3>
                 {!regionId ? (
-                  <p className="cas-eng-empty">방문 지역을 먼저 선택해주세요.</p>
+                  <p className="cas-eng-empty">
+                    방문 지역을 먼저 선택해주세요.
+                  </p>
                 ) : engLoading ? (
                   <p className="cas-eng-empty">기사 목록을 불러오는 중...</p>
                 ) : engineers.length === 0 ? (
@@ -1045,30 +1057,30 @@ function ASRequestFlow({ onClose, onSuccess }) {
                       예약 가능한 일정이 없습니다. 다른 기사를 선택해주세요.
                     </p>
                   ) : (
-                  <div className="cas-avail-dates">
-                    {availableDates.map((d) => {
-                      const dt = new Date(d);
-                      const weekday = [
-                        "일",
-                        "월",
-                        "화",
-                        "수",
-                        "목",
-                        "금",
-                        "토",
-                      ][dt.getDay()];
-                      const label = `${dt.getMonth() + 1}/${dt.getDate()} (${weekday})`;
-                      return (
-                        <button
-                          key={d}
-                          className={`cas-avail-date ${schedDate === d ? "cas-avail-date--active" : ""} ${weekday === "토" ? "cas-avail-date--sat" : ""} ${weekday === "일" ? "cas-avail-date--sun" : ""}`}
-                          onClick={() => handleSchedDate(d)}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                    <div className="cas-avail-dates">
+                      {availableDates.map((d) => {
+                        const dt = new Date(d);
+                        const weekday = [
+                          "일",
+                          "월",
+                          "화",
+                          "수",
+                          "목",
+                          "금",
+                          "토",
+                        ][dt.getDay()];
+                        const label = `${dt.getMonth() + 1}/${dt.getDate()} (${weekday})`;
+                        return (
+                          <button
+                            key={d}
+                            className={`cas-avail-date ${schedDate === d ? "cas-avail-date--active" : ""} ${weekday === "토" ? "cas-avail-date--sat" : ""} ${weekday === "일" ? "cas-avail-date--sun" : ""}`}
+                            onClick={() => handleSchedDate(d)}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
 
                   {/* 선택된 날짜의 가능 시간 */}
@@ -1262,10 +1274,10 @@ function getActionsByStatus(status, hasReview) {
   switch (status) {
     case "PENDING":
     case "AGENCY_RECEIVED":
-      return ["예약 취소"];
     case "ASSIGNED":
+      // 예약 확정(ACCEPTED) 전까지만 취소 가능 — 백엔드 AsRequest.cancel() 정책과 동일
+      return ["예약 취소"];
     case "ACCEPTED":
-      return ["상세보기"];
     case "ENGINEER_DEPARTED":
     case "ENGINEER_ARRIVED":
     case "IN_PROGRESS":
@@ -1469,7 +1481,7 @@ function CancelModal({ item, onConfirm, onClose }) {
           <div className="cas-cancel-modal__notice">
             <AlertTriangle size={12} />
             <span>
-              대행사 배차 확정 이전에만 취소가 가능합니다. 취소 후에는 되돌릴 수
+              예약 확정 이전에만 취소가 가능합니다. 취소 후에는 되돌릴 수
               없습니다.
             </span>
           </div>
@@ -1608,7 +1620,10 @@ export default function CustomerAS() {
             <ArrowLeft size={18} /> 뒤로
           </button>
         </div>
-        <ASRequestFlow onClose={() => setShowReserve(false)} onSuccess={loadAsList} />
+        <ASRequestFlow
+          onClose={() => setShowReserve(false)}
+          onSuccess={loadAsList}
+        />
       </div>
     );
   }
@@ -1640,7 +1655,9 @@ export default function CustomerAS() {
                     await processPayment(requestId);
                     setAsList((prev) =>
                       prev.map((i) =>
-                        i.requestId === requestId ? { ...i, status: "PAID" } : i,
+                        i.requestId === requestId
+                          ? { ...i, status: "PAID" }
+                          : i,
                       ),
                     );
                     setReportTarget(null);
@@ -1813,15 +1830,34 @@ export default function CustomerAS() {
                       <span className={`cas-badge cas-badge--${st.style}`}>
                         {st.label}
                       </span>
-                      <div className="cas-item__engineer-info">
-                        <div className="cas-item__eng-avatar">?</div>
-                        <div>
-                          <p className="cas-item__eng-name">배정 대기 중</p>
-                          <p className="cas-item__eng-rating">
-                            <Star size={10} fill="#f59e0b" color="#f59e0b" /> -
-                          </p>
+                      {item.status === "PENDING" ||
+                      item.status === "AGENCY_RECEIVED" ? (
+                        <div className="cas-item__engineer-info">
+                          <div className="cas-item__eng-avatar">?</div>
+                          <div>
+                            <p className="cas-item__eng-name">배정 대기 중</p>
+                            <p className="cas-item__eng-rating">
+                              <Star size={10} fill="#f59e0b" color="#f59e0b" />{" "}
+                              -
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      ) : item.engineerName ? (
+                        <div className="cas-item__engineer-info">
+                          <div className="cas-item__eng-avatar">
+                            {item.engineerName[0]}
+                          </div>
+                          <div>
+                            <p className="cas-item__eng-name">
+                              {item.engineerName} 기사
+                            </p>
+                            <p className="cas-item__eng-rating">
+                              <Star size={10} fill="#f59e0b" color="#f59e0b" />{" "}
+                              {item.engineerRating?.toFixed?.(1) ?? "-"}
+                            </p>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="cas-item__actions">
                       {getActionsByStatus(
