@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import engineerImg from "../../assets/기사.png";
 import {
   ClipboardList, CheckCircle, Users, HandCoins, Star,
-  UserPlus, Megaphone, ChartNoAxesCombined,
+  UserPlus, ChartNoAxesCombined,
 } from "lucide-react";
 import "../../styles/Agency/AgencyDashboard.css";
+import { getAgencyReviews } from "../../apis/agencyReview";
 
 const BASE_URL = "http://localhost:8080";
 
@@ -41,6 +43,28 @@ const SKILL_MAP = {
   EXPERT:       "고급",   // API 명세 기준 EXPERT
 };
 
+// ── 진행 중 작업 현황 퍼널 버킷 매핑 ──────────────
+// 완료(COMPLETED)/결제완료(PAID) 건은 "진행 중"이 아니므로 퍼널 집계에서 제외
+const FUNNEL_BUCKET = {
+  PENDING:           "received",
+  AGENCY_RECEIVED:   "received",
+  ASSIGNED:          "assigned",
+  ACCEPTED:          "accepted",
+  ENGINEER_DEPARTED: "accepted",
+  ENGINEER_ARRIVED:  "accepted",
+  IN_PROGRESS:       "accepted",
+  CANCELLED:         "cancelled",
+};
+
+function calcFunnelCounts(requests) {
+  const counts = { received: 0, assigned: 0, accepted: 0, cancelled: 0 };
+  requests.forEach((item) => {
+    const bucket = FUNNEL_BUCKET[item.status];
+    if (bucket) counts[bucket] += 1;
+  });
+  return counts;
+}
+
 const noticeData = [
   { id: 1, text: "6월 정산 일정 안내",       date: "2024.06.01" },
   { id: 2, text: "여름철 에어컨 점검 가이드", date: "2024.05.28" },
@@ -58,6 +82,8 @@ function EngineerAvatar({ name, profileImageUrl }) {
 }
 
 export default function AgencyDashboard() {
+  const navigate = useNavigate();
+
   // ── state ──────────────────────────────────
   // 7. 대시보드 요약 통계
   const [summary, setSummary]           = useState(null);
@@ -74,9 +100,16 @@ export default function AgencyDashboard() {
   const [settlement, setSettlement]     = useState(null);
   const [settlementLoading, setSettlementLoading] = useState(true);
 
-  // 8. 진행 중 작업 목록 (COMPLETED 제외)
-  const [workData, setWorkData]         = useState([]);
+  // 8. 진행 중 작업 목록 (전체 리스트 - 퍼널 집계용 + 테이블 표시용)
+  const [allWorkRequests, setAllWorkRequests] = useState([]);
   const [workLoading, setWorkLoading]   = useState(true);
+  const workData = allWorkRequests.slice(0, 4); // 테이블에는 최근 4건만 표시
+  const funnelCounts = calcFunnelCounts(allWorkRequests); // 퍼널은 전체 리스트 기준 현재 상태 스냅샷
+
+  // 평균 고객 만족도 - 리뷰 stats API(avgRating) 재사용
+  // (대시보드 전용 API가 없으므로 리뷰 페이지와 동일한 값을 사용해 수치 불일치 문제 해결)
+  const [avgRating, setAvgRating]       = useState(null);
+  const [ratingLoading, setRatingLoading] = useState(true);
 
   // ── fetch ──────────────────────────────────
   useEffect(() => {
@@ -98,11 +131,17 @@ export default function AgencyDashboard() {
       .catch(console.error)
       .finally(() => setSettlementLoading(false));
 
-    // 8. A/S 요청 목록 (진행 중 작업 현황용 - 최근 4건만 표시)
+    // 8. A/S 요청 목록 (진행 중 작업 현황 퍼널 집계 + 테이블 표시에 함께 사용)
     apiFetch("/api/agency/work-requests")
-      .then(data => setWorkData(Array.isArray(data) ? data.slice(0, 4) : []))
+      .then(data => setAllWorkRequests(Array.isArray(data) ? data : []))
       .catch(console.error)
       .finally(() => setWorkLoading(false));
+
+    // 평균 고객 만족도 (리뷰 stats API 재사용, 리스트는 필요 없으므로 size 최소화)
+    getAgencyReviews({ page: 0, size: 1, filter: {} })
+      .then(res => setAvgRating(res.data?.stats?.avgRating ?? null))
+      .catch(console.error)
+      .finally(() => setRatingLoading(false));
   }, [settlementYear, settlementMonth]);
 
   // ── 통계 카드 값 계산 ────────────────────────
@@ -122,7 +161,10 @@ export default function AgencyDashboard() {
       sub:   "기사 지급액 합계",
       up:    true,
     },
-    satisfaction: { value: "4.7", sub: "지난달 대비 ▲ 0.2", up: true }, // 별도 API 없음
+    // 리뷰 페이지(AgencyReviewPage)와 동일한 avgRating 값 사용
+    satisfaction: {
+      value: avgRating != null ? avgRating.toFixed(1) : "-",
+    },
   };
 
   // ── 정산 카드 값 ────────────────────────────
@@ -190,7 +232,9 @@ export default function AgencyDashboard() {
 
         <div className="agency-stat-card">
           <div className="agency-stat-card__text">
-            <p className="agency-stat-card__value">{statsCards.satisfaction.value}<span>/5.0</span></p>
+            <p className="agency-stat-card__value">
+              {ratingLoading ? "..." : statsCards.satisfaction.value}<span>/5.0</span>
+            </p>
             <p className="agency-stat-card__label">평균 고객 만족도</p>
           </div>
           <div className="agency-stat-card__icon agency-stat-card__icon--amber">
@@ -209,28 +253,28 @@ export default function AgencyDashboard() {
               <div className="work-funnel__step work-funnel__step--purple">
                 <span className="work-funnel__label">접수</span>
                 <span className="work-funnel__count">
-                  {summaryLoading ? "..." : `${summary?.todayNewCount ?? 0}건`}
+                  {workLoading ? "..." : `${funnelCounts.received}건`}
                 </span>
               </div>
               <div className="work-funnel__arrow">›</div>
               <div className="work-funnel__step work-funnel__step--blue">
                 <span className="work-funnel__label">배정</span>
                 <span className="work-funnel__count">
-                  {summaryLoading ? "..." : `${summary?.todayAssignedCount ?? 0}건`}
+                  {workLoading ? "..." : `${funnelCounts.assigned}건`}
                 </span>
               </div>
               <div className="work-funnel__arrow">›</div>
               <div className="work-funnel__step work-funnel__step--green">
                 <span className="work-funnel__label">수락</span>
                 <span className="work-funnel__count">
-                  {summaryLoading ? "..." : `${summary?.todayAcceptedCount ?? 0}건`}
+                  {workLoading ? "..." : `${funnelCounts.accepted}건`}
                 </span>
               </div>
               <div className="work-funnel__arrow">›</div>
               <div className="work-funnel__step work-funnel__step--amber">
                 <span className="work-funnel__label">취소</span>
                 <span className="work-funnel__count">
-                  {summaryLoading ? "..." : `${summary?.todayCancelledCount ?? 0}건`}
+                  {workLoading ? "..." : `${funnelCounts.cancelled}건`}
                 </span>
               </div>
             </div>
@@ -270,7 +314,7 @@ export default function AgencyDashboard() {
                   );
                 })
               )}
-              <button className="work-table__more">작업 목록 전체 보기 ›</button>
+              <button className="work-table__more" onClick={() => navigate("/agency/work")}>작업 목록 전체 보기 ›</button>
             </div>
           </section>
 
@@ -278,16 +322,16 @@ export default function AgencyDashboard() {
             <div className="quick-menu">
               <h2 className="section-title">빠른 메뉴</h2>
               <div className="quick-menu__grid">
-                <button className="quick-menu__item">
+                <button className="quick-menu__item" onClick={() => navigate("/agency/engineers")}>
                   <UserPlus size={24} className="quick-menu__icon" /><span>기사 관리</span>
                 </button>
-                <button className="quick-menu__item">
-                  <Megaphone size={24} className="quick-menu__icon" /><span>공지 확인</span>
+                <button className="quick-menu__item" onClick={() => navigate("/agency/customers")}>
+                  <Users size={24} className="quick-menu__icon" /><span>고객 관리</span>
                 </button>
-                <button className="quick-menu__item">
+                <button className="quick-menu__item" onClick={() => navigate("/agency/settlement")}>
                   <HandCoins size={24} className="quick-menu__icon" /><span>정산 내역</span>
                 </button>
-                <button className="quick-menu__item">
+                <button className="quick-menu__item" onClick={() => navigate("/agency/statistics")}>
                   <ChartNoAxesCombined size={24} className="quick-menu__icon" /><span>리포트 보기</span>
                 </button>
               </div>
@@ -295,7 +339,7 @@ export default function AgencyDashboard() {
             <div className="notice-section">
               <div className="notice-section__header">
                 <h2 className="section-title" style={{ marginBottom: 0 }}>알림</h2>
-                <button className="more-link">더보기 ›</button>
+                <button className="more-link" onClick={() => navigate("/agency/notice")}>더보기 ›</button>
               </div>
               {noticeData.map((n) => (
                 <div key={n.id} className="notice-item">
@@ -313,7 +357,7 @@ export default function AgencyDashboard() {
               <p className="cta-banner__sub">정확한 배정과 신속한 작업으로 고객 만족도를 높여주세요.</p>
             </div>
             <img src={engineerImg} alt="기사" className="cta-banner__img" />
-            <button className="cta-banner__btn">작업 배정 요청하기 ›</button>
+            <button className="cta-banner__btn" onClick={() => navigate("/agency/work")}>작업 배정 요청하기 ›</button>
           </div>
         </div>
 
@@ -324,7 +368,6 @@ export default function AgencyDashboard() {
               <h2 className="section-title" style={{ marginBottom: 0 }}>
                 {settlementYear}년 {settlementMonth}월 정산 요약
               </h2>
-              <button className="more-link">더보기 ›</button>
             </div>
             <div className="perf-card__body">
               <div className="donut">
@@ -405,7 +448,6 @@ export default function AgencyDashboard() {
           <div className="settlement-card">
             <div className="settlement-card__header">
               <h2 className="section-title" style={{ marginBottom: 0 }}>정산 요약</h2>
-              <button className="more-link">더보기 ›</button>
             </div>
             <p className="settlement-card__sub">이번 달 총 매출액</p>
             <p className="settlement-card__amount">

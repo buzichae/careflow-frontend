@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import "../../styles/Customer/CustomerMyPage.css";
 import { getUserInfo, updateUserProfile, getRegionByName } from "../../apis/auth";
+import { PHONE_REGEX, formatPhoneInput } from "../../utils/validators";
 
 const REGIONS = {
   서울특별시: [
@@ -127,6 +128,7 @@ export default function CustomerMyPage() {
 
   const subRegions = regionParent ? REGIONS[regionParent] : [];
   const pwMatch = !newPw2 || newPw === newPw2;
+  const phoneValid = !phone || PHONE_REGEX.test(phone);
 
   /* ── 초기 데이터 로드 ── */
   useEffect(() => {
@@ -157,6 +159,12 @@ export default function CustomerMyPage() {
   async function handleInfoSave(e) {
     e.preventDefault();
     if (!name.trim()) return toast(setInfoMsg, "error", "이름을 입력해주세요.");
+    if (!phoneValid)
+      return toast(
+        setInfoMsg,
+        "error",
+        "전화번호는 '-' 없이 숫자 11자리로 입력해주세요.",
+      );
     try {
       await updateUserProfile({ name, phone: phone || null });
       toast(setInfoMsg, "success", "기본 정보가 저장되었습니다.");
@@ -230,10 +238,15 @@ export default function CustomerMyPage() {
             <Field label="연락처">
               <Input
                 value={phone}
-                onChange={setPhone}
-                placeholder="- 없이 숫자만 입력해주세요"
+                onChange={(v) => setPhone(formatPhoneInput(v))}
+                placeholder="'-' 없이 숫자 11자리를 입력해주세요"
                 type="tel"
               />
+              {phone && !phoneValid && (
+                <p className="cmp-field-error">
+                  전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
+                </p>
+              )}
             </Field>
             {infoMsg && <Toast msg={infoMsg.msg} type={infoMsg.type} />}
             <div className="cmp-form__footer">

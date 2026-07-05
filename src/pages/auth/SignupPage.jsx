@@ -7,14 +7,24 @@ import {
   ArrowLeft,
   MapPin,
   Info,
+  Search,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logoImg from "../../assets/logo.png";
 import { ROLES } from "./authConstants";
 import "../../styles/Auth/Auth.css";
 import { signupAgency, signupCustomer, signupEngineer } from "../../apis/auth";
+import { getAgencyByName } from "../../apis/agency";
 
 import { REGIONS } from "../../constants/regions";
+import {
+  PHONE_REGEX,
+  BUSINESS_NUMBER_REGEX,
+  formatPhoneInput,
+  formatBusinessNumberInput,
+} from "../../utils/validators";
 
 function TopNav({ showBack, onBack }) {
   const navigate = useNavigate();
@@ -46,6 +56,7 @@ function AuthInput({
   value,
   onChange,
   rightEl,
+  readOnly = false,
 }) {
   return (
     <div className="auth-input-wrap">
@@ -57,6 +68,8 @@ function AuthInput({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          readOnly={readOnly}
+          style={readOnly ? { background: "#f7f7fb", color: "#888" } : undefined}
         />
         {rightEl && <span className="auth-input-right">{rightEl}</span>}
       </div>
@@ -159,12 +172,20 @@ function SignupForm({ roleKey, onBack }) {
   const navigate = useNavigate();
   const role = ROLES.find((r) => r.key === roleKey) || ROLES[0];
   const isCustomer = roleKey === "customer";
+  const isAgency = roleKey === "agency";
 
   const [step, setStep] = useState(1);
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // ── 대행사명 조회 상태 (GET /api/agencies/agency) ──
+  // flag: 1 = 기존 등록된 대행사 데이터를 그대로 사용 / 0 = 신규 입력
+  const [agencyLookup, setAgencyLookup] = useState({
+    status: "idle", // idle | loading | found | notfound | error
+    message: "",
+  });
 
   const [formData, setFormData] = useState({
     /* 공통 */
@@ -182,6 +203,7 @@ function SignupForm({ roleKey, onBack }) {
     agencyAddress: "",
     agencyFeeRate: 0,
     businessNumber: "",
+    flag: 0, // 대행사 기존 데이터 존재 여부 (조회 성공 시 1)
     /* 기사 전용 */
     agencyBusinessNumber: "",
   });
@@ -189,6 +211,64 @@ function SignupForm({ roleKey, onBack }) {
   const handleChange = (field) => (value) => {
     setFormError("");
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePhoneChange = (value) => {
+    setFormError("");
+    setFormData((prev) => ({ ...prev, phone: formatPhoneInput(value) }));
+  };
+
+  const handleBusinessNumberChange = (field) => (value) => {
+    setFormError("");
+    setFormData((prev) => ({
+      ...prev,
+      [field]: formatBusinessNumberInput(value),
+    }));
+  };
+
+  // 대행사명이 바뀌면 기존 조회 결과는 무효화 (다시 조회해야 함)
+  const handleAgencyNameChange = (value) => {
+    setFormError("");
+    setAgencyLookup({ status: "idle", message: "" });
+    setFormData((prev) => ({
+      ...prev,
+      agencyName: value,
+      flag: 0,
+      agencyAddress: prev.flag === 1 ? "" : prev.agencyAddress,
+      businessNumber: prev.flag === 1 ? "" : prev.businessNumber,
+      agencyFeeRate: prev.flag === 1 ? 0 : prev.agencyFeeRate,
+    }));
+  };
+
+  // "조회" 버튼 클릭 → GET /api/agencies/agency?agencyName=
+  const handleAgencyLookup = async () => {
+    const name = formData.agencyName.trim();
+    if (!name) return;
+
+    setAgencyLookup({ status: "loading", message: "" });
+    try {
+      const { data } = await getAgencyByName(name);
+      // ※ 응답이 Agencies 엔티티 그대로라 필드명은 추정치입니다.
+      //    실제 엔티티 필드명 확인 후 아래 매핑을 맞춰주세요.
+      setFormData((prev) => ({
+        ...prev,
+        flag: 1,
+        businessNumber: data.businessNumber ?? prev.businessNumber,
+        agencyAddress: data.agencyAddress ?? prev.agencyAddress,
+        agencyFeeRate: data.agencyFeeRate ?? prev.agencyFeeRate,
+      }));
+      setAgencyLookup({
+        status: "found",
+        message: "등록된 대행사 정보를 찾았습니다. 정보가 자동으로 입력됩니다.",
+      });
+    } catch (error) {
+      // 404(NoSuchElementException) 등 조회 실패 → 신규 등록으로 처리
+      setFormData((prev) => ({ ...prev, flag: 0 }));
+      setAgencyLookup({
+        status: "notfound",
+        message: "등록된 대행사 정보가 없습니다. 아래에 직접 입력해주세요.",
+      });
+    }
   };
 
   const handleRegionParent = (v) =>
@@ -205,6 +285,14 @@ function SignupForm({ roleKey, onBack }) {
   /* 비밀번호 확인 일치 여부 */
   const pwMatch =
     !formData.passwordConfirm || formData.password === formData.passwordConfirm;
+
+  /* 전화번호 / 사업자번호 형식 검증 (값이 비어있으면 필수 여부 체크에서 걸러짐) */
+  const phoneValid = !formData.phone || PHONE_REGEX.test(formData.phone);
+  const businessNumberValid =
+    !formData.businessNumber || BUSINESS_NUMBER_REGEX.test(formData.businessNumber);
+  const agencyBusinessNumberValid =
+    !formData.agencyBusinessNumber ||
+    BUSINESS_NUMBER_REGEX.test(formData.agencyBusinessNumber);
 
   /* 스텝별 제출 버튼 활성화 조건 */
   const step1Disabled = (() => {
@@ -223,7 +311,9 @@ function SignupForm({ roleKey, onBack }) {
         !formData.password ||
         !formData.name ||
         !formData.phone ||
+        !PHONE_REGEX.test(formData.phone) ||
         !formData.businessNumber ||
+        !BUSINESS_NUMBER_REGEX.test(formData.businessNumber) ||
         !formData.agencyName
       );
     if (roleKey === "engineer")
@@ -232,7 +322,9 @@ function SignupForm({ roleKey, onBack }) {
         !formData.password ||
         !formData.name ||
         !formData.phone ||
-        !formData.agencyBusinessNumber
+        !PHONE_REGEX.test(formData.phone) ||
+        !formData.agencyBusinessNumber ||
+        !BUSINESS_NUMBER_REGEX.test(formData.agencyBusinessNumber)
       );
     return !formData.email || !formData.password;
   })();
@@ -240,7 +332,10 @@ function SignupForm({ roleKey, onBack }) {
   const step2Disabled = (() => {
     if (isCustomer)
       return (
-        !formData.regionParent || !formData.regionId || !formData.addressDetail
+        !formData.regionParent ||
+        !formData.regionId ||
+        !formData.addressDetail ||
+        !phoneValid
       );
     if (roleKey === "agency") {
       return (
@@ -285,6 +380,7 @@ function SignupForm({ roleKey, onBack }) {
           agencyName: formData.agencyName,
           agencyAddress: formData.agencyAddress,
           agencyFeeRate: formData.agencyFeeRate,
+          flag: formData.flag, // 기존 대행사 데이터 사용 여부
         };
       case "engineer":
         return {
@@ -444,22 +540,78 @@ function SignupForm({ roleKey, onBack }) {
                       />
                       <AuthInput
                         label="연락처"
-                        placeholder="010 - 없이 숫자만 입력해주세요"
+                        placeholder="'-' 없이 숫자 11자리를 입력해주세요"
                         value={formData.phone}
-                        onChange={handleChange("phone")}
+                        onChange={handlePhoneChange}
                       />
+                      {formData.phone && !phoneValid && (
+                        <p className="auth-field-error">
+                          전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
+                        </p>
+                      )}
                       <AuthInput
                         label="사업자등록번호"
-                        placeholder="- 없이 숫자만 입력해주세요"
+                        placeholder="000-00-00000 형식으로 입력해주세요"
                         value={formData.businessNumber}
-                        onChange={handleChange("businessNumber")}
+                        onChange={handleBusinessNumberChange("businessNumber")}
+                        readOnly={formData.flag === 1}
                       />
-                      <AuthInput
-                        label="대행사명"
-                        placeholder="대행사명을 입력해주세요"
-                        value={formData.agencyName}
-                        onChange={handleChange("agencyName")}
-                      />
+                      {formData.businessNumber && !businessNumberValid && (
+                        <p className="auth-field-error">
+                          사업자번호는 000-00-00000 형식으로 입력해주세요.
+                        </p>
+                      )}
+
+                      {/* 대행사명 + 조회 버튼 (GET /api/agencies/agency) */}
+                      <div className="auth-input-wrap">
+                        <label className="auth-label">대행사명</label>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <div className="auth-input-box" style={{ flex: 1 }}>
+                            <input
+                              className="auth-input"
+                              type="text"
+                              placeholder="대행사명을 입력해주세요"
+                              value={formData.agencyName}
+                              onChange={(e) => handleAgencyNameChange(e.target.value)}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="auth-link"
+                            style={{
+                              flexShrink: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              padding: "0 14px",
+                              border: "1px solid #ddd",
+                              borderRadius: 8,
+                              fontSize: 13,
+                              fontWeight: 600,
+                            }}
+                            disabled={!formData.agencyName.trim() || agencyLookup.status === "loading"}
+                            onClick={handleAgencyLookup}
+                          >
+                            {agencyLookup.status === "loading"
+                              ? <Loader2 size={14} className="auth-spin" />
+                              : <Search size={14} />}
+                            조회
+                          </button>
+                        </div>
+                        {agencyLookup.status === "found" && (
+                          <p
+                            className="auth-agency-lookup-msg"
+                            style={{ color: "#16a34a", display: "flex", alignItems: "center", gap: 4 }}
+                          >
+                            <CheckCircle2 size={13} /> {agencyLookup.message}
+                          </p>
+                        )}
+                        {agencyLookup.status === "notfound" && (
+                          <p className="auth-agency-lookup-msg" style={{ color: "#888" }}>
+                            {agencyLookup.message}
+                          </p>
+                        )}
+                      </div>
                     </>
                   )}
                   {roleKey === "engineer" && (
@@ -472,16 +624,26 @@ function SignupForm({ roleKey, onBack }) {
                       />
                       <AuthInput
                         label="연락처"
-                        placeholder="010 - 없이 숫자만 입력해주세요"
+                        placeholder="'-' 없이 숫자 11자리를 입력해주세요"
                         value={formData.phone}
-                        onChange={handleChange("phone")}
+                        onChange={handlePhoneChange}
                       />
+                      {formData.phone && !phoneValid && (
+                        <p className="auth-field-error">
+                          전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
+                        </p>
+                      )}
                       <AuthInput
                         label="소속 대행사 사업자등록번호"
-                        placeholder="소속 대행사의 사업자등록번호를 입력해주세요"
+                        placeholder="000-00-00000 형식으로 입력해주세요"
                         value={formData.agencyBusinessNumber}
-                        onChange={handleChange("agencyBusinessNumber")}
+                        onChange={handleBusinessNumberChange("agencyBusinessNumber")}
                       />
+                      {formData.agencyBusinessNumber && !agencyBusinessNumberValid && (
+                        <p className="auth-field-error">
+                          사업자번호는 000-00-00000 형식으로 입력해주세요.
+                        </p>
+                      )}
                     </>
                   )}
 
@@ -514,10 +676,15 @@ function SignupForm({ roleKey, onBack }) {
                     <>
                       <AuthInput
                         label="연락처 (선택)"
-                        placeholder="- 없이 숫자만 입력해주세요"
+                        placeholder="'-' 없이 숫자 11자리를 입력해주세요"
                         value={formData.phone}
-                        onChange={handleChange("phone")}
+                        onChange={handlePhoneChange}
                       />
+                      {formData.phone && !phoneValid && (
+                        <p className="auth-field-error">
+                          전화번호는 '-' 없이 숫자 11자리로 입력해주세요.
+                        </p>
+                      )}
 
                       {/* 거주지 안내 배너 */}
                       <div className="auth-addr-banner">
@@ -666,11 +833,17 @@ function SignupForm({ roleKey, onBack }) {
                         value={formData.addressDetail}
                         onChange={handleChange("addressDetail")}
                       />
+                      {formData.flag === 1 && (
+                        <p className="auth-agency-lookup-msg" style={{ color: "#5B4FF5" }}>
+                          기존 등록된 대행사 정보로 자동 입력되었습니다.
+                        </p>
+                      )}
                       <AuthInput
                         label="대행사 소재지"
                         placeholder="대행사 주소를 입력해주세요"
                         value={formData.agencyAddress}
                         onChange={handleChange("agencyAddress")}
+                        readOnly={formData.flag === 1}
                       />
                       <AuthInput
                         label="수수료율 (%)"
@@ -680,6 +853,7 @@ function SignupForm({ roleKey, onBack }) {
                         onChange={(v) =>
                           handleChange("agencyFeeRate")(parseFloat(v) || 0)
                         }
+                        readOnly={formData.flag === 1}
                       />
                     </>
                   )}

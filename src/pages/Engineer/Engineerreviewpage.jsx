@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   ChevronLeft, ChevronRight, ChevronDown, Calendar,
 } from "lucide-react";
-import { getEngineerReviews, getEngineerProfile } from "../../apis/engineers"; // 실제 경로에 맞게 수정
+import { getEngineerReviews, getEngineerReviewStats } from "../../apis/engineers"; 
 import "../../styles/Engineer/Engineerreviewpage.css";
 
 const RATING_TAB_LABELS = {
@@ -12,7 +12,6 @@ const RATING_TAB_LABELS = {
   "3": "3점",
   "2": "2점",
   "1": "1점",
-  
 };
 
 function formatDateOnly(isoString) {
@@ -47,24 +46,25 @@ export default function EngineerReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // engineer_profiles에서 가져오는 정확한 집계값
-  const [summary, setSummary] = useState({ avgRating: 0, totalReviews: 0 });
+  const [summary, setSummary] = useState({ avgRating: 0, totalCount: 0 });
+  const [ratingDist, setRatingDist] = useState({}); // { "5": 12, "4": 5, ... }
 
   const [reviewList, setReviewList] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
 
-  // 종합 평점/총 리뷰 수는 프로필 API에서 (정확한 집계값)
+  // 종합 평점 + 평점 분포 — /api/engineer/reviews/stats
   useEffect(() => {
-    getEngineerProfile()
+    getEngineerReviewStats()
       .then((res) => {
+        const d = res.data;
         setSummary({
-          avgRating: res.data.avgRating ?? 0,
-          totalReviews: res.data.totalReviews ?? 0,
+         avgRating: d.avgRating ?? 0,
+         totalCount: d.totalReviews ?? 0,
         });
+        setRatingDist(d.ratingDistribution ?? {});
       })
       .catch((err) => {
-        console.error("프로필(평점 요약) 조회 실패:", err);
+        console.error("리뷰 통계 조회 실패:", err);
       });
   }, []);
 
@@ -80,7 +80,6 @@ export default function EngineerReviewPage() {
         const d = res.data;
         setReviewList(d.content ?? []);
         setTotalPages(d.totalPages ?? 1);
-        setTotalElements(d.totalElements ?? 0);
       })
       .catch((err) => {
         console.error("리뷰 조회 실패:", err);
@@ -92,6 +91,8 @@ export default function EngineerReviewPage() {
 
     return () => { mounted = false; };
   }, [activeTab, currentPage]);
+
+  const totalDistCount = Object.values(ratingDist).reduce((a, b) => a + b, 0);
 
   return (
     <div className="erv">
@@ -105,29 +106,36 @@ export default function EngineerReviewPage() {
           <p className="erv-summary__rating-label">종합 평점</p>
           <p className="erv-summary__rating-value">{summary.avgRating.toFixed(1)} <span>/ 5.0</span></p>
           <StarRating rating={Math.round(summary.avgRating)} size={20} />
-          <p className="erv-summary__rating-count">총 {summary.totalReviews}건의 평가</p>
+          <p className="erv-summary__rating-count">총 {summary.totalCount}건의 평가</p>
         </div>
 
-        {/* ⚠ 평점 분포는 백엔드에 집계 API가 없어서 표시할 수 없습니다.
-            /api/engineer/reviews 응답에 평점별 개수를 함께 내려주는 필드 추가를 요청해야 합니다. */}
         <div className="erv-summary__dist">
           <p className="erv-summary__dist-label">평가 분포</p>
-          <p style={{ fontSize: 12, color: "#aaa", marginTop: 8 }}>
-            평점 분포 데이터는 아직 제공되지 않습니다.
-          </p>
+          {["5", "4", "3", "2", "1"].map((score) => {
+            const count = ratingDist[score] ?? 0;
+            const pct = totalDistCount > 0 ? Math.round((count / totalDistCount) * 100) : 0;
+            return (
+              <div key={score} className="erv-dist-row">
+                <span className="erv-dist-score">{score}점</span>
+                <div className="erv-dist-bar-wrap">
+                  <div className="erv-dist-bar" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="erv-dist-count">{count} ({pct}%)</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="erv-tab-row">
         <div className="erv-tabs">
-          {/* ⚠ 탭별 카운트도 API에 없어서 숫자 없이 라벨만 표시합니다. */}
           {Object.keys(RATING_TAB_LABELS).map((key) => (
             <button
               key={key}
               className={`erv-tab ${activeTab === key ? "erv-tab--active" : ""}`}
               onClick={() => { setActiveTab(key); setCurrentPage(1); }}
             >
-              {RATING_TAB_LABELS[key]}
+              {RATING_TAB_LABELS[key]} {key !== "ALL" && `(${ratingDist[key] ?? 0})`}
             </button>
           ))}
         </div>

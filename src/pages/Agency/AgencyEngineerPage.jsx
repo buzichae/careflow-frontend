@@ -1,16 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
+import { jwtDecode } from "jwt-decode";
 import {
   Users, Circle, BookCheck, ClipboardList, Star,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw,
   Phone, Mail, Building2, X, UserPlus, Pencil, Plus, Save, Loader2,
+  CheckCircle,
 } from "lucide-react";
 import "../../styles/Agency/agency/AgencyEngineerPage.css";
 import "../../styles/Agency/agency/Agencyengineerpage.edit form.css"
+import EngineerApprovalModal from "../../pages/Agency/Modal/Engineerapprovalmodal";
+import { getAgencyEngineersLmsStatus } from "../../apis/lms";
 
-const BASE_URL = "http://localhost:8080";
+export const BASE_URL = "http://localhost:8080";
 
-async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
@@ -56,6 +60,50 @@ function formatEngineerId(userId) {
 function getCareerYears(startYear) {
   if (!startYear) return "-";
   return `${new Date().getFullYear() - startYear}년`;
+}
+
+// 서버의 등급 자동 산정 규칙(1~5년=초급, 6~10년=중급, 11년↑=고급)을 그대로 반영한
+// 프론트 미리보기용 계산. 실제 저장 값은 서버가 재계산하며, 이 값은 참고용 표시일 뿐입니다.
+function previewSkillLevel(startYear) {
+  const year = Number(startYear);
+  if (!year || Number.isNaN(year)) return "BEGINNER";
+  const years = new Date().getFullYear() - year;
+  if (years >= 11) return "EXPERT";
+  if (years >= 6) return "INTERMEDIATE";
+  return "BEGINNER";
+}
+
+/**
+ * LMS 이수 상태 배지
+ *
+ * [v10 설계] 콘텐츠를 전부 이수해도 OX퀴즈 합격 전까지 lmsCompleted=false 유지.
+ * 이 페이지의 기존 기사 목록 API(/api/agency/engineers)는 lmsCompleted만 내려줘서
+ * "콘텐츠는 다 읽었는데 퀴즈만 안 봄" 상태를 구분할 수 없었음.
+ * → getAgencyEngineersLmsStatus()를 별도로 호출해 completedCount/totalCount를 병합,
+ *   AgencyLmsPage와 동일한 3단계 배지 로직을 적용.
+ * lmsDetail이 아직 없거나(로딩 전) 매칭 실패 시엔 기존처럼 lmsCompleted만으로 표시(폴백).
+ *
+ * [버그 수정] 이 페이지는 원래 item.isLmsCompleted를 참조했지만, 백엔드 응답의
+ * 실제 필드명은 lmsCompleted다 (Java boolean getter isLmsCompleted()가
+ * Jackson 직렬화 시 "is" 접두사가 제거되어 lmsCompleted로 나감).
+ * 존재하지 않는 필드를 읽어 항상 undefined(=falsy)가 되면서, 실제로는 이수 완료한
+ * 기사도 "미이수"로 잘못 표시되던 버그였음.
+ */
+function LmsStatusBadge({ isCompleted, lmsDetail }) {
+  if (isCompleted) {
+    return <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>;
+  }
+
+  const contentDone =
+    lmsDetail &&
+    lmsDetail.totalCount > 0 &&
+    lmsDetail.completedCount === lmsDetail.totalCount;
+
+  if (contentDone) {
+    return <span className="aep-lms-badge aep-lms-badge--quiz-pending">콘텐츠 완료 · 퀴즈 대기</span>;
+  }
+
+  return <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>;
 }
 
 function Avatar({ name, profileImg, size = 36 }) {
@@ -265,7 +313,6 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
     expertBrands: Array.isArray(initialData.expertBrands) ? [...initialData.expertBrands] : [],
     serviceRegionIds: Array.isArray(initialData.serviceRegionIds) ? [...initialData.serviceRegionIds] : [],
     careerStartedYear: initialData.careerStartedYear ?? "",
-    skillLevel: initialData.skillLevel ?? "BEGINNER",
     introduction: initialData.introduction ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -278,16 +325,17 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
     setSaving(true);
     setError(null);
     try {
-      // 참고: 브랜드/지역을 모두 삭제하려는 의도로 빈 배열을 보내는 경우,
-      // 백엔드가 `!isEmpty()` 조건으로 빈 배열을 무시하도록 구현되어 있다면
-      // 이 요청은 서버에서 조용히 무시될 수 있습니다. 백엔드 로직 확인이 필요합니다.
+      // 참고(백엔드 확인 완료):
+      // - expertBrands/serviceRegionIds: []는 "전체 삭제", 필드 자체를 보내지 않으면(undefined) "변경 안 함"으로 처리됩니다.
+      //   여기서는 항상 배열(빈 배열 포함)로 명시해서 보내므로 "전체 삭제" 의도가 정상 반영됩니다.
+      // - skillLevel: 서버가 careerStartedYear 기준으로 자동 재산정하며, 요청 필드 자체가 없습니다.
+      //   프론트에서 편집 불가능한 값이라 payload에서 완전히 제외합니다.
       const payload = {
         phone: form.phone,
         email: form.email,
         expertBrands: form.expertBrands,
         serviceRegionIds: form.serviceRegionIds,
         careerStartedYear: form.careerStartedYear ? Number(form.careerStartedYear) : null,
-        skillLevel: form.skillLevel,
         introduction: form.introduction,
       };
 
@@ -364,15 +412,12 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
 
       <div className="aep-edit-field">
         <span className="aep-detail__info-label">기술 등급</span>
-        <select
-          className="aep-edit-input"
-          value={form.skillLevel}
-          onChange={e => updateField("skillLevel", e.target.value)}
-        >
-          {Object.entries(SKILL_MAP).map(([key, v]) => (
-            <option key={key} value={key}>{v.label} ({v.en})</option>
-          ))}
-        </select>
+        <div className="aep-edit-readonly">
+          <span className={`aep-skill-badge aep-skill-badge--${(SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ?? SKILL_MAP.BEGINNER).type}`}>
+            <span>{(SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ?? SKILL_MAP.BEGINNER).label}</span>
+          </span>
+          <span className="aep-edit-readonly__hint">경력 시작 연도 기준으로 저장 시 서버에서 자동 산정됩니다 (직접 지정 불가)</span>
+        </div>
       </div>
 
       <div className="aep-edit-field">
@@ -406,6 +451,10 @@ export default function AgencyEngineerPage() {
   const [engineerList, setEngineerList] = useState([]);
   const [listLoading, setListLoading]   = useState(true);
 
+  // ── LMS 상세 현황(콘텐츠 완료/퀴즈 대기 구분용) ──────────
+  // key: userId(=engineerUserId), value: { completedCount, totalCount, isCompleted }
+  const [lmsDetailMap, setLmsDetailMap] = useState({});
+
   // ── 12번: 기사 상세 ──────────────────────────
   const [selectedItem, setSelectedItem]   = useState(null);
   const [detailData, setDetailData]       = useState(null);
@@ -415,10 +464,17 @@ export default function AgencyEngineerPage() {
   // ── 13번: 기사 프로필 수정 ─────────────────────
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // ── 가입 신청 관리 모달 ─────────────────────────
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+
   // ── 필터 / 페이지 ────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 15;
+
+  const token    = localStorage.getItem("token");
+  const decoded  = token ? jwtDecode(token) : null;
+  const agencyId = decoded?.agencyId ?? null;
 
   const fetchEngineers = useCallback(() => {
     setListLoading(true);
@@ -428,7 +484,21 @@ export default function AgencyEngineerPage() {
       .finally(() => setListLoading(false));
   }, []);
 
+  // LMS 콘텐츠/퀴즈 상세 현황을 별도로 받아와 userId 기준으로 매핑
+  // (이 값이 없으면 LmsStatusBadge는 lmsCompleted만으로 기존처럼 표시됨)
+  const fetchLmsDetail = useCallback(() => {
+    if (!agencyId) return;
+    getAgencyEngineersLmsStatus(agencyId)
+      .then((res) => {
+        const map = {};
+        (res.data ?? []).forEach((e) => { map[e.userId] = e; });
+        setLmsDetailMap(map);
+      })
+      .catch(console.error);
+  }, [agencyId]);
+
   useEffect(() => { fetchEngineers(); }, [fetchEngineers]);
+  useEffect(() => { fetchLmsDetail(); }, [fetchLmsDetail]);
 
   const handleSelectEngineer = useCallback(async (engineer) => {
     setSelectedItem(engineer);
@@ -451,7 +521,8 @@ export default function AgencyEngineerPage() {
     setIsEditMode(false);
     // 목록의 요약 정보(전문 가전 등)도 최신 상태를 반영하도록 새로고침
     fetchEngineers();
-  }, [fetchEngineers]);
+    fetchLmsDetail();
+  }, [fetchEngineers, fetchLmsDetail]);
 
   const filteredList = engineerList.filter(e =>
     !searchQuery ||
@@ -494,7 +565,7 @@ export default function AgencyEngineerPage() {
         <div className="aep-stat-card">
           <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">
-              {listLoading ? "..." : engineerList.filter(e => e.isLmsCompleted).length}
+              {listLoading ? "..." : engineerList.filter(e => e.lmsCompleted).length}
               <span>명</span>
             </p>
             <p className="aep-stat-card__label">교육 이수 완료</p>
@@ -532,7 +603,9 @@ export default function AgencyEngineerPage() {
         <button className="aep-reset-btn" onClick={() => setSearchQuery("")}>
           <RefreshCw size={13} /> 필터 초기화
         </button>
-        <button className="aep-invite-btn"><UserPlus size={14} /> 가입 신청 관리</button>
+        <button className="aep-invite-btn" onClick={() => setIsApprovalModalOpen(true)}>
+          <UserPlus size={14} /> 가입 신청 관리
+        </button>
       </div>
 
       <div className="aep-body">
@@ -557,6 +630,7 @@ export default function AgencyEngineerPage() {
                 const skill    = SKILL_MAP[item.skillLevel] ?? { label: item.skillLevel, type: "beginner", en: item.skillLevel };
                 const schedule = SCHEDULE_STATUS_MAP[item.currentWorkStatus] ?? { label: "-", type: "off" };
                 const isSelected = selectedItem?.engineerUserId === item.engineerUserId;
+                const lmsDetail = lmsDetailMap[item.engineerUserId];
                 return (
                   <div key={item.engineerUserId} className={`aep-table__row ${isSelected ? "aep-table__row--selected" : ""}`}>
                     <span><input type="checkbox" /></span>
@@ -575,10 +649,7 @@ export default function AgencyEngineerPage() {
                       </div>
                     </span>
                     <span>
-                      {item.isLmsCompleted
-                        ? <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>
-                        : <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>
-                      }
+                      <LmsStatusBadge isCompleted={item.lmsCompleted} lmsDetail={lmsDetail} />
                     </span>
                     <span>
                       <span className={`aep-status-badge aep-status-badge--${schedule.type}`}>{schedule.label}</span>
@@ -728,14 +799,28 @@ export default function AgencyEngineerPage() {
                       <div className="aep-detail__lms-section">
                         <p className="aep-detail__section-label">LMS 교육 상태</p>
                         <div className="aep-detail__lms-row">
-                          {detailData.isLmsCompleted
-                            ? <span className="aep-lms-badge aep-lms-badge--done">이수 완료</span>
-                            : <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>
-                          }
+                          <LmsStatusBadge
+                            isCompleted={detailData.lmsCompleted}
+                            lmsDetail={lmsDetailMap[selectedItem.engineerUserId]}
+                          />
                         </div>
-                        {!detailData.isLmsCompleted && (
-                          <p className="aep-detail__lms-warn">⚠ LMS 미이수 — 배차 불가 상태</p>
-                        )}
+                        {(() => {
+                          const lmsDetail = lmsDetailMap[selectedItem.engineerUserId];
+                          const contentDone =
+                            lmsDetail &&
+                            lmsDetail.totalCount > 0 &&
+                            lmsDetail.completedCount === lmsDetail.totalCount;
+
+                          if (detailData.lmsCompleted) return null;
+
+                          return contentDone ? (
+                            <p className="aep-detail__lms-warn aep-detail__lms-warn--info">
+                              콘텐츠는 모두 이수했지만 OX퀴즈 합격 전까지 배차가 제한됩니다.
+                            </p>
+                          ) : (
+                            <p className="aep-detail__lms-warn">⚠ LMS 미이수 — 배차 불가 상태</p>
+                          );
+                        })()}
                       </div>
 
                       <div className="aep-detail__month-section">
@@ -765,6 +850,13 @@ export default function AgencyEngineerPage() {
           </aside>
         )}
       </div>
+
+      {isApprovalModalOpen && (
+        <EngineerApprovalModal
+          onClose={() => setIsApprovalModalOpen(false)}
+          onApproved={fetchEngineers}
+        />
+      )}
     </div>
   );
 }

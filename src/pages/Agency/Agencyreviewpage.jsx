@@ -9,14 +9,6 @@ import { getAgencyReviews } from "../../apis/agencyReview";
 
 const REVIEW_TABS = ["전체 리뷰", "5점 리뷰", "4점 이하 리뷰"];
 
-const GRADE_MAP = {
-  VIP:    { label: "VIP",    type: "vip"    },
-  GOLD:   { label: "GOLD",   type: "gold"   },
-  SILVER: { label: "SILVER", type: "silver" },
-  BRONZE: { label: "BRONZE", type: "bronze" },
-  NORMAL: { label: "",       type: "normal" },
-};
-
 function StarRow({ rating, max = 5 }) {
   return (
     <div className="arp-stars">
@@ -65,8 +57,6 @@ function mapReview(item) {
     id: item.reviewId,
     reviewId: item.reviewId,
     requestId: item.requestId,
-    customerName: item.customerName,
-    customerGrade: "NORMAL",      // 백엔드 미지원
     engineerName: item.engineerName ? `${item.engineerName} 기사` : "-",
     engineerId: item.engineerId ? `ENG-${String(item.engineerId).padStart(5, "0")}` : "-",
     productName: item.productName ?? "-",
@@ -259,17 +249,13 @@ export default function AgencyReviewPage() {
             )}
 
             {!loading && reviews.map((item) => {
-              const grade = GRADE_MAP[item.customerGrade] ?? GRADE_MAP["NORMAL"];
               const isSelected = selectedItem?.id === item.id;
               return (
                 <div key={item.id} className={`arp-table__row ${isSelected ? "arp-table__row--selected" : ""}`}>
                   <div className="arp-table__review-col">
                     <div className="arp-table__customer">
-                      <Avatar name={item.customerName} size={32} />
-                      <div>
-                        <span className="arp-table__customer-name">{item.customerName} 고객</span>
-                        {grade.label && <span className={`arp-grade-badge arp-grade-badge--${grade.type}`}>{grade.label}</span>}
-                      </div>
+                      <Avatar name={item.engineerName} size={32} />
+                      <span className="arp-table__customer-name">{item.engineerName}</span>
                     </div>
                     <p className="arp-table__content">{item.content}</p>
                   </div>
@@ -338,16 +324,10 @@ export default function AgencyReviewPage() {
               <button className="arp-detail__close" onClick={() => setSelectedItem(null)}><X size={16} /></button>
             </div>
             <div className="arp-detail__profile">
-              <Avatar name={selectedItem.customerName} size={44} />
+              <Avatar name={selectedItem.engineerName} size={44} />
               <div>
-                <div className="arp-detail__profile-name">
-                  {selectedItem.customerName} 고객
-                  {(GRADE_MAP[selectedItem.customerGrade] ?? GRADE_MAP["NORMAL"]).label && (
-                    <span className={`arp-grade-badge arp-grade-badge--${(GRADE_MAP[selectedItem.customerGrade] ?? GRADE_MAP["NORMAL"]).type}`}>
-                      {(GRADE_MAP[selectedItem.customerGrade] ?? GRADE_MAP["NORMAL"]).label}
-                    </span>
-                  )}
-                </div>
+                <div className="arp-detail__profile-name">{selectedItem.engineerName}</div>
+                <p className="arp-detail__profile-id">{selectedItem.engineerId}</p>
               </div>
             </div>
             <div className="arp-detail__tabs">
@@ -369,7 +349,6 @@ export default function AgencyReviewPage() {
                     <div className="arp-detail__row"><span className="arp-detail__label">가전 제품</span><span className="arp-detail__value">{selectedItem.productName} ({selectedItem.modelNo})</span></div>
                     <div className="arp-detail__row"><span className="arp-detail__label">접수일</span><span className="arp-detail__value">{selectedItem.createdAt} {selectedItem.createdTime}</span></div>
                     <div className="arp-detail__row"><span className="arp-detail__label">방문일</span><span className="arp-detail__value">{selectedItem.visitDate}</span></div>
-                    <div className="arp-detail__row"><span className="arp-detail__label">담당 기사</span><span className="arp-detail__value">{selectedItem.engineerName} ({selectedItem.engineerId})</span></div>
                     <div className="arp-detail__row"><span className="arp-detail__label">대행사</span><span className="arp-detail__value">{selectedItem.agencyName}</span></div>
                   </div>
                   <div className="arp-detail__section">

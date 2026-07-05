@@ -48,6 +48,7 @@ import EngineerCustomerListPage from "../src/pages/Engineer/Engineercustomerlist
 import EngineerReportSubmitPage from "../src/pages/Engineer/Engineerreportsubmitpage.jsx"
 
 import OAuth2Callback from "../src/pages/auth/OAuth2Callback.jsx"
+import ForgotPasswordPage from "../src/pages/auth/ForgotPasswordPage.jsx"
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -117,6 +118,7 @@ export default function App() {
         {/* 인증 (MainLayout 밖) */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/signup" element={<SignupPage />} />
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
 
         <Route element={<MainLayout />}>

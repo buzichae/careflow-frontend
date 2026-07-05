@@ -5,127 +5,16 @@ import {
   ChevronsLeft, ChevronsRight, RefreshCw, X, Download, Building2,
 } from "lucide-react";
 import "../../styles/Agency/Agencysettlementpage.css";
-import { getAgencySettlements, getAgencySettlementSummary, updateSettlementStatus, downloadMonthlySettlementCsv } from "../../apis/agencySettlement";
+import {
+  getAgencySettlements,
+  updateSettlementStatus,
+  downloadMonthlySettlementCsv,
+} from "../../apis/agencySettlement";
 
-/* =========================================================
-   더미 데이터 (백엔드 응답 실패 시 자동으로 이걸로 화면을 채웁니다)
-   확인 끝나면 이 블록과 아래 .catch() 안의 setSummaryStats(DUMMY_SUMMARY_STATS) /
-   setSettlements(...) / handleStatusChange 안의 더미 fallback만 지우면 원래 코드로 돌아갑니다.
-========================================================= */
-const DUMMY_SUMMARY_STATS = {
-  totalGrossAmount: 48250000,
-  prevMonthGrossDiff: 3120000,
-  paidAmount: 28900000,
-  pendingAmount: 8450000,
-  disputedAmount: 6900000,
-  totalCount: 132,
-  prevMonthCountDiff: 14,
-};
-
-const DUMMY_SETTLEMENTS = [
-  {
-    settlementId: 10234, status: "PENDING", type: "ENGINEER",
-    engineerId: 1, engineerName: "김민준", engineerPhone: "010-1234-5678",
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 24, grossAmount: 3120000,
-    platformFee: 234000, platformFeeRate: 7.5,
-    agencyFee: 156000, agencyFeeRate: 5,
-    engineerNetAmount: 2730000,
-    settledAt: null,
-    agencyName: "케어플로우 서울대행사",
-    payMethod: "계좌이체", bankAccount: "국민 123-456-789012",
-  },
-  {
-    settlementId: 10235, status: "APPROVED", type: "ENGINEER",
-    engineerId: 2, engineerName: "이서연", engineerPhone: "010-2345-6789",
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 19, grossAmount: 2580000,
-    platformFee: 193500, platformFeeRate: 7.5,
-    agencyFee: 129000, agencyFeeRate: 5,
-    engineerNetAmount: 2257500,
-    settledAt: null,
-    agencyName: "케어플로우 서울대행사",
-    payMethod: "계좌이체", bankAccount: "신한 987-654-321098",
-  },
-  {
-    settlementId: 10236, status: "PAID", type: "ENGINEER",
-    engineerId: 3, engineerName: "박도윤", engineerPhone: "010-3456-7890",
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 31, grossAmount: 3980000,
-    platformFee: 298500, platformFeeRate: 7.5,
-    agencyFee: 199000, agencyFeeRate: 5,
-    engineerNetAmount: 3482500,
-    settledAt: "2026-06-28T14:32:00",
-    agencyName: "케어플로우 서울대행사",
-    payMethod: "계좌이체", bankAccount: "우리 111-222-333444",
-  },
-  {
-    settlementId: 10237, status: "DISPUTED", type: "ENGINEER",
-    engineerId: 4, engineerName: "최지우", engineerPhone: "010-4567-8901",
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 15, grossAmount: 1950000,
-    platformFee: 146250, platformFeeRate: 7.5,
-    agencyFee: 97500, agencyFeeRate: 5,
-    engineerNetAmount: 1706250,
-    settledAt: null,
-    agencyName: "케어플로우 서울대행사",
-    payMethod: "계좌이체", bankAccount: "카카오뱅크 3333-01-1234567",
-  },
-  {
-    settlementId: 10238, status: "PENDING", type: "AGENCY",
-    engineerId: 0, engineerName: "케어플로우 부산대행사", engineerPhone: null,
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 58, grossAmount: 9600000,
-    platformFee: 720000, platformFeeRate: 7.5,
-    agencyFee: null, agencyFeeRate: 0,
-    engineerNetAmount: null,
-    settledAt: null,
-    agencyName: null,
-    payMethod: "계좌이체", bankAccount: "기업 555-666-777888",
-  },
-  {
-    settlementId: 10239, status: "PAID", type: "ENGINEER",
-    engineerId: 5, engineerName: "정하은", engineerPhone: "010-5678-9012",
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 27, grossAmount: 3450000,
-    platformFee: 258750, platformFeeRate: 7.5,
-    agencyFee: 172500, agencyFeeRate: 5,
-    engineerNetAmount: 3018750,
-    settledAt: "2026-06-27T09:14:00",
-    agencyName: "케어플로우 서울대행사",
-    payMethod: "계좌이체", bankAccount: "농협 444-555-666777",
-  },
-  {
-    settlementId: 10240, status: "APPROVED", type: "ENGINEER",
-    engineerId: 6, engineerName: "강시우", engineerPhone: "010-6789-0123",
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 12, grossAmount: 1580000,
-    platformFee: 118500, platformFeeRate: 7.5,
-    agencyFee: 79000, agencyFeeRate: 5,
-    engineerNetAmount: 1382500,
-    settledAt: null,
-    agencyName: "케어플로우 대구대행사",
-    payMethod: "계좌이체", bankAccount: "하나 222-333-444555",
-  },
-  {
-    settlementId: 10241, status: "PENDING", type: "ENGINEER",
-    engineerId: 7, engineerName: "조유나", engineerPhone: "010-7890-1234",
-    periodStart: "2026-06-01", periodEnd: "2026-06-30",
-    completedCount: 22, grossAmount: 2870000,
-    platformFee: 215250, platformFeeRate: 7.5,
-    agencyFee: 143500, agencyFeeRate: 5,
-    engineerNetAmount: 2511250,
-    settledAt: null,
-    agencyName: "케어플로우 대구대행사",
-    payMethod: "계좌이체", bankAccount: "국민 888-999-000111",
-  },
-];
-
-// 백엔드 status 값 → UI 레이블/스타일 매핑
+// 백엔드 status 값 → UI 레이블/스타일 매핑 ([DDL v11] APPROVED 상태 제거됨)
 const STATUS_MAP = {
   PAID:     { label: "지급 완료", type: "success"  },
   PENDING:  { label: "지급 대기", type: "ready"    },
-  APPROVED: { label: "승인됨",   type: "approved" },
   DISPUTED: { label: "보류",     type: "hold"     },
 };
 
@@ -153,19 +42,18 @@ function formatSettlementId(id) {
 
 // 금액 포맷 (원화)
 function formatAmount(amount) {
-  return `₩${Number(amount).toLocaleString()}`;
+  return `${Number(amount ?? 0).toLocaleString()}원`;
 }
 
-// paidAt(LocalDateTime) → 날짜 문자열
+// settledAt(LocalDateTime) → 날짜 문자열
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   return dateStr.replace("T", " ").slice(0, 16);
 }
 
-// 이번 달 year/month
-function getCurrentYearMonth() {
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+// 수수료율(비율, 예: 0.46) → 화면 표시용 퍼센트 숫자(46)
+function formatRate(rate) {
+  return (Number(rate ?? 0) * 100).toFixed(1).replace(/\.0$/, "");
 }
 
 function Avatar({ name, size = 32 }) {
@@ -214,8 +102,10 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
               : <div className="asp-modal__agency-icon"><Building2 size={20} /></div>
             }
             <div>
-              <p className="asp-modal__profile-name">{item.engineerName}</p>
-              <p className="asp-modal__profile-sub">ENG-{String(item.engineerId).padStart(5, "0")}</p>
+              <p className="asp-modal__profile-name">{item.engineerName ?? "-"}</p>
+              {item.engineerId != null && (
+                <p className="asp-modal__profile-sub">ENG-{String(item.engineerId).padStart(5, "0")}</p>
+              )}
               {item.engineerPhone && <p className="asp-modal__profile-phone">{item.engineerPhone}</p>}
             </div>
           </div>
@@ -223,7 +113,6 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
           {/* 기본 정보 */}
           <div className="asp-modal__section">
             <div className="asp-modal__row"><span className="asp-modal__label">기준 기간</span><span className="asp-modal__value">{item.periodStart} ~ {item.periodEnd}</span></div>
-            <div className="asp-modal__row"><span className="asp-modal__label">정산일</span><span className="asp-modal__value">{formatDate(item.settledAt)}</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">완료 건수</span><span className="asp-modal__value">{item.completedCount}건</span></div>
             <div className="asp-modal__row"><span className="asp-modal__label">총 정산 금액</span><span className="asp-modal__value asp-modal__value--amount">{formatAmount(item.grossAmount)}</span></div>
           </div>
@@ -237,11 +126,11 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
                 <span>{formatAmount(item.grossAmount)}</span>
               </div>
               <div className="asp-modal__amount-row asp-modal__amount-row--fee">
-                <span>CareFlow 수수료 ({Number(item.platformFeeRate)}%)</span>
+                <span>CareFlow 수수료 ({formatRate(item.platformFeeRate)}%)</span>
                 <span>-{formatAmount(item.platformFee)}</span>
               </div>
               <div className="asp-modal__amount-row asp-modal__amount-row--fee">
-                <span>대행사 수수료 ({Number(item.agencyFeeRate)}%)</span>
+                <span>대행사 수수료 ({formatRate(item.agencyFeeRate)}%)</span>
                 <span>-{item.agencyFee ? formatAmount(item.agencyFee) : "-"}</span>
               </div>
               <div className="asp-modal__amount-divider" />
@@ -255,14 +144,14 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
           </div>
 
           {/* 연결된 대행사 */}
-          {item.type === "ENGINEER" && (
+          {item.type === "ENGINEER" && item.agencyName && (
             <div className="asp-modal__section">
               <p className="asp-modal__section-label">연결된 대행사</p>
               <div className="asp-modal__agency-card">
                 <div className="asp-modal__agency-icon--sm"><Building2 size={14} /></div>
                 <div>
                   <p className="asp-modal__agency-name">{item.agencyName}</p>
-                  <p className="asp-modal__agency-rate">수수료율 {Number(item.agencyFeeRate)}%</p>
+                  <p className="asp-modal__agency-rate">수수료율 {formatRate(item.agencyFeeRate)}%</p>
                 </div>
               </div>
             </div>
@@ -279,19 +168,13 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             )}
           </div>
 
-          {/* 승인 처리 */}
+          {/* 승인 처리 — [DDL v11] APPROVED 제거: PENDING↔DISPUTED 자유, 둘 다 PAID로 바로 전이 가능 */}
           <div className="asp-modal__section">
-            <p className="asp-modal__section-label">승인 처리</p>
+            <p className="asp-modal__section-label">지급 처리</p>
             {item.status === "PAID" && (
               <div className="asp-modal__locked"><Lock size={13} /> 지급이 완료된 건입니다</div>
             )}
             {item.status === "PENDING" && (
-              <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--approve" onClick={() => onStatusChange(item.settlementId, "APPROVED")}>승인</button>
-                <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onStatusChange(item.settlementId, "DISPUTED")}>보류</button>
-              </div>
-            )}
-            {item.status === "APPROVED" && (
               <div className="asp-modal__action-row">
                 <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
                 <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onStatusChange(item.settlementId, "DISPUTED")}>보류</button>
@@ -299,18 +182,11 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             )}
             {item.status === "DISPUTED" && (
               <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--approve" onClick={() => onStatusChange(item.settlementId, "APPROVED")}>승인</button>
+                <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
                 <button className="asp-action-btn asp-action-btn--revert" onClick={() => onStatusChange(item.settlementId, "PENDING")}>재검토</button>
               </div>
             )}
           </div>
-        </div>
-
-        {/* 하단 버튼 */}
-        <div className="asp-modal__footer">
-          <button className="asp-modal__footer-btn asp-modal__footer-btn--outline">
-            <Download size={13} /> 정산 내역 다운로드
-          </button>
         </div>
       </div>
     </div>
@@ -321,64 +197,45 @@ export default function AgencySettlementPage() {
   const [activeTab, setActiveTab]     = useState("전체");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
   const [keyword, setKeyword]           = useState("");
   const [inputKeyword, setInputKeyword] = useState("");
   const [dateFrom, setDateFrom]         = useState("");
   const [dateTo, setDateTo]             = useState("");
 
-  // 목록 데이터
+  // 목록 + 통계 데이터 (한 번에 옴)
   const [settlements, setSettlements] = useState([]);
+  const [stats, setStats]             = useState(null);
   const [totalPages, setTotalPages]   = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
 
-  // 통계 카드 데이터
-  const [summaryStats, setSummaryStats] = useState(null);
+  const [downloading, setDownloading] = useState(false);
 
-  // ── 통계 카드 조회 (이번 달 기준) ──────────────────────────
-  useEffect(() => {
-    const { year, month } = getCurrentYearMonth();
-    getAgencySettlementSummary(year, month)
-      .then((res) => setSummaryStats(res.data))
-      .catch((err) => {
-        console.error("정산 요약 조회 실패:", err);
-        setSummaryStats(DUMMY_SUMMARY_STATS); // ← API 실패 시 더미로 대체
-      });
-  }, []);
-
-  // ── 목록 조회 ────────────────────────────────────────────
+  // ── 목록 + 통계 조회 (GET /api/agency/settlements) ──────────
   const fetchSettlements = useCallback(() => {
     setLoading(true);
-    const params = {
-      page: currentPage - 1,  // 백엔드는 0-indexed
+    setError(null);
+    getAgencySettlements({
+      page: currentPage - 1, // 백엔드는 0-indexed
       size: PAGE_SIZE,
-      status: TAB_STATUS_MAP[activeTab] ?? undefined,
-      keyword: keyword || undefined,
-      dateFrom: dateFrom || undefined,
-      dateTo: dateTo || undefined,
-    };
-
-    getAgencySettlements(params)
+      status: TAB_STATUS_MAP[activeTab],
+      keyword,
+      dateFrom,
+      dateTo,
+    })
       .then((res) => {
         const data = res.data;
         setSettlements(data.content ?? []);
+        setStats(data.stats ?? null);
         setTotalPages(data.totalPages ?? 1);
         setTotalElements(data.totalElements ?? 0);
-        // 페이지 변경 시 상세 모달 닫기
         setSelectedItem(null);
       })
       .catch((err) => {
         console.error("정산 목록 조회 실패:", err);
-        // ← API 실패 시 더미로 대체 (탭 필터는 프론트에서 흉내)
-        const targetStatus = TAB_STATUS_MAP[activeTab];
-        const filtered = targetStatus
-          ? DUMMY_SETTLEMENTS.filter(s => s.status === targetStatus)
-          : DUMMY_SETTLEMENTS;
-        setSettlements(filtered);
-        setTotalPages(1);
-        setTotalElements(filtered.length);
-        setSelectedItem(null);
+        setError("정산 목록을 불러오지 못했습니다.");
+        setSettlements([]);
       })
       .finally(() => setLoading(false));
   }, [activeTab, currentPage, keyword, dateFrom, dateTo]);
@@ -409,7 +266,10 @@ export default function AgencySettlementPage() {
 
   // 월별 정산 CSV 다운로드 — 이번 달 기준
   const handleDownloadCsv = async () => {
-    const { year, month } = getCurrentYearMonth();
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    setDownloading(true);
     try {
       const res = await downloadMonthlySettlementCsv(year, month);
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -420,92 +280,87 @@ export default function AgencySettlementPage() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       alert("CSV 다운로드에 실패했습니다.");
+    } finally {
+      setDownloading(false);
     }
   };
 
-  // 통계 카드 구성 (summaryStats API 연동)
-  const statCards = summaryStats
+  // 필터가 하나라도 적용되어 있는지 (필터 적용 시 백엔드가 prevMonth 관련 필드를 null로 내려줌)
+  const isFiltered = Boolean(TAB_STATUS_MAP[activeTab] || keyword || dateFrom || dateTo);
+  const periodLabel = isFiltered ? "조회 기간" : "";
+
+  // 통계 카드 구성 (목록 응답에 포함된 stats 사용)
+  const statCards = stats
     ? [
         {
-          label: "총 정산 금액 (이번 달)",
-          value: formatAmount(summaryStats.totalGrossAmount),
-          sub: summaryStats.prevMonthGrossDiff >= 0
-            ? `전월 대비 +${formatAmount(summaryStats.prevMonthGrossDiff)}`
-            : `전월 대비 ${formatAmount(summaryStats.prevMonthGrossDiff)}`,
-          subType: summaryStats.prevMonthGrossDiff >= 0 ? "up" : "down",
+          label: `총 정산 금액 (${periodLabel})`,
+          value: formatAmount(stats.thisMonthGrossAmount),
+          // 필터 적용 시 백엔드가 prevMonthGrossDiff를 null로 내려줌 → null 체크 없이 >= 0 비교하면
+          // null >= 0 이 true로 평가돼 "전월 대비 +0원"이 잘못 표시되므로, null이면 배지 자체를 숨김
+          sub: stats.prevMonthGrossDiff == null
+            ? ""
+            : stats.prevMonthGrossDiff >= 0
+              ? `전월 대비 +${formatAmount(stats.prevMonthGrossDiff)}`
+              : `전월 대비 ${formatAmount(stats.prevMonthGrossDiff)}`,
+          subType: stats.prevMonthGrossDiff == null ? "neutral" : (stats.prevMonthGrossDiff >= 0 ? "up" : "down"),
           icon: Wallet, color: "purple",
         },
         {
           label: "지급 완료 금액",
-          value: formatAmount(summaryStats.paidAmount),
-          sub: summaryStats.totalGrossAmount > 0
-            ? `${((summaryStats.paidAmount / summaryStats.totalGrossAmount) * 100).toFixed(1)}%`
+          value: formatAmount(stats.paidAmount),
+          sub: stats.thisMonthGrossAmount > 0
+            ? `${((stats.paidAmount / stats.thisMonthGrossAmount) * 100).toFixed(1)}%`
             : "0%",
           subType: "neutral", icon: CheckCircle, color: "green",
         },
         {
           label: "지급 대기 금액",
-          value: formatAmount(summaryStats.pendingAmount),
-          sub: summaryStats.totalGrossAmount > 0
-            ? `${((summaryStats.pendingAmount / summaryStats.totalGrossAmount) * 100).toFixed(1)}%`
+          value: formatAmount(stats.pendingAmount),
+          sub: stats.thisMonthGrossAmount > 0
+            ? `${((stats.pendingAmount / stats.thisMonthGrossAmount) * 100).toFixed(1)}%`
             : "0%",
           subType: "neutral", icon: Clock, color: "orange",
         },
         {
           label: "보류 금액",
-          value: formatAmount(summaryStats.disputedAmount),
-          sub: summaryStats.totalGrossAmount > 0
-            ? `${((summaryStats.disputedAmount / summaryStats.totalGrossAmount) * 100).toFixed(1)}%`
+          value: formatAmount(stats.disputedAmount),
+          sub: stats.thisMonthGrossAmount > 0
+            ? `${((stats.disputedAmount / stats.thisMonthGrossAmount) * 100).toFixed(1)}%`
             : "0%",
           subType: "neutral", icon: Lock, color: "red",
         },
         {
-          label: "정산 건수 (이번 달)",
-          value: `${Number(summaryStats.totalCount).toLocaleString()}건`,
-          sub: summaryStats.prevMonthCountDiff >= 0
-            ? `전월 대비 +${summaryStats.prevMonthCountDiff}건`
-            : `전월 대비 ${summaryStats.prevMonthCountDiff}건`,
-          subType: summaryStats.prevMonthCountDiff >= 0 ? "up" : "down",
+          label: `정산 건수 (${periodLabel})`,
+          value: `${Number(stats.thisMonthCount).toLocaleString()}건`,
+          // 동일하게 null 체크 — 필터 적용 시 배지 숨김
+          sub: stats.prevMonthCountDiff == null
+            ? ""
+            : stats.prevMonthCountDiff >= 0
+              ? `전월 대비 +${stats.prevMonthCountDiff}건`
+              : `전월 대비 ${stats.prevMonthCountDiff}건`,
+          subType: stats.prevMonthCountDiff == null ? "neutral" : (stats.prevMonthCountDiff >= 0 ? "up" : "down"),
           icon: FileText, color: "blue",
         },
       ]
     : [
-        { label: "총 정산 금액 (이번 달)", value: "-",  sub: "",  subType: "neutral", icon: Wallet,      color: "purple" },
+        { label: `총 정산 금액 (${periodLabel})`, value: "-",  sub: "",  subType: "neutral", icon: Wallet,      color: "purple" },
         { label: "지급 완료 금액",         value: "-",  sub: "",  subType: "neutral", icon: CheckCircle, color: "green"  },
         { label: "지급 대기 금액",         value: "-",  sub: "",  subType: "neutral", icon: Clock,       color: "orange" },
         { label: "보류 금액",              value: "-",  sub: "",  subType: "neutral", icon: Lock,        color: "red"    },
-        { label: "정산 건수 (이번 달)",    value: "-",  sub: "",  subType: "neutral", icon: FileText,    color: "blue"   },
+        { label: `정산 건수 (${periodLabel})`, value: "-",  sub: "",  subType: "neutral", icon: FileText,    color: "blue"   },
       ];
 
-  // 정산 상태 변경 — 해당 행만 즉시 UI 업데이트
+  // 정산 상태 변경 — 성공 시 목록 재조회 (통계도 같이 갱신되도록)
   const handleStatusChange = async (settlementId, newStatus) => {
     try {
       await updateSettlementStatus(settlementId, newStatus);
-      // 성공 시 해당 행의 status 만 갱신 (전체 재조회 없이 즉각 반영)
-      setSettlements(prev =>
-        prev.map(s =>
-          s.settlementId === settlementId
-            ? { ...s, status: newStatus, settledAt: newStatus === "PAID" ? new Date().toISOString() : s.settledAt }
-            : s
-        )
-      );
-      // 모달이 열려있는 행이면 모달 데이터도 함께 업데이트
+      fetchSettlements();
       if (selectedItem?.settlementId === settlementId) {
         setSelectedItem(prev => ({ ...prev, status: newStatus }));
       }
     } catch (err) {
-      // ← API 없을 때(더미 모드)도 버튼 동작 테스트 가능하도록 로컬 상태 업데이트로 대체
-      console.warn("상태 변경 API 실패 — 더미 모드로 로컬 상태만 변경합니다:", err);
-      setSettlements(prev =>
-        prev.map(s =>
-          s.settlementId === settlementId
-            ? { ...s, status: newStatus, settledAt: newStatus === "PAID" ? new Date().toISOString() : s.settledAt }
-            : s
-        )
-      );
-      if (selectedItem?.settlementId === settlementId) {
-        setSelectedItem(prev => ({ ...prev, status: newStatus }));
-      }
+      console.error("정산 상태 변경 실패:", err);
+      alert(err.response?.data?.message ?? "상태 변경에 실패했습니다.");
     }
   };
 
@@ -523,13 +378,9 @@ export default function AgencySettlementPage() {
           <h1 className="asp-header__title">정산 관리</h1>
           <p className="asp-header__sub">기사 및 대행사별 정산 내역을 조회하고 정산 상태를 관리할 수 있습니다.</p>
         </div>
-        <div className="asp-refresh-bar">
-          <span className="asp-refresh-label">자동 갱신</span>
-          <div className={`asp-toggle ${autoRefresh ? "asp-toggle--on" : ""}`} onClick={() => setAutoRefresh(p => !p)}>
-            <div className="asp-toggle__thumb" />
-          </div>
-          <div className="asp-refresh-select">30초 <ChevronDown size={13} /></div>
-        </div>
+        <button className="asp-reset-btn" onClick={fetchSettlements}>
+          <RefreshCw size={13} /> 새로고침
+        </button>
       </div>
 
       {/* 통계 카드 */}
@@ -565,14 +416,16 @@ export default function AgencySettlementPage() {
           <Search size={13} color="#aaa" />
           <input
             type="text"
-            placeholder="기사명, 정산 ID 검색"
+            placeholder="기사명 검색"
             value={inputKeyword}
             onChange={(e) => setInputKeyword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
         <button className="asp-reset-btn" onClick={handleReset}><RefreshCw size={13} /> 필터 초기화</button>
-        <button className="asp-excel-btn" onClick={handleDownloadCsv}><Download size={13} /> CSV 다운로드</button>
+        <button className="asp-excel-btn" onClick={handleDownloadCsv} disabled={downloading}>
+          <Download size={13} /> {downloading ? "다운로드 중..." : "CSV 다운로드"}
+        </button>
       </div>
 
       {/* 탭 */}
@@ -602,7 +455,7 @@ export default function AgencySettlementPage() {
             <span>대행사 수수료</span>
             <span>실 지급액</span>
             <span>상태</span>
-            <span>정산일</span>
+            <span>지급일</span>
             <span>관리</span>
           </div>
 
@@ -610,11 +463,15 @@ export default function AgencySettlementPage() {
             <div className="asp-table__empty">조회 중...</div>
           )}
 
-          {!loading && settlements.length === 0 && (
+          {!loading && error && (
+            <div className="asp-table__empty">{error}</div>
+          )}
+
+          {!loading && !error && settlements.length === 0 && (
             <div className="asp-table__empty">정산 내역이 없습니다.</div>
           )}
 
-          {!loading && settlements.map((item) => {
+          {!loading && !error && settlements.map((item) => {
             const status = STATUS_MAP[item.status] ?? { label: item.status, type: "ready" };
             const type   = TYPE_MAP[item.type]     ?? { label: item.type,   type: "engineer" };
             return (
@@ -624,19 +481,21 @@ export default function AgencySettlementPage() {
                   <span className={`asp-type-badge asp-type-badge--${type.type}`}>{type.label}</span>
                 </span>
                 <span className="asp-table__name-col">
-                  <span className="asp-table__name">{item.engineerName}</span>
-                  <span className="asp-table__sub-id">ENG-{String(item.engineerId).padStart(5, "0")}</span>
+                  <span className="asp-table__name">{item.engineerName ?? item.agencyName ?? "-"}</span>
+                  {item.engineerId != null && (
+                    <span className="asp-table__sub-id">ENG-{String(item.engineerId).padStart(5, "0")}</span>
+                  )}
                 </span>
                 <span className="asp-table__period">{item.periodStart} ~ {item.periodEnd}</span>
                 <span className="asp-table__count">{item.completedCount}건</span>
                 <span className="asp-table__amount">{formatAmount(item.grossAmount)}</span>
                 <span className="asp-table__fee">
                   {formatAmount(item.platformFee)}
-                  <span className="asp-table__fee-rate">({Number(item.platformFeeRate)}%)</span>
+                  <span className="asp-table__fee-rate">({formatRate(item.platformFeeRate)}%)</span>
                 </span>
                 <span className="asp-table__fee">
                   {item.agencyFee ? formatAmount(item.agencyFee) : "-"}
-                  <span className="asp-table__fee-rate">({Number(item.agencyFeeRate)}%)</span>
+                  <span className="asp-table__fee-rate">({formatRate(item.agencyFeeRate)}%)</span>
                 </span>
                 <span className="asp-table__net">
                   {item.engineerNetAmount ? formatAmount(item.engineerNetAmount) : "-"}

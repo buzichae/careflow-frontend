@@ -187,6 +187,10 @@
   white-space: nowrap;
 }
 .crh-diag-dl-btn:hover { background: #7c5cf7; color: #fff; }
+.crh-diag-dl-btn:disabled {
+  border-color: #ccc; color: #aaa; cursor: not-allowed;
+}
+.crh-diag-dl-btn:disabled:hover { background: #fff; color: #aaa; }
 
 .crh-diag-hero { display: flex; align-items: center; gap: 14px; }
 .crh-diag-hero__info { display: flex; flex-direction: column; gap: 6px; }
@@ -427,6 +431,19 @@
   font-size: 12px; font-weight: 700; color: var(--text-dark);
   flex-shrink: 0;
 }
+.crh-repair-card__report-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+  border: 1.5px solid #7c5cf7; background: #fff; color: #7c5cf7;
+  cursor: pointer; transition: background .15s, color .15s;
+  white-space: nowrap; flex-shrink: 0;
+}
+.crh-repair-card__report-btn:hover { background: #7c5cf7; color: #fff; }
+.crh-repair-card__report-btn:disabled {
+  border-color: #ccc; color: #aaa; cursor: not-allowed;
+}
+.crh-repair-card__report-btn:disabled:hover { background: #fff; color: #aaa; }
 
 /* 증상 행 */
 .crh-repair-card__symptom-row {

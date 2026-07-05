@@ -64,12 +64,14 @@ const mockAlerts = [
 ];
 
 function buildDiagModal(certData) {
-  const { cert, applianceId, applianceName, applianceBrand } = certData;
+  const { cert, applianceId, applianceName, applianceBrand, serialNumber } =
+    certData;
   return {
     certId: cert.certId,
     applianceId,
     applianceName,
     applianceBrand,
+    serialNumber,
     grade: cert.grade,
     score: cert.score,
     isCertified: cert.isCertified,
@@ -196,6 +198,7 @@ function DiagnosticModal({ diag, onClose }) {
   }
 
   function handleDownload() {
+    if (!diag.isCertified) return;
     const printWindow = window.open("", "_blank", "width=800,height=900");
 
     // Lucide 스타일 SVG 아이콘 (stroke 2px, round linecap)
@@ -247,6 +250,8 @@ function DiagnosticModal({ diag, onClose }) {
         <table>
           <thead><tr><th colspan="2">진단서 정보</th></tr></thead>
           <tbody>
+            <tr><td>대상 가전</td><td>${diag.applianceBrand ?? "—"}</td></tr>
+            <tr><td>시리얼 넘버</td><td>${diag.serialNumber ?? "—"}</td></tr>
             <tr><td>최초 발급일</td><td>${fmt(diag.issuedAt)}</td></tr>
             <tr><td>최근 갱신일</td><td>${fmt(diag.updatedAt)}</td></tr>
           </tbody>
@@ -404,7 +409,11 @@ function DiagnosticModal({ diag, onClose }) {
                 <td>대상 가전</td>
                 <td>{diag.applianceBrand}</td>
               </tr>
-              {/* <tr>
+              <tr>
+                <td>시리얼 넘버</td>
+                <td>{diag.serialNumber ?? "—"}</td>
+              </tr>
+              <tr>
                 <td>CareFlow 인증</td>
                 <td>
                   {diag.isCertified ? (
@@ -415,7 +424,7 @@ function DiagnosticModal({ diag, onClose }) {
                     <span style={{ color: "#aaa" }}>미인증</span>
                   )}
                 </td>
-              </tr> */}
+              </tr>
               <tr>
                 <td>최초 발급일</td>
                 <td>{fmt(diag.issuedAt)}</td>
@@ -429,6 +438,11 @@ function DiagnosticModal({ diag, onClose }) {
         </div>
 
         <div className="ch-modal__footer">
+          {!diag.isCertified && (
+            <p className="ch-modal__footer-note">
+              CareFlow 인증(B등급 이상) 제품만 다운로드할 수 있어요.
+            </p>
+          )}
           <button
             className="ch-modal__footer-btn ch-modal__footer-btn--outline"
             onClick={onClose}
@@ -438,6 +452,12 @@ function DiagnosticModal({ diag, onClose }) {
           <button
             className="ch-modal__footer-btn ch-modal__footer-btn--download"
             onClick={handleDownload}
+            disabled={!diag.isCertified}
+            title={
+              !diag.isCertified
+                ? "CareFlow 인증(B등급 이상)을 받은 제품만 다운로드할 수 있어요."
+                : undefined
+            }
           >
             <Download size={14} /> 진단서 다운로드
           </button>
@@ -534,6 +554,7 @@ export default function CustomerHome() {
                 applianceId: a.applianceId,
                 applianceName: getCategoryName(a.categoryId),
                 applianceBrand: `${a.brand} ${a.modelName}`,
+                serialNumber: a.serialNumber,
               }))
               .catch(() => null),
           ),

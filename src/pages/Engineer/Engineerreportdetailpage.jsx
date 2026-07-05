@@ -71,6 +71,16 @@ export default function EngineerReportDetailPage() {
     }
   };
 
+  // [버그 수정] "보고서 수정" 버튼이 onClick도 없고 승인 여부 체크도 없이
+  // 항상 노출되고 있었음 (승인 완료된 보고서도 눌리는 것처럼 보임).
+  // → 승인된(customerApproved) 보고서는 버튼 자체를 아예 숨기고,
+  //   미승인 상태에서만 수정 페이지로 이동하도록 연결.
+  const handleEdit = () => {
+    navigate("/engineer/report/submit", {
+      state: { reportId: d.reportId ?? Number(reportId), requestId: d.asRequestId ?? d.requestId },
+    });
+  };
+
   if (loading) return <div className="erdp">불러오는 중...</div>;
   if (error || !d) return <div className="erdp">{error ?? "보고서를 찾을 수 없습니다."}</div>;
 
@@ -93,9 +103,12 @@ export default function EngineerReportDetailPage() {
           <button className="erdp-back-btn" onClick={() => navigate(-1)}>
             <ChevronLeft size={13} /> 목록으로
           </button>
-          <button className="erdp-edit-btn">
-            <Pencil size={13} /> 보고서 수정
-          </button>
+          {/* [수정] 승인 완료된 보고서는 수정 버튼을 아예 노출하지 않음 */}
+          {!d.customerApproved && (
+            <button className="erdp-edit-btn" onClick={handleEdit}>
+              <Pencil size={13} /> 보고서 수정
+            </button>
+          )}
         </div>
       </div>
 
@@ -113,15 +126,12 @@ export default function EngineerReportDetailPage() {
 
       <div className="erdp-body">
         <div className="erdp-left">
-          {/* 상단 3단 요약 */}
           <div className="erdp-summary-grid">
             <div className="erdp-summary-card">
               <div className="erdp-summary-card__img">
-                {/* ⚠ productImageUrl은 스펙에 없어 기본 아이콘만 표시 */}
                 <span>🧊</span>
               </div>
               <div>
-                {/* ⚠ 제품명(productName)은 스펙에 없음(modelNo만 있음) — 필요시 백엔드에 필드 추가 요청 */}
                 <p className="erdp-summary-card__row"><span>모델명</span><span>{d.modelNo}</span></p>
                 <p className="erdp-summary-card__row"><span>시리얼</span><span>{d.serialNo}</span></p>
               </div>
@@ -129,7 +139,6 @@ export default function EngineerReportDetailPage() {
 
             <div className="erdp-summary-card">
               <p className="erdp-summary-card__section-label">고객 정보</p>
-              {/* ⚠ customerName, customerId는 스펙에 없음 */}
               <p className="erdp-summary-card__row-icon"><Phone size={11} /> {d.customerPhone}</p>
               <p className="erdp-summary-card__row-icon"><MapPin size={11} /> {d.customerAddress}</p>
             </div>
@@ -143,12 +152,8 @@ export default function EngineerReportDetailPage() {
             </div>
           </div>
 
-          {/* ⚠ 진행단계(PROGRESS_STEPS) UI는 스펙 응답에 currentStep/statusLogs 배열이 없어서 제외.
-              필요하면 as_status_logs를 배열로 내려주는 API가 별도로 필요합니다. */}
-
           <div className="erdp-section">
             <h3 className="erdp-section__title">진단 결과</h3>
-            {/* ⚠ 진단 증상/상세 텍스트는 스펙에 없고 diagnosisResult(enum)만 있음 */}
             <p className="erdp-diag-item">{DIAGNOSIS_MAP[d.diagnosisResult] ?? d.diagnosisResult}</p>
           </div>
 
@@ -184,7 +189,6 @@ export default function EngineerReportDetailPage() {
             </table>
           </div>
 
-          {/* ⚠ 작업 내용(workContent 리스트)은 스펙에 없고 memo(단일 문자열)만 있어서 memo로 대체 */}
           <div className="erdp-section">
             <h3 className="erdp-section__title">작업 내용 / 기타 사항</h3>
             <p className="erdp-memo">{d.memo ?? "-"}</p>
@@ -219,7 +223,6 @@ export default function EngineerReportDetailPage() {
             </div>
           </div>
 
-          {/* ⚠ 기사 등급/소속/연락처는 스펙에 없음(engineerName만 있음) */}
           <div className="erdp-panel">
             <h3 className="erdp-panel__title">작업 기사 정보</h3>
             <div className="erdp-engineer-card">
@@ -230,7 +233,6 @@ export default function EngineerReportDetailPage() {
             </div>
           </div>
 
-          {/* ⚠ 진행 이력(statusLogs) 배열은 스펙에 없음 — 개별 필드(arrivedAt/workStartAt/workEndAt)만 있음 */}
           <div className="erdp-panel">
             <h3 className="erdp-panel__title">진행 이력</h3>
             <div className="erdp-timeline">

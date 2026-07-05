@@ -16,26 +16,47 @@
 .enp-header__title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
 .enp-header__sub   { font-size: 13px; color: #aaa; }
 
-/* 통계 카드 */
+/* ===========================
+   통계 카드 — cas-kpi 스타일
+=========================== */
 .enp-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+
 .enp-stat-card {
-  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
-  padding: 16px; display: flex; align-items: flex-start; gap: 12px;
-  cursor: pointer; transition: box-shadow 0.1s;
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 12px;
+  padding: 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  min-height: 76px;
+  cursor: pointer;
+  transition: box-shadow 0.1s;
 }
 .enp-stat-card:hover { box-shadow: 0 2px 10px rgba(91,79,245,0.08); }
+
+.enp-stat-card__text { display: flex; flex-direction: column; gap: 3px; z-index: 1; }
+
 .enp-stat-card__icon {
-  width: 44px; height: 44px; border-radius: 10px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.enp-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
-.enp-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
-.enp-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
-.enp-stat-card__icon--orange { background: #fef0e0; color: #d97706; }
-.enp-stat-card__icon--teal   { background: #d0f4f0; color: #0d9488; }
-.enp-stat-card__label { font-size: 11px; color: #aaa; margin-bottom: 4px; }
-.enp-stat-card__value { font-size: 22px; font-weight: 700; color: #1a1a2e; }
-.enp-stat-card__value span { font-size: 13px; font-weight: 400; margin-left: 1px; }
+
+.enp-stat-card__icon--purple,
+.enp-stat-card__icon--blue,
+.enp-stat-card__icon--green,
+.enp-stat-card__icon--orange,
+.enp-stat-card__icon--teal {
+  background: none;
+  color: #e3e1f5;
+}
+
+.enp-stat-card__icon svg { width: 100%; height: 100%; color: #e3e1f5; }
+
+.enp-stat-card__label { font-size: 12px; color: #777; margin-top: 6px; order: 2; }
+.enp-stat-card__value { font-size: 22px; font-weight: 800; color: #1a1a2e; line-height: 1; order: 1; }
+.enp-stat-card__value span { font-size: 13px; font-weight: 500; margin-left: 1px; color: #888; }
 
 /* 탭바 */
 .enp-tab-bar { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f8; }
