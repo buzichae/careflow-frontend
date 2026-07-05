@@ -261,7 +261,7 @@ export default function AdminSettlementPage() {
                         <td style={{ fontSize: 12, color: "#666" }}>{r.paidBankAccount ?? "—"}</td>
                         <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-                            {r.status === "PENDING" && (
+                            {r.status === "PENDING" && r.platformSettlementStatus !== "DISPUTED" && (
                               <button
                                 className="admin-btn admin-btn--approve admin-btn--sm"
                                 onClick={() => approveAgency(r.agencyId)}
