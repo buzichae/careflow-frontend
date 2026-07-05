@@ -7,7 +7,8 @@ import {
 import "../../styles/Agency/Agencysettlementpage.css";
 import {
   getAgencySettlements,
-  updateSettlementStatus,
+  payEngineerPayout,
+  updateEngineerPayoutStatus,
   downloadMonthlySettlementCsv,
 } from "../../apis/agencySettlement";
 
@@ -67,7 +68,7 @@ function Avatar({ name, size = 32 }) {
 /* =========================================================
    정산 상세 모달
 ========================================================= */
-function SettlementDetailModal({ item, onClose, onStatusChange }) {
+function SettlementDetailModal({ item, onClose, onPayEngineerPayout, onEngineerPayoutStatusChange }) {
   useEffect(() => {
     const onKeyDown = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKeyDown);
@@ -78,6 +79,10 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
 
   const status = STATUS_MAP[item.status] ?? { label: item.status, type: "ready" };
   const type   = TYPE_MAP[item.type]     ?? { label: item.type,   type: "engineer" };
+  // 대행사→기사 지급 상태 (engineer_payouts 배치) — item.status(CareFlow→대행사)와 완전히 별개
+  const payoutStatus = item.engineerPayoutStatus
+    ? (STATUS_MAP[item.engineerPayoutStatus] ?? { label: item.engineerPayoutStatus, type: "ready" })
+    : null;
 
   return (
     <div className="asp-modal-overlay" onClick={onClose}>
@@ -168,22 +173,43 @@ function SettlementDetailModal({ item, onClose, onStatusChange }) {
             )}
           </div>
 
-          {/* 승인 처리 — [DDL v11] APPROVED 제거: PENDING↔DISPUTED 자유, 둘 다 PAID로 바로 전이 가능 */}
+          {/* CareFlow→대행사 정산 상태 — 읽기 전용. 승인/보류/재검토는 CareFlow(ADMIN)만 처리할 수 있는 판단이라 대행사는 조회만 가능 */}
           <div className="asp-modal__section">
-            <p className="asp-modal__section-label">지급 처리</p>
+            <p className="asp-modal__section-label">정산 상태 (CareFlow → 대행사)</p>
             {item.status === "PAID" && (
-              <div className="asp-modal__locked"><Lock size={13} /> 지급이 완료된 건입니다</div>
+              <div className="asp-modal__locked"><Lock size={13} /> CareFlow 지급이 완료된 건입니다</div>
             )}
             {item.status === "PENDING" && (
-              <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
-                <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onStatusChange(item.settlementId, "DISPUTED")}>보류</button>
-              </div>
+              <div className="asp-modal__locked">CareFlow 지급 승인 대기 중입니다</div>
             )}
             {item.status === "DISPUTED" && (
+              <div className="asp-modal__locked"><Lock size={13} /> CareFlow 측에서 보류 처리한 건입니다</div>
+            )}
+          </div>
+
+          {/* 대행사→기사 지급 처리 — engineer_payouts 배치 기준(item.status와 별개의 자금 흐름) */}
+          <div className="asp-modal__section">
+            <div className="asp-modal__section-header">
+              <p className="asp-modal__section-label">기사 지급 처리 (대행사 → 기사)</p>
+              {payoutStatus && (
+                <span className={`asp-status-badge asp-status-badge--${payoutStatus.type}`}>{payoutStatus.label}</span>
+              )}
+            </div>
+            {item.engineerPayoutId == null && (
+              <div className="asp-modal__locked">아직 지급 배치가 집계되지 않았습니다</div>
+            )}
+            {item.engineerPayoutId != null && item.engineerPayoutStatus === "PAID" && (
+              <div className="asp-modal__locked"><Lock size={13} /> 기사 지급이 완료된 건입니다</div>
+            )}
+            {item.engineerPayoutId != null && item.engineerPayoutStatus === "PENDING" && (
               <div className="asp-modal__action-row">
-                <button className="asp-action-btn asp-action-btn--paid" onClick={() => onStatusChange(item.settlementId, "PAID")}>지급 처리</button>
-                <button className="asp-action-btn asp-action-btn--revert" onClick={() => onStatusChange(item.settlementId, "PENDING")}>재검토</button>
+                <button className="asp-action-btn asp-action-btn--paid" onClick={() => onPayEngineerPayout(item.engineerPayoutId)}>지급 처리</button>
+                <button className="asp-action-btn asp-action-btn--dispute" onClick={() => onEngineerPayoutStatusChange(item.engineerPayoutId, "DISPUTED")}>보류</button>
+              </div>
+            )}
+            {item.engineerPayoutId != null && item.engineerPayoutStatus === "DISPUTED" && (
+              <div className="asp-modal__action-row">
+                <button className="asp-action-btn asp-action-btn--revert" onClick={() => onEngineerPayoutStatusChange(item.engineerPayoutId, "PENDING")}>재검토</button>
               </div>
             )}
           </div>
@@ -350,16 +376,30 @@ export default function AgencySettlementPage() {
         { label: `정산 건수 (${periodLabel})`, value: "-",  sub: "",  subType: "neutral", icon: FileText,    color: "blue"   },
       ];
 
-  // 정산 상태 변경 — 성공 시 목록 재조회 (통계도 같이 갱신되도록)
-  const handleStatusChange = async (settlementId, newStatus) => {
+  // 기사 지급 완료 처리(대행사→기사) — engineer_payouts 배치 기준
+  const handlePayEngineerPayout = async (engineerPayoutId) => {
     try {
-      await updateSettlementStatus(settlementId, newStatus);
+      await payEngineerPayout(engineerPayoutId);
       fetchSettlements();
-      if (selectedItem?.settlementId === settlementId) {
-        setSelectedItem(prev => ({ ...prev, status: newStatus }));
+      if (selectedItem?.engineerPayoutId === engineerPayoutId) {
+        setSelectedItem(prev => ({ ...prev, engineerPayoutStatus: "PAID" }));
       }
     } catch (err) {
-      console.error("정산 상태 변경 실패:", err);
+      console.error("기사 지급 처리 실패:", err);
+      alert(err.response?.data?.message ?? "지급 처리에 실패했습니다.");
+    }
+  };
+
+  // 기사 지급 건별 상태 변경(보류/재검토, 대행사 자체 판단) — engineer_payouts 배치 기준
+  const handleEngineerPayoutStatusChange = async (engineerPayoutId, newStatus) => {
+    try {
+      await updateEngineerPayoutStatus(engineerPayoutId, newStatus);
+      fetchSettlements();
+      if (selectedItem?.engineerPayoutId === engineerPayoutId) {
+        setSelectedItem(prev => ({ ...prev, engineerPayoutStatus: newStatus }));
+      }
+    } catch (err) {
+      console.error("기사 지급 상태 변경 실패:", err);
       alert(err.response?.data?.message ?? "상태 변경에 실패했습니다.");
     }
   };
@@ -538,14 +578,15 @@ export default function AgencySettlementPage() {
         <div className="asp-page-size">{PAGE_SIZE}개씩 보기 <ChevronDown size={13} /></div>
       </div>
 
-      <p className="asp-footnote">* 실 지급액은 기사의 경우만 표시됩니다. 승인/보류 등 상태 변경은 상세보기에서 진행합니다.</p>
+      <p className="asp-footnote">* 실 지급액은 기사의 경우만 표시됩니다. 기사 지급 처리는 상세보기에서 진행하며, CareFlow→대행사 정산 상태는 CareFlow 측에서 관리합니다.</p>
 
       {/* 상세 정보 모달 */}
       {selectedItem && (
         <SettlementDetailModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
-          onStatusChange={handleStatusChange}
+          onPayEngineerPayout={handlePayEngineerPayout}
+          onEngineerPayoutStatusChange={handleEngineerPayoutStatusChange}
         />
       )}
     </div>

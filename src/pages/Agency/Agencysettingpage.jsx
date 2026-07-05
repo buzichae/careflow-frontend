@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Lock as LockIcon } from "lucide-react";
+import { ChevronRight, Lock as LockIcon, UserPlus } from "lucide-react";
+import { getIsRepresentativeFromToken } from "../../utils/auth";
+import AgencyStaffApprovalModal from "./Modal/AgencyStaffApprovalModal";
 import "../../styles/Agency/Agencysettingpage.css";
 
 const BASE_URL = "http://localhost:8080";
@@ -23,7 +25,7 @@ function isValidAccountNumber(value) {
   return /^[0-9-]+$/.test(value) && value.replace(/-/g, "").length >= 10;
 }
 
-async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
@@ -73,6 +75,13 @@ export default function AgencySettingPage() {
     email:       "admin@careflow.co.kr",
     lastLoginAt: "2024.06.18 (화) 14:35:22",
   };
+
+  // JWT의 isRepresentative 클레임으로 슈퍼 계정(대표 담당자) / 일반 관리자 계정 판별
+  const isRepresentative = getIsRepresentativeFromToken();
+  const accountTypeLabel = isRepresentative ? "슈퍼 계정" : "일반 관리자 계정";
+
+  // ── 일반 관리자 가입 신청 관리 모달 (슈퍼 계정 전용) ──
+  const [isStaffApprovalModalOpen, setIsStaffApprovalModalOpen] = useState(false);
 
   // ── 초기 데이터 로드 ──────────────────────────
   useEffect(() => {
@@ -306,8 +315,15 @@ export default function AgencySettingPage() {
             <div className="asp3-panel__row"><span className="asp3-panel__label">아이디</span><span className="asp3-panel__value">{accountInfo.id}</span></div>
             <div className="asp3-panel__row"><span className="asp3-panel__label">이름</span><span className="asp3-panel__value">{accountInfo.name}</span></div>
             <div className="asp3-panel__row"><span className="asp3-panel__label">이메일</span><span className="asp3-panel__value">{accountInfo.email}</span></div>
+            <div className="asp3-panel__row"><span className="asp3-panel__label">계정 유형</span><span className="asp3-panel__value">{accountTypeLabel}</span></div>
             <div className="asp3-panel__row"><span className="asp3-panel__label">마지막 로그인</span><span className="asp3-panel__value">{accountInfo.lastLoginAt}</span></div>
             <button className="asp3-pw-btn"><LockIcon size={12} /> 비밀번호 변경</button>
+            {/* 슈퍼 계정만 자기 대행사의 일반 관리자 가입 신청을 승인/반려할 수 있음 */}
+            {isRepresentative && (
+              <button className="asp3-pw-btn" onClick={() => setIsStaffApprovalModalOpen(true)}>
+                <UserPlus size={12} /> 가입 신청 관리
+              </button>
+            )}
           </div>
 
           {/* 로그인 보안 */}
@@ -351,6 +367,10 @@ export default function AgencySettingPage() {
           </div>
         </aside>
       </div>
+
+      {isStaffApprovalModalOpen && (
+        <AgencyStaffApprovalModal onClose={() => setIsStaffApprovalModalOpen(false)} />
+      )}
     </div>
   );
 }

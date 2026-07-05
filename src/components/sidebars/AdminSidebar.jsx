@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import "../../styles/Sidebars.css";
-import { House, UsersRound, Wrench, BookOpen, HandCoins } from "lucide-react";
+import { House, UsersRound, Wrench, BookOpen, HandCoins, Banknote } from "lucide-react";
 
 const MENU = [
   {
@@ -29,6 +29,13 @@ const MENU = [
     path: "/admin/settlement",
     icon: (active) => (
       <HandCoins size={18} color={active ? "#ffffff" : "#000000"} />
+    ),
+  },
+  {
+    label: "기사 지급 관리",
+    path: "/admin/engineer-payouts",
+    icon: (active) => (
+      <Banknote size={18} color={active ? "#ffffff" : "#000000"} />
     ),
   },
   {
