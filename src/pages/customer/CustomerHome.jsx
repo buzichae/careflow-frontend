@@ -755,9 +755,10 @@ export default function CustomerHome() {
             <div className="ch-grade-legend">
               {[
                 { g: "A", r: "90~100" },
-                { g: "B", r: "70~89" },
-                { g: "C", r: "50~69" },
-                { g: "D", r: "0~49" },
+                { g: "B", r: "75~89" },
+                { g: "C", r: "60~74" },
+                { g: "D", r: "40~59" },
+                { g: "E", r: "0~39" },
               ].map(({ g, r }) => (
                 <span
                   key={g}
