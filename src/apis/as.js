@@ -43,3 +43,7 @@ export const processPayment = (requestId) =>
 
 export const getPaymentSummary = () =>
     api.get('/api/customer/payments/summary');
+
+// 월별 결제액 추이 (최근 6개월, 오래된 달 → 최신 달 순)
+export const getMonthlyPayments = () =>
+    api.get('/api/customer/payments/monthly');
