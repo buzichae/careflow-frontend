@@ -1800,7 +1800,7 @@ export default function CustomerAS() {
                     className={`cas-item ${item.status === "COMPLETED" ? "cas-item--payment" : ""}`}
                   >
                     <ApplianceIcon
-                      name={item.symptomCode}
+                      name={item.categoryName}
                       size={68}
                       radius={10}
                     />
