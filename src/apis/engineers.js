@@ -16,6 +16,13 @@ export const getEngineerCustomers = (params) => {
   return api.get("/api/engineer/customers", { params });
 };
 
+// [신규 — 백엔드 확인 필요] 담당 고객들이 보유한 가전 브랜드 목록 (중복 제거)
+// brand 컬럼이 ENUM이 아니라 자유 텍스트(VARCHAR)라 마스터 테이블이 없음.
+// 실제 등록된 값 기준으로 드롭다운을 채우려면 이런 distinct 조회 API가 필요합니다.
+// 예시 응답: ["삼성", "LG", "소니", "월풀"]
+export const getEngineerCustomerBrands = () =>
+  api.get("/api/engineer/customers/brands");
+
 // 대시보드 전체 데이터 (기사 정보 + 오늘 일정 + 실적 + 알림)
 export const getEngineerDashboard = () => api.get("/api/engineer/dashboard");
 
@@ -43,12 +50,12 @@ export const createEngineerProfile = (data) =>
 export const updateEngineerProfile = (data) =>
   api.put("/api/engineer/profile", data);
 
-// [신규] 비밀번호 변경
-// ⚠ 실제 엔드포인트/요청 필드명이 백엔드와 맞는지 확인 필요합니다.
-// 로그인/회원 공통 인증 API(예: apis/auth.js)에 이미 비밀번호 변경 함수가
-// 있다면 이 함수 대신 그쪽을 재사용하는 것이 맞을 수 있습니다.
+// [수정] PR로 실제 엔드포인트 확정됨 — 기사 전용이 아니라 전 역할 공용 API.
+// PUT /api/auth/password
+// body: { currentPassword, newPassword }
+// 응답: 200 성공 / 400 현재 비밀번호 불일치·새 비밀번호 규칙 위반·현재와 동일 / 403 소셜 로그인 전용 계정
 export const changePassword = (currentPassword, newPassword) =>
-  api.put("/api/engineer/profile/password", { currentPassword, newPassword });
+  api.put("/api/auth/password", { currentPassword, newPassword });
 
 
 // ── 근무표 (engineerSchedule.md) — "내 근무표 보기"에서 사용 ──

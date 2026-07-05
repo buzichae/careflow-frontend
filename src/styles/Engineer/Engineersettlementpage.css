@@ -18,16 +18,31 @@
 .estp-tab--active { color: #5B4FF5; font-weight: 700; border-bottom-color: #5B4FF5; }
 
 /* 필터 */
-.estp-filters { display: flex; gap: 8px; align-items: center; }
+.estp-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
 .estp-filter-date {
+  display: flex; align-items: center; gap: 6px;
   border: 0.5px solid #e0dcff; border-radius: 8px;
   padding: 7px 12px; font-size: 12px; color: #444; background: #fff;
+  white-space: nowrap;
 }
+.estp-filter-date__input {
+  border: none; outline: none; background: none;
+  font-size: 12px; color: #444; font-family: inherit; cursor: pointer;
+  width: 96px;
+}
+.estp-filter-date__sep { color: #aaa; font-size: 12px; }
+
 .estp-filter-select {
-  display: flex; align-items: center; gap: 5px;
+  display: flex; align-items: center; gap: 4px;
   border: 0.5px solid #e0dcff; border-radius: 8px;
   padding: 7px 10px; font-size: 12px; color: #444;
-  background: #fff; cursor: pointer; white-space: nowrap;
+  background: #fff; white-space: nowrap; cursor: pointer;
+}
+.estp-filter-select__native {
+  border: none; outline: none; background: none;
+  font-size: 12px; color: #444; font-family: inherit;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
 }
 .estp-filter-select--sm { padding: 4px 8px; font-size: 11px; }
 .estp-report-btn {
@@ -37,29 +52,44 @@
   background: #fff; cursor: pointer; font-family: inherit;
 }
 
-/* 통계 카드 */
+/* ===========================
+   통계 카드 — cas-kpi 스타일
+=========================== */
 .estp-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+
 .estp-stat-card {
-  background: #fff; border: 1px solid #e8e4ff; border-radius: 12px;
-  padding: 16px; display: flex; align-items: flex-start; gap: 12px;
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 12px;
+  padding: 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  min-height: 76px;
 }
+
+.estp-stat-card__text { display: flex; flex-direction: column; gap: 3px; z-index: 1; }
+
 .estp-stat-card__icon {
-  width: 44px; height: 44px; border-radius: 10px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.estp-stat-card__icon--purple { background: #eeeaff; color: #5B4FF5; }
-.estp-stat-card__icon--green  { background: #eaf3de; color: #16a34a; }
-.estp-stat-card__icon--amber  { background: #fef9e0; color: #b45309; }
-.estp-stat-card__icon--blue   { background: #e6f1fb; color: #2563eb; }
-.estp-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
 
-.estp-stat-card__label { font-size: 11px; color: #aaa; margin-bottom: 4px; }
-.estp-stat-card__value { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+.estp-stat-card__icon--purple,
+.estp-stat-card__icon--green,
+.estp-stat-card__icon--amber,
+.estp-stat-card__icon--blue,
+.estp-stat-card__icon--red {
+  background: none; color: #e3e1f5;
+}
+
+.estp-stat-card__icon svg { width: 100%; height: 100%; color: #e3e1f5; }
+
+.estp-stat-card__label { font-size: 12px; color: #777; margin-top: 6px; order: 2; }
+.estp-stat-card__value { font-size: 22px; font-weight: 800; color: #1a1a2e; line-height: 1; order: 1; }
 .estp-stat-card__value--sm { font-size: 18px; }
-.estp-stat-card__value span { font-size: 13px; font-weight: 400; margin-left: 2px; }
-.estp-stat-card__sub { font-size: 11px; }
-.estp-stat-card__sub--up   { color: #5B4FF5; }
-.estp-stat-card__sub--down { color: #dc2626; }
+.estp-stat-card__value span { font-size: 13px; font-weight: 500; margin-left: 2px; color: #888; }
 
 /* 차트 3개 */
 .estp-charts { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 12px; }

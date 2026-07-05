@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Plus,
   CalendarCheck,
@@ -31,6 +31,7 @@ import {
   getMyAppliances,
   deleteAppliances,
   createAppliance,
+  updateAppliance,
   getMyDetailAppliance,
   getHealthCertificate,
 } from "../../apis/appliances";
@@ -737,9 +738,38 @@ function ApplianceEditModal({ appliance, onSave, onClose }) {
     warrantyExpiry: appliance.warrantyExpiry ?? "",
     // status: appliance.status,
   });
+  const [saving, setSaving] = useState(false);
 
   function handleChange(k, v) {
     setForm((prev) => ({ ...prev, [k]: v }));
+  }
+
+  /* 가전 정보 수정 저장 — 백엔드 PUT /api/appliances/{id} 연동
+     프론트 UI 필드(model, warrantyExpiry) ↔ 백엔드 필드(modelName, warrantyEndDate) 매핑 필요 */
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await updateAppliance(appliance.id, {
+        brand: form.brand,
+        modelName: form.model,
+        serialNumber: form.serialNumber,
+        purchaseDate: form.purchaseDate,
+        warrantyEndDate: form.warrantyExpiry,
+      });
+      const updated = res.data;
+      onSave({
+        ...appliance,
+        brand: updated.brand,
+        model: updated.modelName,
+        serialNumber: updated.serialNumber,
+        purchaseDate: updated.purchaseDate,
+        warrantyExpiry: updated.warrantyEndDate,
+      });
+    } catch (error) {
+      alert(error.response?.data?.message || "가전 정보 수정에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -814,9 +844,10 @@ function ApplianceEditModal({ appliance, onSave, onClose }) {
           </button>
           <button
             className="ca-btn-primary"
-            onClick={() => onSave({ ...appliance, ...form })}
+            onClick={handleSave}
+            disabled={saving}
           >
-            저장하기
+            {saving ? "저장 중..." : "저장하기"}
           </button>
         </div>
       </div>
@@ -1156,6 +1187,7 @@ export default function CustomerAppliances() {
   const [appliances, setAppliances] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getMyAppliances()
@@ -1268,10 +1300,6 @@ export default function CustomerAppliances() {
                   </button>
                 ))}
               </div>
-              <div className="ca-sort">
-                <span>등록순</span>
-                <ChevronDown size={14} />
-              </div>
             </div>
 
             {/* 가전 그리드 */}
@@ -1352,7 +1380,10 @@ export default function CustomerAppliances() {
                     >
                       상세 및 이력 보기
                     </button>
-                    <button className="ca-btn-check">
+                    <button
+                      className="ca-btn-check"
+                      onClick={() => navigate("/customer/as?reserve=true")}
+                    >
                       <CalendarCheck size={13} /> A/S 예약
                     </button>
                   </div>

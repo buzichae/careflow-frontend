@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, X, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import "../../styles/Admin/Admin.css";
+import { getPageNumbers, DOTS } from "../../utils/pagination";
 import {
   getAgencyRequests,
   approveAgencyRequest,
@@ -356,25 +357,18 @@ export default function AdminMembersPage() {
                 <div className="aep-pagination__left">
                   <button onClick={() => handlePageChange(0)} disabled={currentPage === 0}><ChevronsLeft size={14} /></button>
                   <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}><ChevronLeft size={14} /></button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i).map((i) => (
-                    <button
-                      key={i}
-                      className={currentPage === i ? "aep-pagination__active" : ""}
-                      onClick={() => handlePageChange(i)}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  {totalPages > 5 && (
-                    <>
-                      <span className="aep-pagination__ellipsis">...</span>
+                  {getPageNumbers(currentPage, totalPages).map((p, idx) =>
+                    p === DOTS ? (
+                      <span key={`dots-${idx}`} className="aep-pagination__ellipsis">...</span>
+                    ) : (
                       <button
-                        className={currentPage === totalPages - 1 ? "aep-pagination__active" : ""}
-                        onClick={() => handlePageChange(totalPages - 1)}
+                        key={p}
+                        className={currentPage === p ? "aep-pagination__active" : ""}
+                        onClick={() => handlePageChange(p)}
                       >
-                        {totalPages}
+                        {p + 1}
                       </button>
-                    </>
+                    ),
                   )}
                   <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages - 1}><ChevronRight size={14} /></button>
                   <button onClick={() => handlePageChange(totalPages - 1)} disabled={currentPage === totalPages - 1}><ChevronsRight size={14} /></button>

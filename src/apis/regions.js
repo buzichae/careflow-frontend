@@ -1,5 +1,8 @@
 import api from "./axiosInstance";
 
-// 지역명(구·시 단위)으로 region_id 조회
-export const getRegionByName = (name) =>
-  api.get("/api/regions", { data: { name } });
+// 지역 목록 조회 (구 단위)
+// GET /api/regions?depth=2  → 구 단위 전체 목록
+// GET /api/regions?depth=1  → 시/도 단위 전체 목록
+// GET /api/regions?parentId=1 → 특정 시/도 하위 구만
+export const getRegions = (depth, parentId) =>
+  api.get("/api/regions", { params: { depth, parentId } });

@@ -49,13 +49,29 @@ export default function EngineerDashboard() {
 
   // "개인 실적 및 정산" 패널 데이터 — /api/engineer/settlements/summary 재사용
   const [performance, setPerformance] = useState({
-    workCount: { total: 0, done: 0, ing: 0, cancel: 0 },
+    workCount: { done: 0, cancel: 0 },
     settlement: { current: 0, previous: 0 },
     rating: { avg: 0, total: 0, previous: 0 },
     period: "",
   });
 
   const [notices, setNotices] = useState([]);
+
+  // [수정] "빠른 액션"이 작동할 대상을 자동으로 첫 번째 일정으로만 고정하지 않고,
+  // 오늘 일정이 여러 건일 때 사용자가 직접 클릭해서 고를 수 있도록
+  // selectWorkItem()으로 currentRequestId/currentAssignmentId/workStatus를
+  // 한 번에 전환하는 헬퍼를 분리.
+  const selectWorkItem = useCallback((item) => {
+    if (!item) {
+      setCurrentRequestId(null);
+      setCurrentAssignmentId(null);
+      setWorkStatus(null);
+      return;
+    }
+    setCurrentRequestId(item.asRequestId ?? null);
+    setCurrentAssignmentId(item.assignmentId ?? null);
+    setWorkStatus(item.logStatus ?? null);
+  }, []);
 
   // 대시보드 스냅샷 (기사 정보 + 오늘 일정 + 현재 작업 상태 + 알림)
 useEffect(() => {
@@ -108,25 +124,22 @@ useEffect(() => {
           visitTime: `${item.scheduledDate ?? ""} ${item.scheduledTime ?? ""}`.trim(),
         }));
 
-        // 예정 일시가 가장 빠른 작업을 "현재 작업"으로 사용
+        // 예정 일시가 가장 빠른 작업을 목록 맨 위로 정렬 (기본 선택값으로도 사용)
         const sorted = [...list].sort((a, b) =>
           `${a.scheduledDate}${a.scheduledTime}`.localeCompare(`${b.scheduledDate}${b.scheduledTime}`)
         );
 
         setTodaySchedule(sorted);
 
-        const current = sorted[0] ?? null;
-        // ⚠ 상태 변경 API는 asRequestId(AsRequest PK)를, 페이지 이동/식별은
-        // assignmentId(AsAssignment PK)를 써야 함 — 서로 다른 테이블의 PK라 섞어 쓰면
-        // "ACCEPTED 상태에서만 출발 처리할 수 있습니다" 403 에러가 남.
-        setCurrentRequestId(current?.asRequestId ?? null);
-        setCurrentAssignmentId(current?.assignmentId ?? null);
-        setWorkStatus(current?.logStatus ?? null);
+        // [수정] 이전엔 sorted[0]을 무조건 "현재 작업"으로 고정해서, 오늘 일정이
+        // 2건 이상이어도 사용자가 고를 방법이 없었음. 기본값으로만 첫 항목을
+        // 선택해두고, 실제 선택은 selectWorkItem()을 통해 언제든 바꿀 수 있게 함.
+        selectWorkItem(sorted[0] ?? null);
       })
       .catch((err) => {
         console.error("진행 중인 작업 조회 실패:", err);
       });
-  }, []);
+  }, [selectWorkItem]);
 
   useEffect(() => {
     fetchCurrentWork();
@@ -137,7 +150,9 @@ useEffect(() => {
     let mounted = true;
 
     const now = new Date();
-    const dateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    // [수정] "이번 달"로만 좁혀서 조회하면, 실적/정산 페이지에서 겪었던 것과
+    // 같은 문제(이번 달 외 데이터가 전부 0건으로 보임)가 생길 수 있어 범위를 넓힘.
+    const dateFrom = "2020-01-01";
     const dateTo = now.toISOString().slice(0, 10);
 
     getSettlementSummary(dateFrom, dateTo)
@@ -147,21 +162,22 @@ useEffect(() => {
 
         setPerformance({
           workCount: {
-            total: (s.stats?.completedCount ?? 0) + (s.stats?.inProgressCount ?? 0) + (s.stats?.cancelledCount ?? 0),
-            done: s.stats?.completedCount ?? 0,
-            ing: s.stats?.inProgressCount ?? 0,
-            cancel: s.stats?.cancelledCount ?? 0,
+            // [수정] "진행 중" 건수는 실적 API의 과거 누적치(inProgressCount)가 아니라
+            // 대시보드가 이미 갖고 있는 실시간 진행 목록(todaySchedule.length)을
+            // 화면 렌더링 시 사용하도록 변경 — 여기서는 완료/취소 누적치만 저장.
+            done: s.totalCompletedCount ?? 0,
+            cancel: s.cancelledCount ?? 0,
           },
           settlement: {
             current: s.monthlyComparison?.thisMonthNetAmount ?? s.settlementSummary?.engineerNetAmount ?? 0,
             previous: s.monthlyComparison?.prevMonthNetAmount ?? 0,
           },
           rating: {
-            avg: s.monthlyComparison?.thisMonthAvgRating ?? s.stats?.avgRating ?? 0,
+            avg: s.monthlyComparison?.thisMonthAvgRating ?? s.avgRating ?? 0,
             total: engineer.totalReviews, // 이 API엔 총 리뷰 건수가 없어 대시보드 API 값 재사용
             previous: s.monthlyComparison?.prevMonthAvgRating ?? 0,
           },
-          period: `${dateFrom} ~ ${dateTo}`,
+          period: "전체 기간",
         });
       })
       .catch((err) => {
@@ -199,6 +215,8 @@ useEffect(() => {
 
     try {
       await updateAssignmentStatus(currentRequestId, key);
+      // 상태 변경 후 목록을 다시 불러와 todaySchedule의 logStatus도 최신화
+      fetchCurrentWork();
     } catch (err) {
       console.error("작업 상태 변경 실패:", err);
       setWorkStatus(prevStatus); // 실패 시 롤백
@@ -214,7 +232,9 @@ useEffect(() => {
     return <div className="ed">{error}</div>;
   }
 
-  const nextCustomer = todaySchedule[0];
+  const nextCustomer = todaySchedule.find(
+    (item) => item.assignmentId === currentAssignmentId
+  ) ?? todaySchedule[0];
 
   return (
     <div className="ed">
@@ -226,7 +246,11 @@ useEffect(() => {
       <div className="ed-stats">
         <div className="ed-stat-card">
           <div className="ed-stat-card__text">
-            <p className="ed-stat-card__value">{stats.todayCount}<span>건</span></p>
+            {/* [수정] 별도 요약 API(todayExpectedCount)가 "진짜 오늘 날짜"만 세다 보니
+                아래 목록엔 작업이 있는데도 여기는 0건으로 보여 혼란을 줬음.
+                → 아래 "진행 중인 전체 작업" 목록과 동일한 수치(todaySchedule.length)로
+                통일해서 항상 같은 숫자를 보여주도록 변경. */}
+            <p className="ed-stat-card__value">{todaySchedule.length}<span>건</span></p>
             <p className="ed-stat-card__label">예정 작업</p>
             <button
              className="ed-stat-card__link"
@@ -275,6 +299,14 @@ useEffect(() => {
                 작업 관리에서 보기 ›
               </button>
             </div>
+            {/* [안내] 아래 "빠른 액션"과 이 단계는 현재 선택된 작업(파란 테두리로
+                표시된 항목) 기준으로 동작합니다. 다른 작업으로 바꾸려면
+                아래 "진행 중인 전체 작업" 목록에서 해당 항목을 클릭하세요. */}
+            {todaySchedule.length > 1 && (
+              <p style={{ fontSize: 12, color: "#888", margin: "4px 0 8px" }}>
+                ℹ 아래 "진행 중인 전체 작업" 목록에서 항목을 클릭해 빠른 액션 대상을 선택할 수 있어요.
+              </p>
+            )}
             <div className="ed-work-steps">
               {WORK_STATUS_STEPS.map((step, i) => {
                 const isDone = i <= currentStepIdx;
@@ -322,7 +354,7 @@ useEffect(() => {
                   <button
                     key={a.key}
                     className={`ed-quick-btn ${isCurrent ? "ed-quick-btn--active" : isDone ? "ed-quick-btn--done" : "ed-quick-btn--disabled"}`}
-                    disabled={!(isCurrent || isNext)}
+                    disabled={!(isCurrent || isNext) || !currentRequestId}
                     onClick={() => handleQuickAction(a.key)}
                   >
                     <a.icon size={16} />
@@ -334,39 +366,67 @@ useEffect(() => {
           </div>
 
           <div className="ed-section">
-            <h2 className="ed-section__title">작업 일정</h2>
+            <h2 className="ed-section__title">
+              진행 중인 전체 작업 <span style={{ color: "#5B4FF5", fontWeight: 700 }}>({todaySchedule.length}건)</span>
+            </h2>
+            {/* [수정] 상단 "오늘 예정 작업" 카드는 오늘 날짜 기준 건수만 세고,
+                이 목록은 날짜와 무관하게 현재 ACCEPTED 상태인 작업 전체를 보여줌
+                — 둘이 다른 개념이라 헷갈리지 않도록 라벨을 명확히 분리함. */}
             <div className="ed-schedule-list">
               {todaySchedule.length === 0 && (
                 <p style={{ padding: "16px", color: "#aaa", fontSize: 13 }}>예정된 작업이 없습니다.</p>
               )}
-              {todaySchedule.map((item) => (
-                <div key={item.requestId ?? item.assignmentId} className="ed-schedule-item">
-                  <div className="ed-schedule-item__time">
-                    <span className="ed-schedule-item__hour">{item.scheduledTime}</span>
-                    <span className="ed-schedule-item__badge">예정</span>
+              {todaySchedule.map((item) => {
+                const isSelected = item.assignmentId === currentAssignmentId;
+                return (
+                  <div
+                    key={item.requestId ?? item.assignmentId}
+                    className="ed-schedule-item"
+                    onClick={() => selectWorkItem(item)}
+                    style={{
+                      cursor: "pointer",
+                      border: isSelected ? "2px solid #5B4FF5" : "2px solid transparent",
+                      borderRadius: 10,
+                      background: isSelected ? "#f8f7ff" : undefined,
+                    }}
+                  >
+                    <div className="ed-schedule-item__time">
+                      <span className="ed-schedule-item__hour">{item.scheduledTime}</span>
+                      <span className="ed-schedule-item__badge">
+                        {isSelected ? "선택됨" : "예정"}
+                      </span>
+                    </div>
+                    <div className="ed-schedule-item__dot" />
+                    <div className="ed-schedule-item__product-img">
+                      {item.productImageUrl
+                        ? <img src={item.productImageUrl} alt={item.productName} />
+                        : <div className="ed-schedule-item__product-placeholder">📦</div>}
+                    </div>
+                    <div className="ed-schedule-item__info">
+                      <p className="ed-schedule-item__product">{item.productName}</p>
+                      <p className="ed-schedule-item__customer">{item.customerName} 고객 | {item.customerPhone}</p>
+                      <p className="ed-schedule-item__address"><MapPinIcon size={11} /> {item.address}</p>
+                    </div>
+                    <div className="ed-schedule-item__actions">
+                      <button
+                        className="ed-schedule-detail-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate("/engineer/work", { state: { assignmentId: item.assignmentId } });
+                        }}
+                      >
+                        상세 보기
+                      </button>
+                      <button
+                        className="ed-schedule-call-btn"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Phone size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="ed-schedule-item__dot" />
-                  <div className="ed-schedule-item__product-img">
-                    {item.productImageUrl
-                      ? <img src={item.productImageUrl} alt={item.productName} />
-                      : <div className="ed-schedule-item__product-placeholder">📦</div>}
-                  </div>
-                  <div className="ed-schedule-item__info">
-                    <p className="ed-schedule-item__product">{item.productName}</p>
-                    <p className="ed-schedule-item__customer">{item.customerName} 고객 | {item.customerPhone}</p>
-                    <p className="ed-schedule-item__address"><MapPinIcon size={11} /> {item.address}</p>
-                  </div>
-                  <div className="ed-schedule-item__actions">
-                    <button
-                      className="ed-schedule-detail-btn"
-                      onClick={() => navigate("/engineer/work", { state: { assignmentId: item.assignmentId } })}
-                    >
-                      상세 보기
-                    </button>
-                    <button className="ed-schedule-call-btn"><Phone size={14} /></button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <button className="ed-more-btn">더 많은 일정 보기 <ChevronDown size={13} /></button>
           </div>
@@ -445,10 +505,12 @@ useEffect(() => {
                 title="작업 관리에서 전체 내역 보기"
               >
                 <p className="ed-perf-card__label">작업 건수</p>
-                <p className="ed-perf-card__value-big">{performance.workCount.total}<span>건</span></p>
+                <p className="ed-perf-card__value-big">
+                  {performance.workCount.done + todaySchedule.length + performance.workCount.cancel}<span>건</span>
+                </p>
                 <div className="ed-perf-card__counts">
                   <span className="ed-perf-count ed-perf-count--done">완료 {performance.workCount.done}</span>
-                  <span className="ed-perf-count ed-perf-count--ing">진행 {performance.workCount.ing}</span>
+                  <span className="ed-perf-count ed-perf-count--ing">진행 {todaySchedule.length}</span>
                   <span className="ed-perf-count ed-perf-count--cancel">취소 {performance.workCount.cancel}</span>
                 </div>
               </div>

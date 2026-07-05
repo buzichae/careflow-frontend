@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Bell, Truck, GraduationCap, ShieldCheck, Wrench,
-  Search, ChevronLeft, ChevronRight, MoreVertical,
+  Search, ChevronLeft, ChevronRight, MoreVertical, CheckCheck,
 } from "lucide-react";
 import "../../styles/Engineer/EngineerNoticePage.css";
-import { getMyNotifications, getNotificationSummary } from "../../apis/engineersNotifications";
+import {
+  getMyNotifications,
+  getNotificationSummary,
+  markNotificationRead,
+  markNotificationsRead,
+  markAllNotificationsRead,
+} from "../../apis/engineersNotifications";
 
 const TAB_DEFS = [
   { key: "ALL",        label: "전체"    },
@@ -51,6 +57,9 @@ export default function EngineerNoticePage() {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
 
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [marking, setMarking]         = useState(false);
+
   const fetchSummary = useCallback(async () => {
     try {
       const res = await getNotificationSummary();
@@ -67,6 +76,7 @@ export default function EngineerNoticePage() {
       const res = await getMyNotifications({ type: activeTab, page: currentPage, size: 10 });
       setList(res.data.content ?? []);
       setTotalPages(res.data.totalPages ?? 1);
+      setSelectedIds(new Set());
     } catch (e) {
       setError("알림을 불러오지 못했습니다.");
     } finally {
@@ -82,15 +92,70 @@ export default function EngineerNoticePage() {
     setCurrentPage(0);
   }
 
+  function toggleSelect(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) =>
+      prev.size === list.length ? new Set() : new Set(list.map((n) => n.id))
+    );
+  }
+
+  async function handleOpenNotification(item) {
+    // [버그 수정] 응답 필드명이 isRead가 아니라 read로 옴 (Java boolean getter
+    // isRead()가 Jackson 직렬화 시 "is"가 빠져 read로 나감 — LMS 페이지의
+    // isLmsCompleted → lmsCompleted 때와 동일한 패턴).
+    if (item.read) return;
+    setList((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)));
+    try {
+      await markNotificationRead(item.id);
+      fetchSummary();
+    } catch (e) {
+      console.error("읽음 처리 실패", e);
+      setList((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: false } : n)));
+    }
+  }
+
+  async function handleMarkSelectedRead() {
+    if (selectedIds.size === 0) return;
+    setMarking(true);
+    try {
+      await markNotificationsRead(Array.from(selectedIds));
+      await Promise.all([fetchList(), fetchSummary()]);
+    } catch (e) {
+      console.error("선택 항목 읽음 처리 실패", e);
+      alert("선택한 알림을 읽음 처리하지 못했습니다.");
+    } finally {
+      setMarking(false);
+    }
+  }
+
+  async function handleMarkAllRead() {
+    setMarking(true);
+    try {
+      await markAllNotificationsRead();
+      await Promise.all([fetchList(), fetchSummary()]);
+    } catch (e) {
+      console.error("모두 읽음 처리 실패", e);
+      alert("모두 읽음 처리에 실패했습니다.");
+    } finally {
+      setMarking(false);
+    }
+  }
+
   return (
     <div className="enp">
-      {/* 헤더 */}
       <div className="enp-header">
         <h1 className="enp-header__title">알림</h1>
         <p className="enp-header__sub">작업 배정, 일정, 공지 등 중요한 알림을 확인하세요.</p>
       </div>
 
-      {/* 통계 카드 */}
       <div className="enp-stats">
         {TAB_DEFS.map((s) => {
           const Icon = s.key === "ALL" ? Bell : TYPE_MAP[s.key].icon;
@@ -108,7 +173,6 @@ export default function EngineerNoticePage() {
         })}
       </div>
 
-      {/* 탭 + 필터 */}
       <div className="enp-tab-bar">
         <div className="enp-tabs">
           {TAB_DEFS.map((tab) => (
@@ -129,13 +193,26 @@ export default function EngineerNoticePage() {
             <Search size={13} color="#aaa" />
             <input type="text" placeholder="알림 제목 검색" disabled />
           </div>
+          {selectedIds.size > 0 && (
+            <button className="enp-read-all-btn" onClick={handleMarkSelectedRead} disabled={marking}>
+              <CheckCheck size={13} /> 선택 항목 읽음 처리 ({selectedIds.size})
+            </button>
+          )}
+          <button className="enp-read-all-btn" onClick={handleMarkAllRead} disabled={marking}>
+            <CheckCheck size={13} /> 모두 읽음 처리
+          </button>
         </div>
       </div>
 
-      {/* 목록 */}
       <div className="enp-table">
         <div className="enp-table__header">
-          <span><input type="checkbox" /></span>
+          <span>
+            <input
+              type="checkbox"
+              checked={list.length > 0 && selectedIds.size === list.length}
+              onChange={toggleSelectAll}
+            />
+          </span>
           <span>알림 내용</span>
           <span>유형</span>
           <span>채널</span>
@@ -148,14 +225,49 @@ export default function EngineerNoticePage() {
 
         {!loading && !error && list.map((item) => {
           const typeInfo = TYPE_MAP[item.type];
+          const isRead = !!item.read;
           return (
-            <div key={item.notificationId} className="enp-table__row">
-              <span><input type="checkbox" /></span>
+            <div
+              key={item.id}
+              className="enp-table__row"
+              onClick={() => handleOpenNotification(item)}
+              style={{
+                cursor: "pointer",
+                background: isRead ? undefined : "#f8f7ff",
+              }}
+            >
+              <span onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(item.id)}
+                  onChange={() => toggleSelect(item.id)}
+                />
+              </span>
               <span className="enp-table__content-col">
                 <NotifIcon type={item.type} />
-                <div>
-                  <p className="enp-table__title">{item.title}</p>
-                  <p className="enp-table__body">{item.body}</p>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                  {!isRead && (
+                    <span
+                      style={{
+                        width: 6, height: 6, borderRadius: "50%",
+                        background: "#5B4FF5", marginTop: 6, flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <div>
+                    <p
+                      className="enp-table__title"
+                      style={{ fontWeight: isRead ? 400 : 700, color: isRead ? "#888" : undefined }}
+                    >
+                      {item.title}
+                    </p>
+                    <p
+                      className="enp-table__body"
+                      style={{ color: isRead ? "#bbb" : undefined }}
+                    >
+                      {item.body}
+                    </p>
+                  </div>
                 </div>
               </span>
               <span>
@@ -164,7 +276,7 @@ export default function EngineerNoticePage() {
               <span className="enp-table__channel">{item.channel}</span>
               <span className="enp-table__time">{formatDate(item.createdAt)}</span>
               <span>
-                <button className="enp-more-btn"><MoreVertical size={14} /></button>
+                <button className="enp-more-btn" onClick={(e) => e.stopPropagation()}><MoreVertical size={14} /></button>
               </span>
             </div>
           );
@@ -175,7 +287,6 @@ export default function EngineerNoticePage() {
         )}
       </div>
 
-      {/* 페이지네이션 */}
       <div className="enp-pagination">
         <button onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={currentPage === 0}>
           <ChevronLeft size={14} />

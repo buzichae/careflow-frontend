@@ -17,51 +17,34 @@ import {
   Calendar,
   Settings,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import "../../styles/Customer/CustomerHome.css";
 import ApplianceIcon from "./ApplianceIcon";
 import { getMyAppliances, getHealthCertificate } from "../../apis/appliances";
 import { getUserInfo } from "../../apis/auth";
 import { getMyAS } from "../../apis/as";
+import {
+  getMyNotifications,
+  getNotificationSummary,
+} from "../../apis/customerNotifications";
 
-const mockAlerts = [
-  {
-    id: 1,
-    Icon: Bell,
-    iconBg: "#fff7e6",
-    iconColor: "#f59e0b",
-    text: "냉장고 필터 교체 주기가 도래했습니다.",
-    tag: "소모품 교체",
-    tagColor: "#f59e0b",
-    tagBg: "#fff7e6",
-    appliance: "냉장고",
-    dday: 3,
-  },
-  {
-    id: 2,
-    Icon: Shield,
-    iconBg: "#f0edff",
-    iconColor: "#734bcf",
-    text: "무상 A/S 기간이 7일 후 종료됩니다.",
-    tag: "무상 A/S",
-    tagColor: "#734bcf",
-    tagBg: "#f0edff",
-    appliance: "세탁기",
-    dday: 7,
-  },
-  {
-    id: 3,
-    Icon: CalendarCheck,
-    iconBg: "#eff6ff",
-    iconColor: "#3b82f6",
-    text: "A/S 방문이 2일 후 예정되어 있습니다.",
-    tag: "A/S 예약",
-    tagColor: "#3b82f6",
-    tagBg: "#eff6ff",
-    appliance: "에어컨",
-    dday: 2,
-  },
+/* "진행 중 A/S" 통계에 포함할 상태 — CustomerAS.jsx의 "진행 중" KPI 정의와 동일 */
+const IN_PROGRESS_AS_STATUSES = [
+  "AGENCY_RECEIVED",
+  "ASSIGNED",
+  "ACCEPTED",
+  "ENGINEER_DEPARTED",
+  "ENGINEER_ARRIVED",
+  "IN_PROGRESS",
 ];
+
+/* 최근 알림 카드 — notifications.type 별 아이콘/색상 매핑 */
+const ALERT_TYPE_META = {
+  AS_STATUS: { label: "A/S 단계 변경", color: "#3b82f6", bg: "#eff6ff", Icon: Wrench },
+  CONSUMABLE: { label: "소모품 교체", color: "#f59e0b", bg: "#fff7e6", Icon: RefreshCw },
+  WARRANTY: { label: "무상 A/S 만료", color: "#734bcf", bg: "#f0edff", Icon: Shield },
+};
 
 function buildDiagModal(certData) {
   const { cert, applianceId, applianceName, applianceBrand, serialNumber } =
@@ -508,8 +491,23 @@ export default function CustomerHome() {
   const [latestCert, setLatestCert] = useState(null);
   const [asSchedules, setAsSchedules] = useState([]);
   const [warrantySchedules, setWarrantySchedules] = useState([]);
+  const [recentAlerts, setRecentAlerts] = useState([]);
+  const [unreadAlertCount, setUnreadAlertCount] = useState(0);
+  const [inProgressAsCount, setInProgressAsCount] = useState(0);
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    getMyNotifications({ page: 0, size: 3 })
+      .then((res) => setRecentAlerts(res.data.content ?? []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    getNotificationSummary()
+      .then((res) => setUnreadAlertCount(res.data?.total?.unreadCount ?? 0))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     getMyAppliances()
@@ -588,6 +586,10 @@ export default function CustomerHome() {
     getMyAS()
       .then((res) => {
         const list = res.data ?? [];
+        setInProgressAsCount(
+          list.filter((item) => IN_PROGRESS_AS_STATUSES.includes(item.status))
+            .length,
+        );
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const items = list
@@ -644,7 +646,7 @@ export default function CustomerHome() {
               {
                 Icon: Wrench,
                 color: "green",
-                num: "1",
+                num: String(inProgressAsCount),
                 unit: "건",
                 label: "진행 중 A/S",
                 sub: "접수된 A/S 건",
@@ -653,7 +655,7 @@ export default function CustomerHome() {
               {
                 Icon: Bell,
                 color: "orange",
-                num: "3",
+                num: String(unreadAlertCount),
                 unit: "건",
                 label: "확인 필요 알림",
                 sub: "새로운 알림",
@@ -755,9 +757,10 @@ export default function CustomerHome() {
             <div className="ch-grade-legend">
               {[
                 { g: "A", r: "90~100" },
-                { g: "B", r: "70~89" },
-                { g: "C", r: "50~69" },
-                { g: "D", r: "0~49" },
+                { g: "B", r: "75~89" },
+                { g: "C", r: "60~74" },
+                { g: "D", r: "40~59" },
+                { g: "E", r: "0~39" },
               ].map(({ g, r }) => (
                 <span
                   key={g}
@@ -771,41 +774,51 @@ export default function CustomerHome() {
         </div>
       )}
 
-      {/* 3. 중요 알림 */}
-      <section className="ch-alerts-section">
-        <div className="ch-section__header">
-          <h2>
-            중요 알림 <span className="ch-alert-count">3</span>
-          </h2>
-          <button
-            className="ch-link-btn"
-            onClick={() => navigate("/customer/notice")}
-          >
-            전체 보기 <ChevronRight size={14} />
-          </button>
-        </div>
-        <div className="ch-alerts-list">
-          {mockAlerts.map((a) => (
-            <div key={a.id} className="ch-alert-item">
-              <div
-                className="ch-alert-item__icon"
-                style={{ background: a.iconBg, color: a.iconColor }}
-              >
-                <a.Icon size={16} />
-              </div>
-              <span className="ch-alert-item__text">{a.text}</span>
-              <span
-                className="ch-alert-tag"
-                style={{ background: a.tagBg, color: a.tagColor }}
-              >
-                {a.tag}
-              </span>
-              <span className="ch-alert-appliance">{a.appliance}</span>
-              <span className="ch-alert-dday">D-{a.dday}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* 3. 최근 알림 — 알림이 하나도 없는 신규 가입자는 섹션 자체를 숨김 */}
+      {recentAlerts.length > 0 && (
+        <section className="ch-alerts-section">
+          <div className="ch-section__header">
+            <h2>
+              최근 알림{" "}
+              <span className="ch-alert-count">{recentAlerts.length}</span>
+            </h2>
+            <button
+              className="ch-link-btn"
+              onClick={() => navigate("/customer/notice")}
+            >
+              전체 보기 <ChevronRight size={14} />
+            </button>
+          </div>
+          <div className="ch-alerts-list">
+            {recentAlerts.map((a) => {
+              const meta = ALERT_TYPE_META[a.type] ?? {
+                label: a.type,
+                color: "#888",
+                bg: "#f5f5f5",
+                Icon: Bell,
+              };
+              return (
+                <div key={a.id} className="ch-alert-item">
+                  <div
+                    className="ch-alert-item__icon"
+                    style={{ background: meta.bg, color: meta.color }}
+                  >
+                    <meta.Icon size={16} />
+                  </div>
+                  <span className="ch-alert-item__text">{a.body}</span>
+                  <span
+                    className="ch-alert-tag"
+                    style={{ background: meta.bg, color: meta.color }}
+                  >
+                    {meta.label}
+                  </span>
+                  <span className="ch-alert-appliance">{a.createdAt}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* 4. 내 가전 상태 */}
       <section className="ch-appliance-section">
@@ -914,9 +927,6 @@ export default function CustomerHome() {
         <div className="ch-schedule">
           <div className="ch-section__header">
             <h2>예정된 일정</h2>
-            <button className="ch-link-btn">
-              전체 보기 <ChevronRight size={14} />
-            </button>
           </div>
           <div className="ch-schedule__list">
             {(() => {

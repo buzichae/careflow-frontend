@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Shield, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import api from "../../apis/axiosInstance";
 import "../../styles/Admin/Admin.css";
+import { getPageNumbers, DOTS } from "../../utils/pagination";
 
 /* ── 상태 한글 매핑 ── */
 const STATUS_MAP = {
@@ -69,6 +70,8 @@ export default function AdminServicePage() {
   const [repairCosts, setRepairCosts] = useState([]);
   const [editCost, setEditCost] = useState(null);
   const [costLoading, setCostLoading] = useState(false);
+  const [costPage, setCostPage] = useState(0);
+  const COST_PAGE_SIZE = 10;
 
   /* ── 인증 뱃지 상태 ── */
   const [badge, setBadge] = useState({ minGrade: "B", minScore: 75 });
@@ -106,6 +109,7 @@ export default function AdminServicePage() {
   useEffect(() => {
     if (tab !== "cost") return;
     setCostLoading(true);
+    setCostPage(0);
     api.get("/api/admin/repair-costs")
       .then((res) => setRepairCosts(res.data))
       .catch((e) => console.error("수리 비용 조회 실패", e))
@@ -162,6 +166,13 @@ export default function AdminServicePage() {
   const statCards = Object.entries(STATUS_MAP).map(([key, { label, color }]) => ({
     key, label, color, count: stats[key] ?? 0,
   }));
+
+  /* ── 수리 비용 가이드 클라이언트 페이지네이션 (전체 조회 API라 프론트에서 자름) ── */
+  const costTotalPages = Math.ceil(repairCosts.length / COST_PAGE_SIZE);
+  const pagedRepairCosts = repairCosts.slice(
+    costPage * COST_PAGE_SIZE,
+    (costPage + 1) * COST_PAGE_SIZE,
+  );
 
   return (
     <div className="admin-page">
@@ -277,32 +288,29 @@ export default function AdminServicePage() {
               </tbody>
             </table>
 
-            {/* 페이지네이션 */}
+            {/* 페이지네이션 — 회원 관리 페이지와 동일한 1,2,3,4,5,...N 스타일 */}
             {totalPages > 1 && (
-              <div className="crh-pagination">
-                <button
-                  className="crh-page-btn"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    className={`crh-page-btn ${page === i ? "crh-page-btn--active" : ""}`}
-                    onClick={() => setPage(i)}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                <button
-                  className="crh-page-btn"
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                >
-                  <ChevronRight size={14} />
-                </button>
+              <div className="aep-pagination" style={{ justifyContent: "center", gap: 12, position: "relative" }}>
+                <div className="aep-pagination__left">
+                  <button onClick={() => setPage(0)} disabled={page === 0}><ChevronsLeft size={14} /></button>
+                  <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}><ChevronLeft size={14} /></button>
+                  {getPageNumbers(page, totalPages).map((p, idx) =>
+                    p === DOTS ? (
+                      <span key={`dots-${idx}`} className="aep-pagination__ellipsis">...</span>
+                    ) : (
+                      <button
+                        key={p}
+                        className={page === p ? "aep-pagination__active" : ""}
+                        onClick={() => setPage(p)}
+                      >
+                        {p + 1}
+                      </button>
+                    ),
+                  )}
+                  <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronRight size={14} /></button>
+                  <button onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}><ChevronsRight size={14} /></button>
+                </div>
+                <span style={{ fontSize: 13, color: "#888", position: "absolute", right: 0 }}>총 {totalElements}건</span>
               </div>
             )}
           </div>
@@ -328,7 +336,7 @@ export default function AdminServicePage() {
                   <tr><td colSpan={4} className="admin-empty">불러오는 중...</td></tr>
                 ) : repairCosts.length === 0 ? (
                   <tr><td colSpan={4} className="admin-empty">데이터가 없습니다.</td></tr>
-                ) : repairCosts.map((c) => (
+                ) : pagedRepairCosts.map((c) => (
                   <tr key={c.id}>
                     <td><span className="admin-badge admin-badge--purple">{c.categoryName}</span></td>
                     <td>{c.symptom}</td>
@@ -342,6 +350,35 @@ export default function AdminServicePage() {
                 ))}
               </tbody>
             </table>
+
+            {/* 페이지네이션 */}
+            {costTotalPages > 1 && (
+              <div className="crh-pagination">
+                <button
+                  className="crh-page-btn"
+                  onClick={() => setCostPage((p) => Math.max(0, p - 1))}
+                  disabled={costPage === 0}
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                {Array.from({ length: costTotalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    className={`crh-page-btn ${costPage === i ? "crh-page-btn--active" : ""}`}
+                    onClick={() => setCostPage(i)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button
+                  className="crh-page-btn"
+                  onClick={() => setCostPage((p) => Math.min(costTotalPages - 1, p + 1))}
+                  disabled={costPage >= costTotalPages - 1}
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
