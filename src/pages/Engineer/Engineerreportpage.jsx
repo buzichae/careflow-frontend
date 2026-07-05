@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search, ChevronDown, ChevronLeft, ChevronRight,
@@ -16,6 +16,7 @@ const STATUS_MAP = {
 
 export default function EngineerReportPage() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize]       = useState(20);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState(null);
   const [reportList, setReportList]   = useState([]);
@@ -23,12 +24,28 @@ export default function EngineerReportPage() {
   const [totalCount, setTotalCount]   = useState(0);
   const navigate = useNavigate();
 
+  // [버그 수정] 아래 필터들은 원래 state가 아예 없는 장식용 UI였음
+  // (onChange 없음, fetch 호출에도 값이 전달되지 않음)
+  const [statusFilter, setStatusFilter] = useState("전체 상태");
+  const [search, setSearch] = useState("");
+  // [수정] 기본값을 "올해"로 제한하면, 작년에 완료된 보고서 등 다른 연도
+  // 데이터가 기본 화면에서 안 보이게 되는 문제가 있었음.
+  // → 기본값은 빈 값(필터링 없음, 전체 기간)으로 두고, 사용자가 직접 날짜를
+  //   선택했을 때만 그 범위로 필터링되도록 변경.
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
+
   useEffect(() => {
     let mounted = true;
     setLoading(true);
     setError(null);
 
-    getWorkReports(currentPage, 20)
+    // 참고: getWorkReports가 현재 (page, size)만 받도록 되어 있어, 필터를
+    // 서버로 넘길 방법이 없습니다. 백엔드/API 함수가 필터 파라미터를 지원하도록
+    // 확장되면 이 호출에 statusFilter/search/dateStart/dateEnd를 함께 전달하고
+    // 아래 클라이언트 필터링은 제거하는 것이 정확합니다 (지금은 현재 페이지
+    // 20~50건 안에서만 필터링되어, 여러 페이지에 걸친 결과는 놓칠 수 있음).
+    getWorkReports(currentPage, pageSize)
       .then((res) => {
         if (!mounted) return;
         const d = res.data;
@@ -43,13 +60,41 @@ export default function EngineerReportPage() {
       .finally(() => { if (mounted) setLoading(false); });
 
     return () => { mounted = false; };
-  }, [currentPage]);
+  }, [currentPage, pageSize]);
+
+  // [버그 수정] 상태/검색어/기간 필터를 실제로 목록에 적용
+  const filteredList = useMemo(() => {
+    return reportList.filter((item) => {
+      if (statusFilter !== "전체 상태" && item.status !== statusFilter) return false;
+
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const haystack = [item.customerName, item.productName, item.requestId]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+
+      if (item.workDate) {
+        // [버그 수정] workDate는 "2026.07.07 (화)" 형식(점 구분자 + 요일)인데
+        // dateStart/dateEnd는 "2026-07-07" 형식(하이픈)이라 문자열 비교가 항상
+        // 어긋나서 전부 필터링되어 사라지던 문제. "YYYY.MM.DD" 부분만 뽑아
+        // 하이픈 형식으로 변환한 뒤 비교.
+        const workDateOnly = item.workDate.split(" ")[0].replace(/\./g, "-");
+        if (dateStart && workDateOnly < dateStart) return false;
+        if (dateEnd && workDateOnly > dateEnd) return false;
+      }
+
+      return true;
+    });
+  }, [reportList, statusFilter, search, dateStart, dateEnd]);
 
   const statCards = [
-    { label: "전체",    value: totalCount,                                              icon: FileText,    color: "purple" },
-    { label: "작성 대기", value: reportList.filter(r => r.status === "DRAFT").length,     icon: Clock,       color: "orange" },
-    { label: "제출 완료", value: reportList.filter(r => r.status === "SUBMITTED").length, icon: CheckCircle, color: "blue"   },
-    { label: "승인 완료", value: reportList.filter(r => r.status === "APPROVED").length,  icon: CheckCircle, color: "green"  },
+    { label: "전체",    value: totalCount,                                                  icon: FileText,    color: "purple" },
+    { label: "작성 대기", value: filteredList.filter(r => r.status === "DRAFT").length,      icon: Clock,       color: "orange" },
+    { label: "제출 완료", value: filteredList.filter(r => r.status === "SUBMITTED").length,  icon: CheckCircle, color: "blue"   },
+    { label: "승인 완료", value: filteredList.filter(r => r.status === "APPROVED").length,   icon: CheckCircle, color: "green"  },
   ];
 
   return (
@@ -62,12 +107,48 @@ export default function EngineerReportPage() {
       </div>
 
       <div className="erp-filters">
-        <div className="erp-filter-date"><span>2024.06.01 ~ 2024.06.30</span></div>
-        <div className="erp-filter-select"><span>전체 상태</span><ChevronDown size={13} /></div>
-        <div className="erp-filter-select"><span>전체 브랜드</span><ChevronDown size={13} /></div>
+        <div className="erp-filter-date" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <input
+            type="date"
+            value={dateStart}
+            onChange={(e) => setDateStart(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+          <span>~</span>
+          <input
+            type="date"
+            value={dateEnd}
+            onChange={(e) => setDateEnd(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+        </div>
+
+        <select
+          className="erp-filter-select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ border: "none", background: "none", font: "inherit", color: "inherit", cursor: "pointer" }}
+        >
+          <option value="전체 상태">전체 상태</option>
+          <option value="DRAFT">작성 대기</option>
+          <option value="SUBMITTED">제출 완료</option>
+          <option value="APPROVED">승인 완료</option>
+        </select>
+
+        {/* [주의] 브랜드 필터는 응답에 brand 필드 자체가 없어(productName/modelNo만 있음)
+            정확한 필터링이 불가능한 상태입니다. 백엔드에 brand 필드 추가가 필요합니다. */}
+        <div className="erp-filter-select" title="백엔드 응답에 brand 필드가 없어 아직 동작하지 않습니다">
+          <span>전체 브랜드</span><ChevronDown size={13} />
+        </div>
+
         <div className="erp-search">
           <Search size={13} color="#aaa" />
-          <input type="text" placeholder="고객명, 모델명, 접수번호 검색" />
+          <input
+            type="text"
+            placeholder="고객명, 모델명, 접수번호 검색"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <button className="erp-excel-btn"><Download size={13} /> 엑셀 다운로드</button>
       </div>
@@ -93,10 +174,20 @@ export default function EngineerReportPage() {
       {!loading && !error && (
         <>
           <div className="erp-list-meta">
-            <span className="erp-list-count">총 {totalCount}건</span>
+            <span className="erp-list-count">
+              총 {totalCount}건 {filteredList.length !== reportList.length && `(현재 페이지 중 ${filteredList.length}건 표시)`}
+            </span>
             <div className="erp-list-controls">
               <div className="erp-sort-select">최신순 <ChevronDown size={13} /></div>
-              <div className="erp-size-select">20개씩 <ChevronDown size={13} /></div>
+              <select
+                className="erp-size-select"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                style={{ border: "none", background: "none", font: "inherit", color: "inherit", cursor: "pointer" }}
+              >
+                <option value={20}>20개씩</option>
+                <option value={50}>50개씩</option>
+              </select>
             </div>
           </div>
 
@@ -113,7 +204,7 @@ export default function EngineerReportPage() {
               <span>관리</span>
             </div>
 
-            {reportList.map((item) => {
+            {filteredList.map((item) => {
               const status = STATUS_MAP[item.status];
               return (
                 <div key={item.reportId ?? item.requestId} className="erp-table__row">
@@ -136,15 +227,35 @@ export default function EngineerReportPage() {
                   <span className="erp-table__date">{item.submittedAt ?? "-"}</span>
                   <span className="erp-table__date">{item.approvedAt ?? "-"}</span>
                   <span className="erp-table__actions">
-                    {item.status === "DRAFT"
-                      ? <button className="erp-write-btn">보고서 작성</button>
-                      : <button className="erp-detail-btn" onClick={() => navigate(`/engineer/reports/${item.reportId}`)}>상세보기</button>
-                    }
+                    {/* [수정] 제출완료(SUBMITTED)에서도 수정 버튼을 없애기로 함 →
+                        DRAFT만 "보고서 작성"으로 작성 화면 진입, 그 외(SUBMITTED/APPROVED)는
+                        전부 "상세보기"만 제공 (수정 기능은 목록에서 노출하지 않음) */}
+                    {item.status === "DRAFT" ? (
+                      <button
+                        className="erp-write-btn"
+                        onClick={() => navigate("/engineer/reports/submit", { state: { requestId: item.requestId } })}
+                      >
+                        보고서 작성
+                      </button>
+                    ) : (
+                      <button
+                        className="erp-detail-btn"
+                        onClick={() => navigate(`/engineer/reports/${item.reportId}`)}
+                      >
+                        상세보기
+                      </button>
+                    )}
                     <button className="erp-more-btn"><MoreVertical size={14} /></button>
                   </span>
                 </div>
               );
             })}
+
+            {filteredList.length === 0 && (
+              <p style={{ padding: 24, textAlign: "center", color: "#aaa" }}>
+                조건에 맞는 보고서가 없습니다.
+              </p>
+            )}
           </div>
 
           <div className="erp-pagination">
@@ -157,7 +268,6 @@ export default function EngineerReportPage() {
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
               <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
             </div>
-            <div className="erp-page-size">20개씩 <ChevronDown size={13} /></div>
           </div>
         </>
       )}

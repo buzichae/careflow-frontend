@@ -50,11 +50,22 @@ export default function EngineerSettlementPage() {
   const [settlementList, setSettlementList] = useState([]);
   const [settlementTotalPages, setSettlementTotalPages] = useState(1);
 
-  // ⚠ 날짜 범위는 필터 UI가 아직 값을 안 들고 있어서, 우선 이번 달 1일~오늘로 고정.
-  // 실제 필터(estp-filter-date)와 연결하려면 별도 상태 관리가 필요합니다.
-  const now = new Date();
-  const dateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const dateTo = now.toISOString().slice(0, 10);
+  // [버그 수정] 기존엔 "이번 달 1일~오늘"로 고정돼 있어서, 그 범위를 벗어난
+  // 과거 완료 건들이 전부 제외되어 통계가 0으로 보였음.
+  // → 기본값을 넓게(과거 포함) 잡고, 사용자가 직접 좁힐 수 있도록 변경.
+  const today = new Date().toISOString().slice(0, 10);
+  const [dateFrom, setDateFrom] = useState("2020-01-01");
+  const [dateTo, setDateTo] = useState(today);
+
+  // [버그 수정] 아래 두 필터는 state가 없는 장식용 UI였음
+  const [brandFilter, setBrandFilter] = useState("전체 브랜드");
+  const [statusFilter, setStatusFilter] = useState("전체 상태");
+
+  // [연동] 브랜드/상태 옵션 드롭다운용 — 필터링된 결과만으로 옵션을 뽑으면
+  // 필터를 걸수록 선택 가능한 옵션이 점점 줄어드는 문제가 생기므로,
+  // 지금까지 응답에서 본 적 있는 브랜드/상태를 누적해서 옵션 목록으로 유지.
+  const [seenBrands, setSeenBrands] = useState([]);
+  const [seenStatuses, setSeenStatuses] = useState([]);
 
   useEffect(() => {
     if (activeTab !== "실적 현황") return;
@@ -62,36 +73,48 @@ export default function EngineerSettlementPage() {
     setLoading(true);
     setError(null);
 
-    getSettlementSummary(dateFrom, dateTo)
-  .then((res) => {
-    if (!mounted) return;
-    const d = res.data;
+    // [연동] 백엔드가 brand/status 파라미터를 지원하도록 확장됨 확인 완료.
+    // "전체 브랜드"/"전체 상태" 선택 시엔 필터링 없이 조회하도록 undefined로 전달.
+    getSettlementSummary(
+      dateFrom,
+      dateTo,
+      brandFilter !== "전체 브랜드" ? brandFilter : undefined,
+      statusFilter !== "전체 상태" ? statusFilter : undefined
+    )
+      .then((res) => {
+        if (!mounted) return;
+        const d = res.data;
 
-    // 평평한 필드들을 stats 객체로 직접 구성
-    setStats({
-      completedCount: d.totalCompletedCount ?? 0,
-      grossAmount: d.totalGrossAmount ?? 0,
-      avgRating: d.avgRating ?? 0,
-      satisfactionRate: d.customerSatisfaction ?? 0,
-      rejectedCount: d.rejectedCount ?? 0,
-    });
+        setStats({
+          completedCount: d.totalCompletedCount ?? 0,
+          grossAmount: d.totalGrossAmount ?? 0,
+          avgRating: d.avgRating ?? 0,
+          satisfactionRate: d.customerSatisfaction ?? 0,
+          rejectedCount: d.rejectedCount ?? 0,
+        });
 
-    setDailyTrend(d.dailyTrends ?? []);
-    setBrandDist(d.brandDistributions ?? []);
-    setStatusDist(d.statusDistributions ?? []);
-    setPerformanceList(d.performanceList ?? []);
-    setSettlementSummary(d.settlementSummary ?? null);
-  })
-  .catch((err) => {
-    console.error("실적 현황 조회 실패:", err);
-    if (mounted) setError("실적 정보를 불러오지 못했습니다.");
-  })
-  .finally(() => {
-    if (mounted) setLoading(false);
-  });
+        setDailyTrend(d.dailyTrends ?? []);
+        setBrandDist(d.brandDistributions ?? []);
+        setStatusDist(d.statusDistributions ?? []);
+        setPerformanceList(d.performanceList ?? []);
+        setSettlementSummary(d.settlementSummary ?? null);
+
+        // 옵션 목록 누적 (필터링 없이 봤던 값들도 계속 선택 가능하도록)
+        const brandsInRes = (d.performanceList ?? []).map((i) => i.brand).filter(Boolean);
+        const statusesInRes = (d.performanceList ?? []).map((i) => i.diagnosisResult).filter(Boolean);
+        if (brandsInRes.length) setSeenBrands((prev) => Array.from(new Set([...prev, ...brandsInRes])));
+        if (statusesInRes.length) setSeenStatuses((prev) => Array.from(new Set([...prev, ...statusesInRes])));
+      })
+      .catch((err) => {
+        console.error("실적 현황 조회 실패:", err);
+        if (mounted) setError("실적 정보를 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
 
     return () => { mounted = false; };
-  }, [activeTab]);
+  }, [activeTab, dateFrom, dateTo, brandFilter, statusFilter]);
 
   useEffect(() => {
     if (activeTab !== "정산 내역") return;
@@ -117,6 +140,11 @@ export default function EngineerSettlementPage() {
     return () => { mounted = false; };
   }, [activeTab, currentPage]);
 
+  // [정리] 브랜드/상태 필터를 이제 서버가 처리하므로, 클라이언트 사이드
+  // 필터링(useMemo)은 더 이상 필요 없어 제거. performanceList를 그대로 사용.
+  const brandOptions = seenBrands;
+  const statusOptions = seenStatuses;
+
   return (
     <div className="estp">
       <div className="estp-header">
@@ -137,9 +165,44 @@ export default function EngineerSettlementPage() {
       </div>
 
       <div className="estp-filters">
-        <div className="estp-filter-date"><span>{dateFrom} ~ {dateTo}</span></div>
-        <div className="estp-filter-select"><span>전체 브랜드</span><ChevronDown size={13} /></div>
-        <div className="estp-filter-select"><span>전체 상태</span><ChevronDown size={13} /></div>
+        <div className="estp-filter-date" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+          <span>~</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+        </div>
+
+        <select
+          className="estp-filter-select"
+          value={brandFilter}
+          onChange={(e) => setBrandFilter(e.target.value)}
+          style={{ border: "none", background: "none", font: "inherit", color: "inherit", cursor: "pointer" }}
+        >
+          <option value="전체 브랜드">전체 브랜드</option>
+          {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+
+        <select
+          className="estp-filter-select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ border: "none", background: "none", font: "inherit", color: "inherit", cursor: "pointer" }}
+        >
+          <option value="전체 상태">전체 상태</option>
+          {statusOptions.map((s) => (
+            <option key={s} value={s}>{DIAGNOSIS_MAP[s]?.label ?? s}</option>
+          ))}
+        </select>
+
         <button className="estp-report-btn"><Download size={13} /> 리포트 다운로드</button>
       </div>
 
@@ -293,6 +356,11 @@ export default function EngineerSettlementPage() {
                         </div>
                       );
                     })}
+                    {performanceList.length === 0 && (
+                      <p style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>
+                        조건에 맞는 실적이 없습니다.
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -219,28 +219,26 @@ export default function EngineerCustomerListPage() {
                 <td>{c.phone}</td>
                 <td>{c.region}</td>
 
-                <td className="eclp-td-center">{c.appliances}</td>
-                <td className="eclp-td-center">{c.as}</td>
+                {/* [버그 수정] 실제 응답 필드명은 appliances/as/lastWork가 아니라
+                    appliancesCount/totalAsCount/lastWorkDate 였음 */}
+                <td className="eclp-td-center">{c.appliancesCount ?? 0}</td>
+                <td className="eclp-td-center">{c.totalAsCount ?? 0}</td>
 
                 <td className="eclp-td-center">
-                  {c.inProgress > 0 ? (
-                    <span className="eclp-inprogress-badge">
-                      {c.inProgress}건
-                    </span>
-                  ) : (
-                    <span className="eclp-zero">0건</span>
-                  )}
+                  {/* ⚠ "진행 중 작업" 건수 필드(inProgress 등)는 이 응답에 아직
+                      없습니다. 필요하면 백엔드에 추가 요청이 필요합니다. */}
+                  <span className="eclp-zero">-</span>
                 </td>
 
                 <td>
                   <span
-                    className={`eclp-status-badge eclp-status-badge--${c.status.toLowerCase()}`}
+                    className={`eclp-status-badge eclp-status-badge--${c.status?.toLowerCase()}`}
                   >
                     {c.status === "ACTIVE" ? "활성" : "비활성"}
                   </span>
                 </td>
 
-                <td>{c.lastWork}</td>
+                <td>{c.lastWorkDate ?? "-"}</td>
 
                 <td className="eclp-td-actions">
                   <button
