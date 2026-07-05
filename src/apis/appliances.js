@@ -11,6 +11,9 @@ export const deleteAppliances = (applianceId) => {
 export const createAppliance = (data) =>
     api.post("/api/appliances", { ...data, registerMethod: "MANUAL" });
 
+export const updateAppliance = (applianceId, data) =>
+    api.put(`/api/appliances/${applianceId}`, data);
+
 export const getMyDetailAppliance = (applianceId) => {
     return api.get(`/api/appliances/${applianceId}/repair-history`);
 }
