@@ -28,6 +28,7 @@ import {
   review,
   getAsRequestDetail,
   createAsRequest,
+  processPayment,
 } from "../../apis/as";
 import { getMyAppliances } from "../../apis/appliances";
 import { getAvailableEngineers, getEngineerAvailability } from "../../apis/engineers";
@@ -1525,14 +1526,6 @@ export default function CustomerAS() {
   const [reviewTarget, setReviewTarget] = useState(null); // { item, existingReview? }
   const [reviews, setReviews] = useState({});
 
-  function handlePayment(requestId) {
-    setAsList((prev) =>
-      prev.map((item) =>
-        item.requestId === requestId ? { ...item, status: "PAID" } : item,
-      ),
-    );
-  }
-
   async function handleReviewSubmit({ rating, content }) {
     const item = reviewTarget.item;
     try {
@@ -1630,20 +1623,33 @@ export default function CustomerAS() {
           onApprove={
             reportTarget.item.status === "COMPLETED"
               ? async () => {
+                  const requestId = reportTarget.item.requestId;
+                  // 1) 보고서 승인 (customer_approved=true) — 결제 전 선행 조건
                   try {
                     await approveReport(reportTarget.report.reportId);
+                  } catch (error) {
+                    alert(
+                      error.response?.data?.message || "승인에 실패했습니다.",
+                    );
+                    return;
+                  }
+                  // 2) 승인 성공 후에만 실제 결제 처리 — 승인만 하고 결제 API를
+                  //    호출하지 않으면 서버에는 결제 기록이 남지 않고 상태도
+                  //    COMPLETED에 그대로 머물러 있음 (프론트에서만 PAID로 표시되는 버그)
+                  try {
+                    await processPayment(requestId);
                     setAsList((prev) =>
                       prev.map((i) =>
-                        i.requestId === reportTarget.item.requestId
-                          ? { ...i, status: "PAID" }
-                          : i,
+                        i.requestId === requestId ? { ...i, status: "PAID" } : i,
                       ),
                     );
                     setReportTarget(null);
                   } catch (error) {
                     alert(
-                      error.response?.data?.message || "승인에 실패했습니다.",
+                      error.response?.data?.message ||
+                        "보고서는 승인되었지만 결제 처리에 실패했습니다. 다시 시도해주세요.",
                     );
+                    setReportTarget(null);
                   }
                 }
               : undefined
@@ -1833,18 +1839,16 @@ export default function CustomerAS() {
                               ? () => setCancelTarget(item)
                               : action === "수리 보고서 보기"
                                 ? () => handleReportView(item)
-                                : action === "결제하기"
-                                  ? () => handlePayment(item.requestId)
-                                  : action === "기사님 리뷰 남기기"
-                                    ? () => handleReviewOpen(item)
-                                    : action === "작성한 리뷰 보기"
-                                      ? () =>
-                                          setReviewTarget({
-                                            item,
-                                            existingReview:
-                                              reviews[item.requestId],
-                                          })
-                                      : undefined
+                                : action === "기사님 리뷰 남기기"
+                                  ? () => handleReviewOpen(item)
+                                  : action === "작성한 리뷰 보기"
+                                    ? () =>
+                                        setReviewTarget({
+                                          item,
+                                          existingReview:
+                                            reviews[item.requestId],
+                                        })
+                                    : undefined
                           }
                         >
                           {action}

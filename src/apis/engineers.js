@@ -22,7 +22,9 @@ export const getEngineerDashboard = () => api.get("/api/engineer/dashboard");
 // 작업 상태 변경 (출발/도착/수리중/완료)
 // as_status_logs.to_status 값: ENGINEER_DEPARTED / ENGINEER_ARRIVED / IN_PROGRESS / COMPLETED
 export const updateAssignmentStatus = (requestId, status) =>
-  api.patch(`/api/engineer/tasks/${requestId}/status`, { status });
+  api.patch(`/api/engineer/tasks/${requestId}/status`, null, {
+    params: { newStatus: status },
+  });
 
 // ── 오늘/특정 날짜 배정된 A/S 작업 목록  ──
 // 응답: 배열. summary 없음.
@@ -40,6 +42,13 @@ export const createEngineerProfile = (data) =>
 // 프로필 수정
 export const updateEngineerProfile = (data) =>
   api.put("/api/engineer/profile", data);
+
+// [수정] PR로 실제 엔드포인트 확정됨 — 기사 전용이 아니라 전 역할 공용 API.
+// PUT /api/auth/password
+// body: { currentPassword, newPassword }
+// 응답: 200 성공 / 400 현재 비밀번호 불일치·새 비밀번호 규칙 위반·현재와 동일 / 403 소셜 로그인 전용 계정
+export const changePassword = (currentPassword, newPassword) =>
+  api.put("/api/auth/password", { currentPassword, newPassword });
 
 
 // ── 근무표 (engineerSchedule.md) — "내 근무표 보기"에서 사용 ──
@@ -77,9 +86,15 @@ export const getWorkReports = (page = 1, size = 20) =>
 export const getWorkReportDetail = (reportId) =>
   api.get(`/api/engineer/work-reports/${reportId}`);
 
-// ── 작업 보고서 제출 (기사가 보고서 작성 완료 시)
+// ── 작업 보고서 제출 (기사가 보고서 작성 완료 시, 최초 생성)
 export const submitWorkReport = (data) =>
   api.post("/api/engineer/work-reports", data);
+
+// [신규] 작업 보고서 수정 (SUBMITTED 상태에서 승인 전까지만 가능 — APPROVED는
+// EngineerReportSubmitPage에서 화면 단에서 이미 차단하지만, 백엔드에서도
+// status가 APPROVED인 경우 403/409로 막아주는 검증이 필요합니다.)
+export const updateWorkReport = (reportId, data) =>
+  api.put(`/api/engineer/work-reports/${reportId}`, data);
 
 // ── 보고서 승인 
 export const approveWorkReport = (reportId) =>
@@ -94,8 +109,8 @@ export const getEngineerCustomerDetail = (customerId) =>
   api.get(`/api/engineer/customers/${customerId}`);
 
 // 실적 현황 요약 (통계 카드 + 차트 + 상세 목록)
-export const getSettlementSummary = (dateFrom, dateTo) =>
-  api.get("/api/engineer/settlements/summary", { params: { dateFrom, dateTo } });
+export const getSettlementSummary = (dateFrom, dateTo, brand, status) =>
+  api.get("/api/engineer/settlements/summary", { params: { dateFrom, dateTo, brand, status } });
 
 // 정산 내역 목록 
 export const getSettlements = (page = 0, size = 10) =>

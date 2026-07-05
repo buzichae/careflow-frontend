@@ -7,12 +7,6 @@ import {
 import { getEngineerCustomerDetail } from "../../apis/engineers"; // 실제 경로에 맞게 수정
 import "../../styles/Engineer/Engineercustomerpage.css";
 
-const APPLIANCE_STATUS_MAP = {
-  NORMAL:      { label: "정상",     type: "normal"      },
-  NEED_REPAIR: { label: "수리 필요", type: "need-repair" },
-  SOLD:        { label: "판매됨",   type: "sold"        },
-};
-
 const AS_STATUS_TABS = ["전체", "진행 중", "완료", "취소"];
 
 const AS_STATUS_MAP = {
@@ -25,6 +19,9 @@ const AS_STATUS_MAP = {
   PAID:            { label: "정산 완료", type: "paid"      },
   CANCELLED:       { label: "취소",    type: "cancelled" },
 };
+
+const IN_PROGRESS_STATUSES = ["ACCEPTED", "IN_PROGRESS", "ASSIGNED"];
+const DONE_STATUSES        = ["COMPLETED", "PAID"];
 
 function Avatar({ name, size = 60 }) {
   return (
@@ -78,11 +75,26 @@ export default function EngineerCustomerPage() {
 
   const asHistory = c.asHistory ?? [];
   const appliances = c.appliances ?? [];
+  // [확정] 백엔드 회신: memos는 DB에 대응 테이블이 없어 영구적으로 빈 배열로 내려옴
+  // (고객 레벨의 상담 메모 개념 자체가 스키마에 없음 — 추후 추가 예정도 아님)
   const memos = c.memos ?? [];
 
+  // region/addressDetail 조합 (address 단일 필드는 응답에 없음)
+  const fullAddress = [c.region, c.addressDetail].filter(Boolean).join(" ");
+
+  // ⚠ totalAs/doneAs/inProgressAs/cancelledAs/totalPayment 집계값은 여전히
+  // 응답에 없어서, 이미 받은 asHistory로 직접 계산 (asHistory가 비어있으면 실제 0건)
+  const totalAsCount      = asHistory.length;
+  const doneAsCount       = asHistory.filter(a => DONE_STATUSES.includes(a.status)).length;
+  const inProgressAsCount = asHistory.filter(a => IN_PROGRESS_STATUSES.includes(a.status)).length;
+  const cancelledAsCount  = asHistory.filter(a => a.status === "CANCELLED").length;
+  const totalPayment      = asHistory
+    .filter(a => a.finalAmount != null)
+    .reduce((sum, a) => sum + a.finalAmount, 0);
+
   const filteredAs = asTab === "전체"   ? asHistory
-    : asTab === "진행 중" ? asHistory.filter(a => ["ACCEPTED", "IN_PROGRESS", "ASSIGNED"].includes(a.status))
-    : asTab === "완료"    ? asHistory.filter(a => ["COMPLETED", "PAID"].includes(a.status))
+    : asTab === "진행 중" ? asHistory.filter(a => IN_PROGRESS_STATUSES.includes(a.status))
+    : asTab === "완료"    ? asHistory.filter(a => DONE_STATUSES.includes(a.status))
     : asHistory.filter(a => a.status === "CANCELLED");
 
   return (
@@ -97,21 +109,6 @@ export default function EngineerCustomerPage() {
         <p className="ecp-header__sub">고객의 기본 정보, 가전 보유 현황, A/S 이력 및 진행 중인 작업을 확인할 수 있습니다.</p>
       </div>
 
-      <div className="ecp-search-bar">
-        <div className="ecp-search">
-          <Search size={15} color="#aaa" />
-          <input
-            type="text"
-            placeholder="이름, 연락처, 주소, 고객ID로 검색하세요."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <button className="ecp-adv-search-btn">
-          <SlidersHorizontal size={14} /> 상세 검색
-        </button>
-      </div>
-
       <div className="ecp-body">
         <div className="ecp-left">
           <div className="ecp-section">
@@ -123,30 +120,41 @@ export default function EngineerCustomerPage() {
               <div className="ecp-profile__info">
                 <div className="ecp-profile__name-row">
                   <span className="ecp-profile__name">{c.name} 고객님</span>
-                  <span className="ecp-grade-badge">{c.grade}</span>
-                  <span className={`ecp-status-badge ecp-status-badge--${c.status?.toLowerCase()}`}>
-                    {c.status === "ACTIVE" ? "활성" : "비활성"}
-                  </span>
+                  {/* [확정] 백엔드 회신: grade(고객 등급/tier)는 users 테이블에
+                      대응 컬럼이 없어 영구적으로 null입니다. HealthCertificate의
+                      grade(가전 건강등급 A~E)와 이름만 같을 뿐 다른 개념이라
+                      혼용 금지. status는 User에 실제 존재하는 컬럼이므로
+                      이 API가 나중에 내려줄 수 있어 조건부 렌더링 유지. */}
+                  {c.grade && <span className="ecp-grade-badge">{c.grade}</span>}
+                  {c.status && (
+                    <span className={`ecp-status-badge ecp-status-badge--${c.status?.toLowerCase()}`}>
+                      {c.status === "ACTIVE" ? "활성" : "비활성"}
+                    </span>
+                  )}
                 </div>
                 <p className="ecp-profile__id">고객ID &nbsp; {c.customerId}</p>
               </div>
             </div>
 
             <div className="ecp-info-list">
-              <div className="ecp-info-row"><Phone size={13} color="#aaa" /><span className="ecp-info-label">연락처</span><span className="ecp-info-value">{c.phone}</span></div>
-              <div className="ecp-info-row"><Mail size={13} color="#aaa" /><span className="ecp-info-label">이메일</span><span className="ecp-info-value">{c.email}</span></div>
-              <div className="ecp-info-row"><MapPin size={13} color="#aaa" /><span className="ecp-info-label">주소</span><span className="ecp-info-value">{c.address}</span></div>
-              <div className="ecp-info-row"><Clock size={13} color="#aaa" /><span className="ecp-info-label">회원가입일</span><span className="ecp-info-value">{c.joinedAt}</span></div>
-              <div className="ecp-info-row"><Clock size={13} color="#aaa" /><span className="ecp-info-label">선호 연락 시간</span><span className="ecp-info-value">{c.preferredContactTime}</span></div>
-              <div className="ecp-info-row"><FileText size={13} color="#aaa" /><span className="ecp-info-label">메모</span><span className="ecp-info-value">{c.memo}</span></div>
+              <div className="ecp-info-row"><Phone size={13} color="#aaa" /><span className="ecp-info-label">연락처</span><span className="ecp-info-value">{c.phone || "-"}</span></div>
+              <div className="ecp-info-row"><Mail size={13} color="#aaa" /><span className="ecp-info-label">이메일</span><span className="ecp-info-value">{c.email || "-"}</span></div>
+              <div className="ecp-info-row"><MapPin size={13} color="#aaa" /><span className="ecp-info-label">주소</span><span className="ecp-info-value">{fullAddress || "-"}</span></div>
+              <div className="ecp-info-row"><Clock size={13} color="#aaa" /><span className="ecp-info-label">회원가입일</span><span className="ecp-info-value">{c.joinedAt || "-"}</span></div>
+              {/* [확정] 백엔드 회신: preferredContactTime, memo는 users 테이블에
+                  대응 컬럼이 없어 영구적으로 빈 값입니다 (추후 추가 예정 아님).
+                  memo 개념 자체는 WorkReport/AsStatusLog에만 존재하고
+                  고객(User) 레벨엔 스키마상 존재하지 않습니다. */}
+              <div className="ecp-info-row"><Clock size={13} color="#aaa" /><span className="ecp-info-label">선호 연락 시간</span><span className="ecp-info-value">{c.preferredContactTime || "-"}</span></div>
+              <div className="ecp-info-row"><FileText size={13} color="#aaa" /><span className="ecp-info-label">메모</span><span className="ecp-info-value">{c.memo || "-"}</span></div>
             </div>
 
             <div className="ecp-as-stats">
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 A/S 건수</p><p className="ecp-as-stat__value">{c.totalAs ?? 0}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">완료 건수</p><p className="ecp-as-stat__value">{c.doneAs ?? 0}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">진행 중</p><p className="ecp-as-stat__value">{c.inProgressAs ?? 0}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">취소/거절</p><p className="ecp-as-stat__value">{c.cancelledAs ?? 0}건</p></div>
-              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 결제 금액</p><p className="ecp-as-stat__value ecp-as-stat__value--amount">{(c.totalPayment ?? 0).toLocaleString()}원</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 A/S 건수</p><p className="ecp-as-stat__value">{totalAsCount}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">완료 건수</p><p className="ecp-as-stat__value">{doneAsCount}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">진행 중</p><p className="ecp-as-stat__value">{inProgressAsCount}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">취소/거절</p><p className="ecp-as-stat__value">{cancelledAsCount}건</p></div>
+              <div className="ecp-as-stat"><p className="ecp-as-stat__label">총 결제 금액</p><p className="ecp-as-stat__value ecp-as-stat__value--amount">{totalPayment.toLocaleString()}원</p></div>
             </div>
           </div>
 
@@ -160,7 +168,7 @@ export default function EngineerCustomerPage() {
                   onClick={() => setAsTab(tab)}
                 >
                   {tab}{" "}
-                  {tab === "전체" ? `(${c.totalAs ?? 0})` : tab === "진행 중" ? `(${c.inProgressAs ?? 0})` : tab === "완료" ? `(${c.doneAs ?? 0})` : `(${c.cancelledAs ?? 0})`}
+                  {tab === "전체" ? `(${totalAsCount})` : tab === "진행 중" ? `(${inProgressAsCount})` : tab === "완료" ? `(${doneAsCount})` : `(${cancelledAsCount})`}
                 </button>
               ))}
             </div>
@@ -185,6 +193,11 @@ export default function EngineerCustomerPage() {
                   </div>
                 );
               })}
+              {filteredAs.length === 0 && (
+                <p style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>
+                  A/S 이력이 없습니다.
+                </p>
+              )}
             </div>
             <button className="ecp-more-btn">전체 A/S 이력 보기 <ChevronRight size={13} /></button>
           </div>
@@ -196,35 +209,39 @@ export default function EngineerCustomerPage() {
               <h3 className="ecp-panel__title">보유 가전 목록 ({appliances.length})</h3>
               <button className="ecp-panel__link">전체 보기</button>
             </div>
+            {/* [수정] 실제 응답의 appliance 항목엔 applianceId/brand/modelName/categoryName만
+                있고, modelNo/purchaseDate/status/imageUrl/registeredAt은 없음.
+                없는 필드를 억지로 참조하지 않고, 있는 정보(브랜드/모델명/카테고리)만 표시.
+                구매일·상태·등록일이 필요하면 백엔드에 필드 추가 요청이 필요합니다. */}
             <div className="ecp-appliance-list">
-              {appliances.map(a => {
-                const s = APPLIANCE_STATUS_MAP[a.status] ?? { label: a.status, type: "normal" };
-                return (
-                  <div key={a.applianceId} className="ecp-appliance-item">
-                    <ApplianceImg imageUrl={a.imageUrl} size={56} />
-                    <div className="ecp-appliance-item__info">
-                      <p className="ecp-appliance-item__name">{a.brand} {a.modelName}</p>
-                      <p className="ecp-appliance-item__model">모델명 &nbsp; {a.modelNo}</p>
-                      <p className="ecp-appliance-item__purchase">구매일 &nbsp; {a.purchaseDate}</p>
-                    </div>
-                    <div className="ecp-appliance-item__right">
-                      <span className={`ecp-appliance-badge ecp-appliance-badge--${s.type}`}>{s.label}</span>
-                      <p className="ecp-appliance-item__registered">제품 등록일<br />{a.registeredAt}</p>
-                    </div>
+              {appliances.map(a => (
+                <div key={a.applianceId} className="ecp-appliance-item">
+                  <ApplianceImg imageUrl={a.imageUrl} size={56} />
+                  <div className="ecp-appliance-item__info">
+                    <p className="ecp-appliance-item__name">{a.brand} {a.modelName}</p>
+                    <p className="ecp-appliance-item__model">카테고리 &nbsp; {a.categoryName ?? "-"}</p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
+              {appliances.length === 0 && (
+                <p style={{ padding: 12, textAlign: "center", color: "#aaa", fontSize: 12 }}>
+                  등록된 가전이 없습니다.
+                </p>
+              )}
             </div>
           </div>
 
           <div className="ecp-panel">
             <h3 className="ecp-panel__title">진행 중인 작업</h3>
-            {c.inProgressWork && (
+            {/* [연동] PR로 inProgressWork가 객체로 확장됨:
+                { requestId, productName, symptom, visitDate, progressStatus, status }
+                기존 inProgressRequestId(숫자만)는 더 이상 안 씀. */}
+            {c.inProgressWork ? (
               <div className="ecp-inprogress-card">
                 <div className="ecp-inprogress-card__header">
                   <span className="ecp-inprogress-card__id">{c.inProgressWork.requestId}</span>
-                  <span className={`ecp-as-badge ecp-as-badge--${AS_STATUS_MAP[c.inProgressWork.status]?.type}`}>
-                    {AS_STATUS_MAP[c.inProgressWork.status]?.label}
+                  <span className={`ecp-as-badge ecp-as-badge--${AS_STATUS_MAP[c.inProgressWork.status]?.type ?? "pending"}`}>
+                    {AS_STATUS_MAP[c.inProgressWork.status]?.label ?? c.inProgressWork.status}
                   </span>
                 </div>
                 <div className="ecp-inprogress-card__body">
@@ -238,16 +255,25 @@ export default function EngineerCustomerPage() {
                   <div className="ecp-inprogress-card__row">
                     <Clock size={12} color="#aaa" />
                     <span className="ecp-inprogress-card__label">방문 예정일</span>
-                    <span>{c.inProgressWork.visitDate}</span>
+                    <span>{c.inProgressWork.visitDate ?? "-"}</span>
                   </div>
                   <div className="ecp-inprogress-card__row">
                     <ChevronRight size={12} color="#aaa" />
                     <span className="ecp-inprogress-card__label">진행 상태</span>
-                    <span>{c.inProgressWork.progressStatus}</span>
+                    <span>{c.inProgressWork.progressStatus ?? "-"}</span>
                   </div>
                 </div>
-                <button className="ecp-inprogress-card__btn">상세 보기 <ChevronRight size={13} /></button>
+                <button
+                  className="ecp-inprogress-card__btn"
+                  onClick={() => navigate("/engineer/work")}
+                >
+                  작업 관리에서 보기 <ChevronRight size={13} />
+                </button>
               </div>
+            ) : (
+              <p style={{ padding: 12, textAlign: "center", color: "#aaa", fontSize: 12 }}>
+                진행 중인 작업이 없습니다.
+              </p>
             )}
           </div>
 
@@ -256,6 +282,9 @@ export default function EngineerCustomerPage() {
               <h3 className="ecp-panel__title">최근 상담/메모</h3>
               <button className="ecp-panel__link">전체 보기 <ChevronRight size={12} /></button>
             </div>
+            {/* [확정] 백엔드 회신: memos는 DB에 대응 테이블이 없어 영구적으로
+                빈 배열입니다. 고객 레벨 상담 메모 기능 자체가 스키마에 없어
+                추후에도 채워질 가능성이 없습니다 (기능 자체를 없애는 것도 검토 가능). */}
             <div className="ecp-memo-list">
               {memos.map((m, i) => (
                 <div key={i} className="ecp-memo-item">
@@ -263,6 +292,11 @@ export default function EngineerCustomerPage() {
                   <p className="ecp-memo-item__content">{m.content}</p>
                 </div>
               ))}
+              {memos.length === 0 && (
+                <p style={{ padding: 12, textAlign: "center", color: "#aaa", fontSize: 12 }}>
+                  등록된 메모가 없습니다.
+                </p>
+              )}
             </div>
           </div>
         </aside>

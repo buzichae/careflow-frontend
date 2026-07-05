@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search, ChevronDown, ChevronRight, X,
   User, Phone, Calendar, Clock,
-  MapPin, CheckCircle,
+  MapPin, CheckCircle, FileText,
 } from "lucide-react";
 import {
   getEngineerAssignments,
@@ -76,15 +76,34 @@ function WorkSteps({ logStatus }) {
 }
 
 export default function EngineerWorkPage() {
-  const [activeTab, setActiveTab] = useState("ALL");
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [activeTab, setActiveTab] = useState(
+    location.state?.initialTab && TAB_LABELS[location.state.initialTab]
+      ? location.state.initialTab
+      : "ALL"
+  );
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [workList, setWorkList] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // [버그 수정] 검색/지역/날짜 필터가 전부 state 없는 장식용 UI였음
+  const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("전체 지역");
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
+
+  useEffect(() => {
+    const targetTab = location.state?.initialTab;
+    if (targetTab && TAB_LABELS[targetTab] && targetTab !== activeTab) {
+      setActiveTab(targetTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.assignmentId, location.state?.initialTab]);
 
   const fetchList = useCallback(() => {
     setLoading(true);
@@ -95,14 +114,13 @@ export default function EngineerWorkPage() {
         const d = res.data;
         const list = (d.content ?? d.list ?? []).map((item) => ({
           ...item,
-          isNew: item.new, // 백엔드가 boolean isNew를 "new"로 직렬화해서 내려줌
-          visitTime: `${item.scheduledDate} ${item.scheduledTime}`, // 응답에 가공된 문자열이 없어서 직접 조합
+          isNew: item.new,
+          visitTime: `${item.scheduledDate} ${item.scheduledTime}`,
         }));
 
         setWorkList(list);
         setTotalCount(d.totalElements ?? list.length);
 
-        // 상세 패널: 라우터로 넘어온 assignmentId가 있으면 그걸 선택, 없으면 첫 항목
         const targetId = location.state?.assignmentId;
         const found = list.find((item) => item.assignmentId === targetId);
         setSelectedItem(found ?? list[0] ?? null);
@@ -118,6 +136,36 @@ export default function EngineerWorkPage() {
     fetchList();
   }, [fetchList]);
 
+  // [버그 수정] 검색어/지역/날짜 필터를 실제 목록에 적용 (클라이언트 사이드)
+  const filteredWorkList = useMemo(() => {
+    return workList.filter((item) => {
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const haystack = [item.customerName, item.customerPhone, item.modelNo, item.address]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (regionFilter !== "전체 지역" && !item.address?.includes(regionFilter)) return false;
+      if (item.scheduledDate) {
+        if (dateStart && item.scheduledDate < dateStart) return false;
+        if (dateEnd && item.scheduledDate > dateEnd) return false;
+      }
+      return true;
+    });
+  }, [workList, search, regionFilter, dateStart, dateEnd]);
+
+  // 지역 필터 옵션 — 별도 마스터 API 없이 현재 목록의 주소에서 구 단위 추출
+  const regionOptions = useMemo(() => {
+    const set = new Set();
+    workList.forEach((item) => {
+      const match = item.address?.match(/\S+구|\S+시|\S+군/);
+      if (match) set.add(match[0]);
+    });
+    return Array.from(set);
+  }, [workList]);
+
   const handleAccept = async (id) => {
     try {
       await acceptAssignment(id);
@@ -130,7 +178,7 @@ export default function EngineerWorkPage() {
 
   const handleReject = async (id) => {
     const reason = window.prompt("거절 사유를 입력해주세요.");
-    if (reason === null) return; // 취소
+    if (reason === null) return;
     if (!reason.trim()) {
       alert("거절 사유를 입력해주세요.");
       return;
@@ -149,15 +197,26 @@ export default function EngineerWorkPage() {
     label: TAB_LABELS[key],
   }));
 
-  const handleChangeWorkStatus = async (requestId, nextStatus) => {
-  try {
-    await updateAssignmentStatus(requestId, nextStatus);
-    fetchList(); // 최신 상태로 다시 조회
-  } catch (err) {
-    console.error("작업 상태 변경 실패:", err);
-    alert("작업 상태 변경에 실패했습니다.");
-  }
-};
+  const handleChangeWorkStatus = async (asRequestId, nextStatus) => {
+    try {
+      // ⚠ 백엔드 /api/engineer/tasks/{requestId}/status 는 AsAssignment PK가 아니라
+      // AsRequest PK(asRequestId)를 받음.
+      await updateAssignmentStatus(asRequestId, nextStatus);
+      fetchList();
+    } catch (err) {
+      console.error("작업 상태 변경 실패:", err);
+      alert("작업 상태 변경에 실패했습니다.");
+    }
+  };
+
+  // [신규] 보고서 작성 페이지로 이동.
+  // 요청사항: 보고서 작성은 작업이 완전히 끝난(logStatus === "COMPLETED") 뒤에만
+  // 가능해야 함 — 아래 렌더링 부분에서 그 시점에만 이 버튼이 나타나도록 처리.
+  // submitWorkReport payload의 requestId는 AsRequest 숫자 PK를 기대하므로
+  // asRequestId를 그대로 전달.
+  const handleWriteReport = (item) => {
+    navigate("/engineer/report/submit", { state: { requestId: item.asRequestId } });
+  };
 
   return (
     <div className="ewp">
@@ -174,7 +233,6 @@ export default function EngineerWorkPage() {
             onClick={() => setActiveTab(tab.key)}
           >
             {tab.label}
-            {/* ⚠ 백엔드가 탭별 카운트를 안 내려줘서, 현재 선택된 탭에서만 실제 카운트를 보여줍니다. */}
             {activeTab === tab.key && (
               <span className="ewp-tab__count ewp-tab__count--active">{totalCount}</span>
             )}
@@ -185,12 +243,39 @@ export default function EngineerWorkPage() {
       <div className="ewp-filters">
         <div className="ewp-search">
           <Search size={13} color="#aaa" />
-          <input type="text" placeholder="고객명, 연락처, 모델명, 주소 검색" />
+          <input
+            type="text"
+            placeholder="고객명, 연락처, 모델명, 주소 검색"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-        <div className="ewp-filter-select"><span>전체 상태</span><ChevronDown size={13} /></div>
-        <div className="ewp-filter-select"><span>전체 지역</span><ChevronDown size={13} /></div>
-        <div className="ewp-filter-select"><span>전체 날짜</span><ChevronDown size={13} /></div>
-        <div className="ewp-filter-date"><span>2024.06.01 ~ 2024.06.30</span></div>
+        {/* [주의] "전체 상태"는 상단 탭(배정대기/진행중/완료/취소)이 이미 상태별
+            필터링 역할을 하고 있어서 별도 상태 드롭다운은 만들지 않았습니다. */}
+        <select
+          className="ewp-filter-select"
+          value={regionFilter}
+          onChange={(e) => setRegionFilter(e.target.value)}
+          style={{ border: "none", background: "none", font: "inherit", color: "inherit", cursor: "pointer" }}
+        >
+          <option value="전체 지역">전체 지역</option>
+          {regionOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <div className="ewp-filter-date" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <input
+            type="date"
+            value={dateStart}
+            onChange={(e) => setDateStart(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+          <span>~</span>
+          <input
+            type="date"
+            value={dateEnd}
+            onChange={(e) => setDateEnd(e.target.value)}
+            style={{ border: "none", background: "none", font: "inherit", color: "inherit" }}
+          />
+        </div>
         <button className="ewp-schedule-btn" onClick={() => navigate("/engineer/my-schedule")}>
           📋 내 근무표 보기
         </button>
@@ -204,27 +289,23 @@ export default function EngineerWorkPage() {
           <div className="ewp-left">
             <div className="ewp-summary">
               <p className="ewp-summary__title">상태 요약</p>
-              {/* ⚠ 상태별 집계(counts) API가 없어서, 상태 요약 패널은 현재 탭 기준 총 건수만 표시합니다.
-                  탭별 세부 카운트가 필요하면 백엔드에 집계 API 추가 요청이 필요해요. */}
               <div className="ewp-summary__row">
                 <span className="ewp-summary__label ewp-summary__label--total">
                   {TAB_LABELS[activeTab]}
                 </span>
                 <span className="ewp-summary__count ewp-summary__count--total">{totalCount}</span>
               </div>
-
-              {/* ⚠ 오늘의 실적(todayStats)도 이 API엔 없습니다. 표시가 필요하면 별도 API 확인 필요. */}
             </div>
           </div>
 
           <div className="ewp-center">
             <div className="ewp-list-header">
-              <span className="ewp-list-count">작업 목록 ({workList.length})</span>
+              <span className="ewp-list-count">작업 목록 ({filteredWorkList.length})</span>
               <div className="ewp-sort-select">최신순 <ChevronDown size={13} /></div>
             </div>
 
             <div className="ewp-list">
-              {workList.map((item) => {
+              {filteredWorkList.map((item) => {
                 const aStatus = ASSIGN_STATUS_MAP[item.assignStatus];
                 const lStatus = LOG_STATUS_MAP[item.logStatus];
                 const isSelected = selectedItem?.assignmentId === item.assignmentId;
@@ -264,6 +345,11 @@ export default function EngineerWorkPage() {
                   </div>
                 );
               })}
+              {filteredWorkList.length === 0 && (
+                <p style={{ padding: 24, textAlign: "center", color: "#aaa" }}>
+                  조건에 맞는 작업이 없습니다.
+                </p>
+              )}
             </div>
           </div>
 
@@ -298,7 +384,15 @@ export default function EngineerWorkPage() {
                 <div className="ewp-detail__section">
                   <div className="ewp-detail__section-header">
                     <p className="ewp-detail__section-label">고객 정보</p>
-                    <button className="ewp-detail__link">상세 보기</button>
+                    <button
+                      className="ewp-detail__link"
+                      onClick={() => navigate(`/engineer/customers/${selectedItem.customerId}`)}
+                      disabled={!selectedItem.customerId}
+                      title={!selectedItem.customerId ? "고객 ID 정보가 없어 이동할 수 없습니다 (백엔드 확인 필요)" : undefined}
+                      style={!selectedItem.customerId ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
+                    >
+                      상세 보기
+                    </button>
                   </div>
                   <div className="ewp-detail__row"><User size={12} /><span>{selectedItem.customerName} 고객</span></div>
                   <div className="ewp-detail__row"><Phone size={12} /><span>{selectedItem.customerPhone}</span></div>
@@ -334,34 +428,49 @@ export default function EngineerWorkPage() {
                 </div>
 
                 <div className="ewp-detail__section">
-  <p className="ewp-detail__section-label">작업 진행 단계</p>
-  <WorkSteps
-    logStatus={
-      selectedItem.assignStatus === "COMPLETED" ? "COMPLETED" : selectedItem.logStatus
-    }
-  />
+                  <p className="ewp-detail__section-label">작업 진행 단계</p>
+                  <WorkSteps
+                    logStatus={
+                      selectedItem.assignStatus === "COMPLETED" ? "COMPLETED" : selectedItem.logStatus
+                    }
+                  />
 
-  {selectedItem.assignStatus === "ACCEPTED" && (
-    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-      {(() => {
-        const currentIdx = WORK_STEPS.findIndex((s) => s.key === selectedItem.logStatus);
-        const nextStep = WORK_STEPS[currentIdx + 1];
-        if (!nextStep) return null;
-        return (
-          <button
-            onClick={() => handleChangeWorkStatus(selectedItem.requestId, nextStep.key)}
-            style={{
-              flex: 1, padding: "10px", borderRadius: 8, border: "none",
-              background: "#5B4FF5", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer",
-            }}
-          >
-            {nextStep.icon} {nextStep.label}(으)로 변경
-          </button>
-        );
-      })()}
-    </div>
-  )}
-</div>
+                  {selectedItem.assignStatus === "ACCEPTED" && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                      {(() => {
+                        const currentIdx = WORK_STEPS.findIndex((s) => s.key === selectedItem.logStatus);
+                        const nextStep = WORK_STEPS[currentIdx + 1];
+
+                        if (!nextStep) {
+                          return (
+                            <button
+                              onClick={() => handleWriteReport(selectedItem)}
+                              style={{
+                                flex: 1, padding: "10px", borderRadius: 8, border: "none",
+                                background: "#16a34a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                              }}
+                            >
+                              <FileText size={14} /> 보고서 작성
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            onClick={() => handleChangeWorkStatus(selectedItem.asRequestId, nextStep.key)}
+                            style={{
+                              flex: 1, padding: "10px", borderRadius: 8, border: "none",
+                              background: "#5B4FF5", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                            }}
+                          >
+                            {nextStep.icon} {nextStep.label}(으)로 변경
+                          </button>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
               </div>
             </aside>
           )}

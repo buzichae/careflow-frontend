@@ -60,9 +60,8 @@ export default function AgencySettingPage() {
   const [accountError,  setAccountError]  = useState("");
 
   // ── 수수료율 (5번 + 6번 API) ──────────────────
-  // GET /api/agencies/fee-rate → { agencyId, agencyName, agencyFeeRate }  (agencyFeeRate는 비율, 예: 0.1 = 10%)
-  // PATCH /api/agencies/fee-rate → { agencyFeeRate }  (요청도 동일하게 비율로 전달)
-  // 화면에는 사용자에게 익숙한 퍼센트 숫자로 표시 — API 응답/요청 시 100을 곱하거나 나눠 변환
+  // GET /api/agencies/fee-rate → { agencyId, agencyName, agencyFeeRate }
+  // PATCH /api/agencies/fee-rate → { agencyFeeRate }
   const [feeRate,      setFeeRate]      = useState("");
   const [feeLoading,   setFeeLoading]   = useState(true);
   const [feeSaving,    setFeeSaving]    = useState(false);
@@ -90,9 +89,9 @@ export default function AgencySettingPage() {
       .finally(() => setInfoLoading(false));
 
     // 5번: 수수료율 조회
-    // 응답: { agencyId, agencyName, agencyFeeRate }  (agencyFeeRate는 비율 — 화면 표시용으로 100을 곱해 퍼센트로 변환)
+    // 응답: { agencyId, agencyName, agencyFeeRate }
     apiFetch("/api/agencies/fee-rate")
-      .then(data => setFeeRate(data.agencyFeeRate != null ? data.agencyFeeRate * 100 : ""))
+      .then(data => setFeeRate(data.agencyFeeRate ?? ""))
       .catch(console.error)
       .finally(() => setFeeLoading(false));
   }, []);
@@ -147,21 +146,21 @@ export default function AgencySettingPage() {
 
   // ── 6번: 수수료율 수정 ────────────────────────
   // PATCH /api/agencies/fee-rate
-  // 요청: { agencyFeeRate: Double }  (비율 — 화면에 입력된 퍼센트를 100으로 나눠 전달)
-  // 응답: { agencyId, agencyName, agencyFeeRate }  (비율 — 화면 표시용으로 다시 100을 곱해 퍼센트로 변환)
+  // 요청: { agencyFeeRate: Double }
+  // 응답: { agencyId, agencyName, agencyFeeRate }
   const handleSaveFeeRate = async () => {
     const rate = Number(feeRate);
-    if (isNaN(rate) || rate < 0 || rate > 100) {
-      alert("유효한 수수료율을 입력해주세요. (0~100 사이)");
+    if (isNaN(rate) || rate < 0 || rate > 999.99) {
+      alert("유효한 수수료율을 입력해주세요.");
       return;
     }
     setFeeSaving(true);
     try {
       const data = await apiFetch("/api/agencies/fee-rate", {
         method: "PATCH",
-        body: JSON.stringify({ agencyFeeRate: rate / 100 }),
+        body: JSON.stringify({ agencyFeeRate: rate }),
       });
-      setFeeRate(data.agencyFeeRate != null ? data.agencyFeeRate * 100 : "");
+      setFeeRate(data.agencyFeeRate);
       alert("수수료율이 변경되었습니다.");
     } catch (e) {
       console.error(e);
@@ -233,7 +232,7 @@ export default function AgencySettingPage() {
                     >
                       <option value="">은행을 선택하세요</option>
                       {BANK_LIST.map(bank => (
-                        <option key={bank.code} value={bank.code}>{bank.name}</option>
+                        <option key={bank.code} value={bank.name}>{bank.name}</option>
                       ))}
                     </select>
                   </div>
@@ -280,7 +279,7 @@ export default function AgencySettingPage() {
                       className="asp3-input asp3-input--suffix"
                       type="number"
                       min={0}
-                      max={100}
+                      max={999}
                       step={0.01}
                       value={feeRate}
                       onChange={e => setFeeRate(e.target.value)}

@@ -25,6 +25,44 @@ const CAREER_LEVELS = [
 const careerLabel  = (key) => CAREER_LEVELS.find((cl) => cl.key === key)?.label ?? key;
 const categoryName = (id)  => CATEGORIES.find((c) => c.id === id)?.name ?? "-";
 
+/**
+ * 이수 상태 배지
+ *
+ * [v10 설계] 콘텐츠를 전부 이수해도 OX퀴즈 합격 전까지 isCompleted=false 유지.
+ * 그래서 "콘텐츠 완료 개수 = 전체 개수"인데도 isCompleted가 false인 경우가 있음
+ * (자료는 다 읽었지만 퀴즈 미응시/불합격 상태). 이 상태를 "미이수"로 뭉뚱그리면
+ * 관리자가 "3/3인데 왜 미이수?" 하고 헷갈리므로 3단계로 구분해서 표시한다.
+ *   1) 이수 완료      — 콘텐츠 + 퀴즈 모두 완료 (isCompleted=true)
+ *   2) 콘텐츠 완료 · 퀴즈 대기 — 콘텐츠는 다 읽었지만 퀴즈 미통과
+ *   3) 미이수         — 콘텐츠 자체를 아직 다 안 읽음
+ */
+function LmsStatusBadge({ engineer }) {
+    if (engineer.isCompleted) {
+        return (
+            <span className="agency-lms__status-badge agency-lms__status-badge--done">
+                <CheckCircle size={13} /> 이수 완료
+            </span>
+        );
+    }
+
+    const contentDone =
+        engineer.totalCount > 0 && engineer.completedCount === engineer.totalCount;
+
+    if (contentDone) {
+        return (
+            <span className="agency-lms__status-badge agency-lms__status-badge--quiz-pending">
+                <Circle size={13} /> 콘텐츠 완료 · 퀴즈 대기
+            </span>
+        );
+    }
+
+    return (
+        <span className="agency-lms__status-badge agency-lms__status-badge--pending">
+            <Circle size={13} /> 미이수
+        </span>
+    );
+}
+
 /* ── 기사 상세 모달 ── */
 function EngineerDetailModal({
     engineer, confirmations, quizAttempts,
@@ -349,14 +387,7 @@ export default function AgencyLmsPage() {
                                 </td>
                                 <td>{engineer.completedCount} / {engineer.totalCount}개</td>
                                 <td>
-                                    {engineer.isCompleted
-                                        ? <span className="agency-lms__status-badge agency-lms__status-badge--done">
-                                            <CheckCircle size={13} /> 이수 완료
-                                          </span>
-                                        : <span className="agency-lms__status-badge agency-lms__status-badge--pending">
-                                            <Circle size={13} /> 미이수
-                                          </span>
-                                    }
+                                    <LmsStatusBadge engineer={engineer} />
                                 </td>
                                 <td>
                                     {!engineer.isCompleted && (

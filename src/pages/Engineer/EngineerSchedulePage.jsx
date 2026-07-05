@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ChevronLeft, ChevronRight, Calendar, Download,
   ChevronDown, MapPin, Flag, Coffee, ClipboardList,
 } from "lucide-react";
-import { getEngineerTaskSchedule, getDailyWorkSchedule } from "../../apis/engineers"; 
+import { getEngineerTaskSchedule, getDailyWorkSchedule } from "../../apis/engineers";
 import "../../styles/Engineer/EngineerSchedulePage.css";
 
 const VIEWS = ["일간", "주간", "월간"];
@@ -13,6 +13,16 @@ const STATUS_MAP = {
   WAITING:   { label: "방문 예정", color: "purple", bg: "#eeeaff" },
   ACCEPTED:  { label: "진행 중",   color: "green",  bg: "#eaf3de" },
   COMPLETED: { label: "완료",     color: "gray",   bg: "#f5f5f5" },
+  REJECTED: { label: "취소",     color: "red",    bg: "#fdeaea" },
+};
+
+// 사이드바 필터 체크박스 라벨 ↔ 실제 작업 상태값(statusKey) 매핑
+// [버그 수정] 기존엔 filterStatus state만 바뀌고 목록 렌더링에는 전혀 반영되지 않았음
+const FILTER_KEY_TO_STATUS = {
+  방문예정: "WAITING",
+  진행중:  "ACCEPTED",
+  완료:    "COMPLETED",
+  취소:    "REJECTED",
 };
 
 const CALENDAR_DAYS = ["일","월","화","수","목","금","토"];
@@ -22,16 +32,10 @@ function getCalendarDays(year, month) {
   const prev  = new Date(year, month, 0).getDate();
   const days = [];
   for (let i = first - 1; i >= 0; i--) days.push({ day: prev - i, cur: false });
-  for (let i = 1; i <= last; i++)      days.push({ day: i, cur: true });
+  for (let i = 1; i <= last; i++)      days.push({ day: i, cur: true, date: new Date(year, month, i) });
   while (days.length % 7 !== 0)        days.push({ day: days.length - last - first + 1, cur: false });
   return days;
 }
-
-const TIMELINE_HOURS = Array.from({ length: 22 }, (_, i) => {
-  const h = 8 + Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "30";
-  return `${String(h).padStart(2, "0")}:${m}`;
-});
 
 const FIXED_BLOCKS = [
   { startTime: "08:00", endTime: "09:00", label: "일일 준비",  sub: "장비 점검 및 이동 준비", type: "prepare", icon: Flag   },
@@ -43,13 +47,6 @@ function timeToMinutes(t) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
-
-const DAY_START = timeToMinutes("08:00");
-const DAY_END   = timeToMinutes("18:30");
-const DAY_TOTAL = DAY_END - DAY_START;
-
-function calcTop(time)   { return ((timeToMinutes(time) - DAY_START) / DAY_TOTAL) * 100; }
-function calcHeight(s, e){ return ((timeToMinutes(e) - timeToMinutes(s)) / DAY_TOTAL) * 100; }
 
 function toDateParam(date) {
   const y = date.getFullYear();
@@ -70,6 +67,39 @@ function mergeWorkHours(timeSlots) {
   return { start, end };
 }
 
+// 작업 목록 API 응답 → 화면용 형태로 매핑 (일간/주간 공용)
+function mapTasks(list) {
+  return (list ?? []).map((item, idx) => {
+    const [h, m] = item.scheduledTime.split(":").map(Number);
+    const endH = h + 1;
+    const endTime = `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    return {
+      assignmentId: item.requestId,
+      startTime: item.scheduledTime,
+      endTime,
+      statusKey: item.assignmentStatus,
+      productName: `${item.applianceBrand} ${item.applianceModelName}`,
+      productImageUrl: null,
+      customerName: item.customerName,
+      customerPhone: item.customerPhone,
+      address: `${item.visitRegionName} ${item.visitAddressDetail}`,
+      regionName: item.visitRegionName,
+      symptom: item.symptomName,
+      number: idx + 1,
+    };
+  });
+}
+
+function getWeekDates(date) {
+  const start = new Date(date);
+  start.setDate(date.getDate() - date.getDay()); // 그 주의 일요일
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return d;
+  });
+}
+
 export default function EngineerSchedulePage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -81,6 +111,9 @@ export default function EngineerSchedulePage() {
   const [calYear, setCalYear] = useState(currentDate.getFullYear());
   const [calMonth, setCalMonth] = useState(currentDate.getMonth());
   const [selectedDate, setSelectedDate] = useState(currentDate.getDate());
+
+  // [버그 수정] 체크 상태만 있고 실제 필터링에 쓰이지 않던 state
+  // → FILTER_KEY_TO_STATUS를 통해 실제 렌더링 목록에 적용됨
   const [filterStatus, setFilterStatus] = useState({ 방문예정: true, 진행중: true, 완료: false, 취소: false });
 
   const [loading, setLoading] = useState(true);
@@ -91,51 +124,107 @@ export default function EngineerSchedulePage() {
   // 근무표(가용 시간) 상태
   const [workHours, setWorkHours] = useState(null); // { start, end } | null
   const [isOff, setIsOff] = useState(false);
+  const [workScheduleError, setWorkScheduleError] = useState(false);
+
+  // 주간 뷰 데이터: { "YYYY-MM-DD": task[] }
+  const [weekTasks, setWeekTasks] = useState({});
+  const [weekLoading, setWeekLoading] = useState(false);
+
+  // 월간 뷰 데이터: { day(number): count }
+  const [monthCounts, setMonthCounts] = useState({});
+  const [monthLoading, setMonthLoading] = useState(false);
+
+  // [버그 수정] 상단 "전체 작업"/"전체 지역"이 옵션 없는 장식 버튼이었음
+  // → 전체 작업: 사이드바와 같은 filterStatus를 재사용하는 드롭다운으로 구현
+  // → 전체 지역: 별도 지역 마스터 API가 없어, 지금까지 불러온 작업 데이터에서
+  //   지역명을 추출해 옵션으로 제공 (임시 방편 — 지역 API가 생기면 교체 권장)
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
+  const [regionFilter, setRegionFilter] = useState(null); // null = 전체 지역
+  const [knownRegions, setKnownRegions] = useState([]);
+
+  const mergeKnownRegions = useCallback((tasks) => {
+    const regions = tasks.map((t) => t.regionName).filter(Boolean);
+    if (regions.length === 0) return;
+    setKnownRegions((prev) => Array.from(new Set([...prev, ...regions])));
+  }, []);
+
+  const activeStatusCount = Object.values(filterStatus).filter(Boolean).length;
+  const statusButtonLabel = activeStatusCount === Object.keys(filterStatus).length
+    ? "전체 작업"
+    : activeStatusCount === 0
+      ? "선택 없음"
+      : `${activeStatusCount}개 선택`;
 
   const calDays = getCalendarDays(calYear, calMonth);
+
   const dateStr = `${currentDate.getFullYear()}.${String(currentDate.getMonth()+1).padStart(2,"0")}.${String(currentDate.getDate()).padStart(2,"0")} (${["일","월","화","수","목","금","토"][currentDate.getDay()]})`;
 
+  // 필터가 적용된 작업 목록 (전체 뷰 공통으로 사용)
+  const applyFilter = useCallback((tasks) => {
+    const activeStatuses = Object.entries(filterStatus)
+      .filter(([, checked]) => checked)
+      .map(([key]) => FILTER_KEY_TO_STATUS[key])
+      .filter(Boolean);
+    let result = tasks;
+    if (activeStatuses.length > 0) {
+      result = result.filter((t) => activeStatuses.includes(t.statusKey));
+    }
+    if (regionFilter) {
+      result = result.filter((t) => t.regionName === regionFilter);
+    }
+    return result;
+  }, [filterStatus, regionFilter]);
+
+  const filteredSchedule = applyFilter(todaySchedule);
+
+  // 필터 범위 기준 타임라인 시간대 (기본 08:00~18:30, 이 범위를 벗어나는 작업이 있으면 확장)
+  // [버그 수정] 기존엔 08:00~18:30로 고정돼 있어서, 이 범위 밖 작업은 위치 계산이
+  // 음수/100% 초과가 되어 화면에서 잘려 보이지 않았음
+  const times = filteredSchedule.flatMap((t) => [timeToMinutes(t.startTime), timeToMinutes(t.endTime)]);
+  const DAY_START = Math.min(timeToMinutes("08:00"), ...times.length ? times : [Infinity]);
+  const DAY_END   = Math.max(timeToMinutes("18:30"), ...times.length ? times : [-Infinity]);
+  const DAY_TOTAL = DAY_END - DAY_START;
+
+  const TIMELINE_HOURS = [];
+  for (let m = DAY_START; m <= DAY_END; m += 30) {
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    TIMELINE_HOURS.push(`${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`);
+  }
+
+  function calcTop(time)   { return ((timeToMinutes(time) - DAY_START) / DAY_TOTAL) * 100; }
+  function calcHeight(s, e){ return ((timeToMinutes(e) - timeToMinutes(s)) / DAY_TOTAL) * 100; }
+
+  // ── 일간 데이터 조회 ──────────────────────────
   useEffect(() => {
     let mounted = true;
     setLoading(true);
     setError(null);
     setWorkHours(null);
     setIsOff(false);
+    setWorkScheduleError(false);
 
     const dateParam = toDateParam(currentDate);
 
     // 실제 배정된 작업 목록
     const taskPromise = getEngineerTaskSchedule(dateParam)
       .then((res) => {
-        const list = res.data ?? [];
-        const mapped = list.map((item, idx) => {
-          const [h, m] = item.scheduledTime.split(":").map(Number);
-          const endH = h + 1;
-          const endTime = `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-          return {
-            assignmentId: item.requestId,
-            startTime: item.scheduledTime,
-            endTime,
-            statusKey: item.assignmentStatus,
-            productName: `${item.applianceBrand} ${item.applianceModelName}`,
-            productImageUrl: null,
-            customerName: item.customerName,
-            customerPhone: item.customerPhone,
-            address: `${item.visitRegionName} ${item.visitAddressDetail}`,
-            symptom: item.symptomName,
-            number: idx + 1,
-          };
+        if (!mounted) return;
+        const mapped = mapTasks(res.data);
+        setTodaySchedule(mapped);
+        mergeKnownRegions(mapped);
+        setSummary({
+          tasks: mapped.length,
+          doneCount: mapped.filter((m) => m.statusKey === "COMPLETED").length,
         });
-        if (mounted) {
-          setTodaySchedule(mapped);
-          setSummary({
-            tasks: mapped.length,
-            doneCount: mapped.filter((m) => m.statusKey === "COMPLETED").length,
-          });
-        }
       });
 
-    // 그 날의 근무표(가용 시간) — 없으면 400 에러 → 휴무/미등록으로 처리
+    // 그 날의 근무표(가용 시간)
+    // [버그 수정] 근무표 API가 실패하면 무조건 "휴무"로 간주해 화면 전체(작업 목록 포함)를
+    // 덮어써 버렸음. 이제는 근무표 조회 실패를 "휴무"와 구분해서, 배정된 작업은
+    // 근무표 상태와 무관하게 항상 표시하고, 진짜 휴무(status: "OFF")일 때만
+    // 안내 문구를 추가로 보여준다.
     const workPromise = getDailyWorkSchedule(dateParam)
       .then((res) => {
         if (!mounted) return;
@@ -149,10 +238,12 @@ export default function EngineerSchedulePage() {
         }
       })
       .catch(() => {
-        // 근무표 자체가 없는 날 → 휴무로 취급
+        // 근무표 조회 자체가 실패한 경우 — "휴무"로 단정하지 않음.
+        // 근무 시간 음영 표시만 생략하고, 작업 목록은 정상적으로 보여준다.
         if (mounted) {
-          setIsOff(true);
+          setIsOff(false);
           setWorkHours(null);
+          setWorkScheduleError(true);
         }
       });
 
@@ -168,13 +259,98 @@ export default function EngineerSchedulePage() {
     return () => { mounted = false; };
   }, [currentDate]);
 
-  const goNext = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
-  const goPrev = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
-  const goToday = () => setCurrentDate(new Date());
+  // ── 주간 데이터 조회 ──────────────────────────
+  useEffect(() => {
+    if (view !== "주간") return;
+    let mounted = true;
+    setWeekLoading(true);
 
-  const handleDetail = (item) => {
-    navigate("/engineer/work", { state: { assignmentId: item.assignmentId } });
+    const weekDates = getWeekDates(currentDate);
+    Promise.all(
+      weekDates.map((d) =>
+        getEngineerTaskSchedule(toDateParam(d))
+          .then((res) => ({ dateKey: toDateParam(d), tasks: mapTasks(res.data) }))
+          .catch(() => ({ dateKey: toDateParam(d), tasks: [] }))
+      )
+    ).then((results) => {
+      if (!mounted) return;
+      const map = {};
+      results.forEach((r) => { map[r.dateKey] = r.tasks; });
+      setWeekTasks(map);
+      mergeKnownRegions(results.flatMap((r) => r.tasks));
+    }).finally(() => { if (mounted) setWeekLoading(false); });
+
+    return () => { mounted = false; };
+  }, [view, currentDate]);
+
+  // ── 월간 데이터 조회 ──────────────────────────
+  useEffect(() => {
+    if (view !== "월간") return;
+    let mounted = true;
+    setMonthLoading(true);
+
+    const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+    const dates = Array.from({ length: lastDate }, (_, i) => new Date(calYear, calMonth, i + 1));
+
+    // 참고: 백엔드에 월 단위 범위 조회 API가 없어 하루치씩 병렬 호출함.
+    // 트래픽이 부담되면 /api/engineer/schedule?year=&month= 같은 범위 API 추가를 권장.
+    Promise.all(
+      dates.map((d) =>
+        getEngineerTaskSchedule(toDateParam(d))
+          .then((res) => ({ day: d.getDate(), count: (res.data ?? []).length }))
+          .catch(() => ({ day: d.getDate(), count: 0 }))
+      )
+    ).then((results) => {
+      if (!mounted) return;
+      const map = {};
+      results.forEach((r) => { map[r.day] = r.count; });
+      setMonthCounts(map);
+    }).finally(() => { if (mounted) setMonthLoading(false); });
+
+    return () => { mounted = false; };
+  }, [view, calYear, calMonth]);
+
+  const goNext = () => {
+    if (view === "주간") {
+      setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7));
+    } else if (view === "월간") {
+      if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(m => m + 1);
+    } else {
+      setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+    }
   };
+  const goPrev = () => {
+    if (view === "주간") {
+      setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7));
+    } else if (view === "월간") {
+      if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1);
+    } else {
+      setCurrentDate(d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+    }
+  };
+  const goToday = () => {
+    const now = new Date();
+    setCurrentDate(now);
+    setCalYear(now.getFullYear());
+    setCalMonth(now.getMonth());
+    setSelectedDate(now.getDate());
+  };
+
+  // [수정] assignmentId만 넘기면 EngineerWorkPage 탭이 항상 "전체"로 남아있어서,
+  // 클릭한 작업의 상태(statusKey)에 맞는 탭으로 바로 이동하도록 initialTab도 함께 전달
+  const handleDetail = (item) => {
+    navigate("/engineer/work", { state: { assignmentId: item.assignmentId, initialTab: item.statusKey } });
+  };
+
+  // 월간 뷰에서 날짜 클릭 → 그 날짜의 일간 뷰로 전환
+  const handleMonthDayClick = (d) => {
+    if (!d.cur || !d.date) return;
+    setCurrentDate(d.date);
+    setSelectedDate(d.day);
+    setView("일간");
+  };
+
+  const weekDates = getWeekDates(currentDate);
 
   return (
     <div className="esp">
@@ -188,29 +364,105 @@ export default function EngineerSchedulePage() {
           </div>
           <div className="esp-date-nav">
             <button className="esp-nav-btn" onClick={goPrev}><ChevronLeft size={15} /></button>
-            <span className="esp-date-label">{dateStr}</span>
+            <span className="esp-date-label">
+              {view === "월간" ? `${calYear}년 ${calMonth + 1}월` : dateStr}
+            </span>
             <button className="esp-nav-btn" onClick={goNext}><ChevronRight size={15} /></button>
           </div>
           <button className="esp-today-btn" onClick={goToday}><Calendar size={13} /> 오늘</button>
-          <div className="esp-filter-select"><span>전체 작업</span><ChevronDown size={13} /></div>
-          <div className="esp-filter-select"><MapPin size={12} color="#aaa" /><span>전체 지역</span><ChevronDown size={13} /></div>
+          {/* 전체 작업 상태 필터 드롭다운 (사이드바 filterStatus와 동일한 state 공유) */}
+          <div className="esp-filter-select" style={{ position: "relative" }}>
+            <button
+              onClick={() => { setStatusDropdownOpen(o => !o); setRegionDropdownOpen(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", font: "inherit", color: "inherit" }}
+            >
+              <span>{statusButtonLabel}</span><ChevronDown size={13} />
+            </button>
+            {statusDropdownOpen && (
+              <div style={{
+                position: "absolute", top: "130%", left: 0, zIndex: 20,
+                background: "#fff", border: "1px solid #eee", borderRadius: 8,
+                padding: 10, minWidth: 140, boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                display: "flex", flexDirection: "column", gap: 6,
+              }}>
+                {Object.keys(filterStatus).map((key) => (
+                  <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={filterStatus[key]}
+                      onChange={() => setFilterStatus(p => ({ ...p, [key]: !p[key] }))}
+                    />
+                    {key}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 전체 지역 필터 드롭다운 — 지역 마스터 API가 없어 로딩된 작업 데이터에서 지역명 추출 */}
+          <div className="esp-filter-select" style={{ position: "relative" }}>
+            <button
+              onClick={() => { setRegionDropdownOpen(o => !o); setStatusDropdownOpen(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", font: "inherit", color: "inherit" }}
+            >
+              <MapPin size={12} color="#aaa" /><span>{regionFilter ?? "전체 지역"}</span><ChevronDown size={13} />
+            </button>
+            {regionDropdownOpen && (
+              <div style={{
+                position: "absolute", top: "130%", left: 0, zIndex: 20,
+                background: "#fff", border: "1px solid #eee", borderRadius: 8,
+                padding: 10, minWidth: 140, maxHeight: 220, overflowY: "auto",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                display: "flex", flexDirection: "column", gap: 6,
+              }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="regionFilter"
+                    checked={!regionFilter}
+                    onChange={() => { setRegionFilter(null); setRegionDropdownOpen(false); }}
+                  />
+                  전체 지역
+                </label>
+                {knownRegions.map((r) => (
+                  <label key={r} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="regionFilter"
+                      checked={regionFilter === r}
+                      onChange={() => { setRegionFilter(r); setRegionDropdownOpen(false); }}
+                    />
+                    {r}
+                  </label>
+                ))}
+                {knownRegions.length === 0 && (
+                  <p style={{ fontSize: 11, color: "#aaa" }}>조회된 지역이 아직 없어요</p>
+                )}
+              </div>
+            )}
+          </div>
           <button className="esp-export-btn"><Download size={13} /> 일정 내보내기</button>
         </div>
       </div>
 
-      {loading && <p style={{ padding: "16px" }}>불러오는 중...</p>}
+      {loading && view === "일간" && <p style={{ padding: "16px" }}>불러오는 중...</p>}
       {error && <p style={{ padding: "16px", color: "red" }}>{error}</p>}
 
-      {!loading && !error && isOff && (
-        <div style={{ padding: "48px 16px", textAlign: "center", color: "#888" }}>
-          <p style={{ fontSize: 16, fontWeight: 600 }}>😴 휴무일입니다</p>
-          <p style={{ marginTop: 8, fontSize: 13 }}>이 날짜는 근무표에 등록되지 않았거나 휴무로 설정되어 있어요.</p>
-        </div>
-      )}
-
-      {!loading && !error && !isOff && (
+      {/* ── 일간 뷰 ── */}
+      {!error && view === "일간" && !loading && (
         <div className="esp-body">
           <div className="esp-timeline-wrap">
+            {isOff && (
+              <div style={{ padding: "12px 16px", color: "#888", background: "#f8f7ff", borderRadius: 8, marginBottom: 12, fontSize: 13 }}>
+                😴 이 날짜는 휴무로 등록되어 있어요. (배정된 작업이 있다면 아래에 표시됩니다)
+              </div>
+            )}
+            {workScheduleError && !isOff && (
+              <div style={{ padding: "12px 16px", color: "#b8860b", background: "#fff7e6", borderRadius: 8, marginBottom: 12, fontSize: 13 }}>
+                ⚠ 근무표 정보를 불러오지 못했어요. 근무 시간 음영 표시 없이 작업 목록만 보여드려요.
+              </div>
+            )}
+
             <div className="esp-timeline">
               <div className="esp-time-labels">
                 {TIMELINE_HOURS.map(t => (
@@ -261,7 +513,7 @@ export default function EngineerSchedulePage() {
                   </div>
                 ))}
 
-                {todaySchedule.map((item) => {
+                {filteredSchedule.map((item) => {
                   const s = STATUS_MAP[item.statusKey] ?? STATUS_MAP.WAITING;
                   return (
                     <div
@@ -292,94 +544,208 @@ export default function EngineerSchedulePage() {
                     </div>
                   );
                 })}
+
+                {filteredSchedule.length === 0 && (
+                  <p style={{ position: "absolute", top: "40%", left: 0, right: 0, textAlign: "center", color: "#aaa", fontSize: 13 }}>
+                    표시할 작업이 없습니다. (필터 설정을 확인해보세요)
+                  </p>
+                )}
               </div>
             </div>
             <p className="esp-drag-hint">ⓘ 작업 시간을 드래그하여 일정을 조절할 수 있습니다.</p>
           </div>
 
           <aside className="esp-aside">
-            <div className="esp-panel">
-              <div className="esp-cal-header">
-                <button className="esp-cal-nav" onClick={() => { if(calMonth === 0) { setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }}><ChevronLeft size={14} /></button>
-                <span className="esp-cal-title">{calYear}년 {calMonth+1}월</span>
-                <button className="esp-cal-nav" onClick={() => { if(calMonth === 11) { setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }}><ChevronRight size={14} /></button>
+            {renderSidePanels()}
+          </aside>
+        </div>
+      )}
+
+      {/* ── 주간 뷰 ── */}
+      {!error && view === "주간" && (
+        <div className="esp-body">
+          <div className="esp-timeline-wrap">
+            {weekLoading ? (
+              <p style={{ padding: 16, color: "#aaa" }}>불러오는 중...</p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
+                {weekDates.map((d) => {
+                  const key = toDateParam(d);
+                  const tasks = applyFilter(weekTasks[key] ?? []);
+                  const isToday = toDateParam(d) === toDateParam(new Date());
+                  return (
+                    <div key={key} style={{ minHeight: 200 }}>
+                      <div
+                        style={{
+                          textAlign: "center", padding: "6px 0", borderRadius: 6, marginBottom: 6,
+                          background: isToday ? "#eeeaff" : "transparent",
+                          fontWeight: 700, fontSize: 12,
+                          color: d.getDay() === 0 ? "#e04848" : d.getDay() === 6 ? "#3b6fd6" : "#1a1a2e",
+                        }}
+                      >
+                        {CALENDAR_DAYS[d.getDay()]} · {d.getDate()}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {tasks.map((t) => {
+                          const s = STATUS_MAP[t.statusKey] ?? STATUS_MAP.WAITING;
+                          return (
+                            <button
+                              key={t.assignmentId}
+                              onClick={() => handleDetail(t)}
+                              style={{
+                                textAlign: "left", border: "none", borderRadius: 8, padding: "8px",
+                                background: s.bg, cursor: "pointer",
+                              }}
+                            >
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a2e" }}>{t.startTime}</div>
+                              <div style={{ fontSize: 11, color: "#444", marginTop: 2 }}>{t.productName}</div>
+                              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{t.customerName} 고객</div>
+                            </button>
+                          );
+                        })}
+                        {tasks.length === 0 && (
+                          <p style={{ fontSize: 11, color: "#ccc", textAlign: "center", marginTop: 8 }}>-</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="esp-cal-grid">
+            )}
+          </div>
+          <aside className="esp-aside">
+            {renderSidePanels()}
+          </aside>
+        </div>
+      )}
+
+      {/* ── 월간 뷰 ── */}
+      {!error && view === "월간" && (
+        <div className="esp-body">
+          <div className="esp-timeline-wrap">
+            {monthLoading ? (
+              <p style={{ padding: 16, color: "#aaa" }}>불러오는 중...</p>
+            ) : (
+              <div className="esp-cal-grid" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
                 {CALENDAR_DAYS.map(d => <div key={d} className="esp-cal-day-label">{d}</div>)}
-                {calDays.map((d, i) => (
-                  <button
-                    key={i}
-                    className={`esp-cal-day ${!d.cur ? "esp-cal-day--other" : ""} ${d.cur && d.day === selectedDate && calMonth === currentDate.getMonth() ? "esp-cal-day--selected" : ""} ${d.cur && d.day === new Date().getDate() && calMonth === new Date().getMonth() ? "esp-cal-day--today" : ""}`}
-                    onClick={() => {
-                      if (d.cur) {
-                        setSelectedDate(d.day);
-                        setCurrentDate(new Date(calYear, calMonth, d.day));
-                      }
-                    }}
-                  >
-                    {d.day}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="esp-panel">
-              <h3 className="esp-panel__title">오늘 일정 요약</h3>
-              <div className="esp-summary-grid">
-                <div className="esp-summary-item esp-summary-item--purple">
-                  <Calendar size={16} color="#5B4FF5" />
-                  <div>
-                    <p className="esp-summary-item__label">예정된 작업</p>
-                    <p className="esp-summary-item__value">{summary.tasks}건</p>
-                  </div>
-                </div>
-                <div className="esp-summary-item esp-summary-item--green">
-                  <ChevronRight size={16} color="#16a34a" />
-                  <div>
-                    <p className="esp-summary-item__label">완료</p>
-                    <p className="esp-summary-item__value">{summary.doneCount}건</p>
-                  </div>
-                </div>
-              </div>
-              {workHours && (
-                <p style={{ marginTop: 12, fontSize: 12, color: "#888" }}>
-                  근무 시간 {workHours.start} - {workHours.end}
-                </p>
-              )}
-            </div>
-
-            <div className="esp-panel">
-              <h3 className="esp-panel__title">일정 필터</h3>
-              <div className="esp-filter-list">
-                {[
-                  { key: "전체",    color: "#5B4FF5" },
-                  { key: "방문예정", color: "#5B4FF5" },
-                  { key: "진행중",  color: "#16a34a" },
-                  { key: "완료",   color: "#aaa"    },
-                  { key: "취소",   color: "#ddd"    },
-                ].map(f => (
-                  <label key={f.key} className="esp-filter-item">
-                    <input
-                      type="checkbox"
-                      checked={f.key === "전체" ? Object.values(filterStatus).every(Boolean) : filterStatus[f.key] ?? false}
-                      onChange={() => {
-                        if (f.key === "전체") {
-                          const all = Object.values(filterStatus).every(Boolean);
-                          setFilterStatus(Object.fromEntries(Object.keys(filterStatus).map(k => [k, !all])));
-                        } else {
-                          setFilterStatus(p => ({ ...p, [f.key]: !p[f.key] }));
-                        }
+                {calDays.map((d, i) => {
+                  const count = d.cur ? (monthCounts[d.day] ?? 0) : 0;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleMonthDayClick(d)}
+                      disabled={!d.cur}
+                      style={{
+                        aspectRatio: "1", border: "1px solid #f0f0f5", borderRadius: 8,
+                        background: !d.cur ? "#fafafa" : "#fff",
+                        color: !d.cur ? "#ccc" : "#1a1a2e",
+                        cursor: d.cur ? "pointer" : "default",
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
                       }}
-                      style={{ accentColor: f.color }}
-                    />
-                    <span>{f.key}</span>
-                  </label>
-                ))}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{d.day}</span>
+                      {d.cur && count > 0 && (
+                        <span style={{ fontSize: 10, color: "#5B4FF5", fontWeight: 700 }}>{count}건</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            )}
+          </div>
+          <aside className="esp-aside">
+            {renderSidePanels()}
           </aside>
         </div>
       )}
     </div>
   );
+
+  // 세 뷰에서 공통으로 쓰는 우측 사이드 패널(미니 달력 + 요약 + 필터)
+  function renderSidePanels() {
+    return (
+      <>
+        <div className="esp-panel">
+          <div className="esp-cal-header">
+            <button className="esp-cal-nav" onClick={() => { if(calMonth === 0) { setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); }}><ChevronLeft size={14} /></button>
+            <span className="esp-cal-title">{calYear}년 {calMonth+1}월</span>
+            <button className="esp-cal-nav" onClick={() => { if(calMonth === 11) { setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); }}><ChevronRight size={14} /></button>
+          </div>
+          <div className="esp-cal-grid">
+            {CALENDAR_DAYS.map(d => <div key={d} className="esp-cal-day-label">{d}</div>)}
+            {calDays.map((d, i) => (
+              <button
+                key={i}
+                className={`esp-cal-day ${!d.cur ? "esp-cal-day--other" : ""} ${d.cur && d.day === selectedDate && calMonth === currentDate.getMonth() ? "esp-cal-day--selected" : ""} ${d.cur && d.day === new Date().getDate() && calMonth === new Date().getMonth() ? "esp-cal-day--today" : ""}`}
+                onClick={() => {
+                  if (d.cur) {
+                    setSelectedDate(d.day);
+                    setCurrentDate(new Date(calYear, calMonth, d.day));
+                    setView("일간");
+                  }
+                }}
+              >
+                {d.day}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="esp-panel">
+          <h3 className="esp-panel__title">오늘 일정 요약</h3>
+          <div className="esp-summary-grid">
+            <div className="esp-summary-item esp-summary-item--purple">
+              <Calendar size={16} color="#5B4FF5" />
+              <div>
+                <p className="esp-summary-item__label">예정된 작업</p>
+                <p className="esp-summary-item__value">{summary.tasks}건</p>
+              </div>
+            </div>
+            <div className="esp-summary-item esp-summary-item--green">
+              <ChevronRight size={16} color="#16a34a" />
+              <div>
+                <p className="esp-summary-item__label">완료</p>
+                <p className="esp-summary-item__value">{summary.doneCount}건</p>
+              </div>
+            </div>
+          </div>
+          {workHours && (
+            <p style={{ marginTop: 12, fontSize: 12, color: "#888" }}>
+              근무 시간 {workHours.start} - {workHours.end}
+            </p>
+          )}
+        </div>
+
+        <div className="esp-panel">
+          <h3 className="esp-panel__title">일정 필터</h3>
+          <div className="esp-filter-list">
+            {[
+              { key: "전체",    color: "#5B4FF5" },
+              { key: "방문예정", color: "#5B4FF5" },
+              { key: "진행중",  color: "#16a34a" },
+              { key: "완료",   color: "#aaa"    },
+              { key: "취소",   color: "#e04848" },
+            ].map(f => (
+              <label key={f.key} className="esp-filter-item">
+                <input
+                  type="checkbox"
+                  checked={f.key === "전체" ? Object.values(filterStatus).every(Boolean) : filterStatus[f.key] ?? false}
+                  onChange={() => {
+                    if (f.key === "전체") {
+                      const all = Object.values(filterStatus).every(Boolean);
+                      setFilterStatus(Object.fromEntries(Object.keys(filterStatus).map(k => [k, !all])));
+                    } else {
+                      setFilterStatus(p => ({ ...p, [f.key]: !p[f.key] }));
+                    }
+                  }}
+                  style={{ accentColor: f.color }}
+                />
+                <span>{f.key}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
 }
