@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Plus,
   CalendarCheck,
@@ -1156,6 +1156,7 @@ export default function CustomerAppliances() {
   const [appliances, setAppliances] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getMyAppliances()
@@ -1268,10 +1269,6 @@ export default function CustomerAppliances() {
                   </button>
                 ))}
               </div>
-              <div className="ca-sort">
-                <span>등록순</span>
-                <ChevronDown size={14} />
-              </div>
             </div>
 
             {/* 가전 그리드 */}
@@ -1352,7 +1349,10 @@ export default function CustomerAppliances() {
                     >
                       상세 및 이력 보기
                     </button>
-                    <button className="ca-btn-check">
+                    <button
+                      className="ca-btn-check"
+                      onClick={() => navigate("/customer/as?reserve=true")}
+                    >
                       <CalendarCheck size={13} /> A/S 예약
                     </button>
                   </div>
