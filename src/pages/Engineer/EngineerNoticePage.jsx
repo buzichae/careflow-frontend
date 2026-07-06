@@ -108,17 +108,16 @@ export default function EngineerNoticePage() {
   }
 
   async function handleOpenNotification(item) {
-    // [버그 수정] 응답 필드명이 isRead가 아니라 read로 옴 (Java boolean getter
-    // isRead()가 Jackson 직렬화 시 "is"가 빠져 read로 나감 — LMS 페이지의
-    // isLmsCompleted → lmsCompleted 때와 동일한 패턴).
-    if (item.read) return;
-    setList((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)));
+    // [버그 수정] 필드명이 read ↔ isRead로 왔다 갔다 했음. 최신 확인 결과
+    // 실제 응답은 다시 isRead로 옴 (DB 저장 자체는 정상, 응답 필드명만 변동).
+    if (item.isRead) return;
+    setList((prev) => prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n)));
     try {
       await markNotificationRead(item.id);
       fetchSummary();
     } catch (e) {
       console.error("읽음 처리 실패", e);
-      setList((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: false } : n)));
+      setList((prev) => prev.map((n) => (n.id === item.id ? { ...n, isRead: false } : n)));
     }
   }
 
@@ -225,7 +224,7 @@ export default function EngineerNoticePage() {
 
         {!loading && !error && list.map((item) => {
           const typeInfo = TYPE_MAP[item.type];
-          const isRead = !!item.read;
+          const isRead = !!item.isRead;
           return (
             <div
               key={item.id}

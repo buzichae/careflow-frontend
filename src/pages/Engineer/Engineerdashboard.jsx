@@ -17,11 +17,15 @@ const WORK_STATUS_STEPS = [
   { key: "COMPLETED",         label: "완료",   sub: "작업 완료"   },
 ];
 
+// [버그 수정] 백엔드의 상태 변경 API(updateEngineerTaskStatus)는 출발/도착/작업시작
+// 3단계만 지원하고, "완료(COMPLETED)"는 이 API로 바꿀 수 없게 막혀있음
+// ("해당 API로는 출발/도착/작업시작 상태만 변경 가능합니다." 403 에러).
+// 완료 처리는 보고서 제출(submitWorkReport) 시 백엔드가 자동으로 처리함.
+// → "작업 완료" 퀵액션 버튼을 없애고, "수리 시작" 다음엔 바로 "보고서 작성"으로 연결.
 const QUICK_ACTIONS = [
   { key: "ENGINEER_DEPARTED", label: "출발",      color: "blue",     icon: Car           },
   { key: "ENGINEER_ARRIVED",  label: "도착",      color: "purple",   icon: MapPin        },
   { key: "IN_PROGRESS",       label: "수리 시작",  color: "green",    icon: Wrench        },
-  { key: "COMPLETED",         label: "작업 완료",  color: "orange",   icon: ClipboardCheck },
   { key: "REPORT",            label: "보고서 작성", color: "lavender", icon: FileText      },
 ];
 
@@ -335,8 +339,8 @@ useEffect(() => {
                   return (
                     <button
                       key={a.key}
-                      className={`ed-quick-btn ${workStatus === "COMPLETED" ? "ed-quick-btn--active" : "ed-quick-btn--disabled"}`}
-                      disabled={workStatus !== "COMPLETED"}
+                      className={`ed-quick-btn ${workStatus === "IN_PROGRESS" ? "ed-quick-btn--active" : "ed-quick-btn--disabled"}`}
+                      disabled={workStatus !== "IN_PROGRESS"}
                       onClick={() => handleQuickAction(a.key)}
                     >
                       <a.icon size={16} />

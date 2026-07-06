@@ -35,10 +35,10 @@ const TARGETS = [
 ];
 
 const FLOATING_ICONS = [
-  { icon: <Wrench size={24} color="#5B4FF5" />, label: "수리/점검", top: "26%", left: "15%" },
-  { icon: <Monitor size={24} color="#5B4FF5" />, label: "등록/관리", top: "7%", left: "28%" },
-  { icon: <Bell size={24} color="#5B4FF5" />, label: "소모품 교체 알림", top: "16%", right: "11%" },
-  { icon: <RefreshCw size={24} color="#5B4FF5" />, label: "중고 거래", top: "43%", right: "8%" },
+  { icon: <Wrench size={24} color="#5B4FF5" />, label: "수리/점검", top: "26%", left: "31%" },
+  { icon: <Monitor size={24} color="#5B4FF5" />, label: "등록/관리", top: "7%", left: "38%" },
+  { icon: <Bell size={24} color="#5B4FF5" />, label: "소모품 교체 알림", top: "16%", right: "29%" },
+  { icon: <RefreshCw size={24} color="#5B4FF5" />, label: "중고 거래", top: "43%", right: "28%" },
 ];
 
 export default function ServicePage() {

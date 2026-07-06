@@ -23,6 +23,18 @@ const AS_STATUS_MAP = {
 const IN_PROGRESS_STATUSES = ["ACCEPTED", "IN_PROGRESS", "ASSIGNED"];
 const DONE_STATUSES        = ["COMPLETED", "PAID"];
 
+// [신규] inProgressWork.progressStatus는 as_status_logs의 세부 작업 로그값
+// (WAITING/ENGINEER_DEPARTED/ENGINEER_ARRIVED/IN_PROGRESS/COMPLETED)이라
+// as_requests.status(AS_STATUS_MAP)와는 다른 값 체계임. 영문 그대로 노출되던
+// 문제를 고쳐 한글 라벨로 표시.
+const PROGRESS_LOG_MAP = {
+  WAITING:           "배정 대기",
+  ENGINEER_DEPARTED: "출발",
+  ENGINEER_ARRIVED:  "도착",
+  IN_PROGRESS:       "작업 중",
+  COMPLETED:         "작업 완료(보고서 제출됨) · 고객 승인 대기",
+};
+
 function Avatar({ name, size = 60 }) {
   return (
     <div className="ecp-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
@@ -98,10 +110,28 @@ export default function EngineerCustomerPage() {
     .filter(a => a.finalAmount != null)
     .reduce((sum, a) => sum + a.finalAmount, 0);
 
-  const filteredAs = asTab === "전체"   ? asHistory
-    : asTab === "진행 중" ? asHistory.filter(a => IN_PROGRESS_STATUSES.includes(a.status))
-    : asTab === "완료"    ? asHistory.filter(a => DONE_STATUSES.includes(a.status))
-    : asHistory.filter(a => a.status === "CANCELLED");
+  // [수정] 이전엔 inProgressWork에 createdAt 필드 자체가 없어서 null로
+  // 하드코딩해뒀었는데, 백엔드가 이제 실제 값을 내려주므로 그대로 사용.
+  // __isInProgress 플래그로 asHistory의 실제 완료 건과 구분.
+  const inProgressRow = c.inProgressWork ? {
+    __isInProgress: true,
+    requestId: c.inProgressWork.requestId,
+    createdAt: c.inProgressWork.createdAt,
+    productName: c.inProgressWork.productName,
+    symptom: c.inProgressWork.symptom,
+    status: c.inProgressWork.status,
+    visitDate: c.inProgressWork.visitDate,
+    finalAmount: null, // 완료 전이라 결제금액은 여전히 없음(정상)
+  } : null;
+
+  // [버그 수정] asHistory 항목의 status/visitDate가 빈 문자열("")로 오는 경우가
+  // 있어서 "완료" 탭 필터(a.status === COMPLETED)에 안 걸려 안 보이던 문제.
+  // asHistory에 들어있다는 것 자체가 백엔드 정의상 이미 "완료"이므로, status
+  // 필드 값과 무관하게 asHistory 전체를 완료로 취급.
+  const filteredAs = asTab === "전체"   ? (inProgressRow ? [inProgressRow, ...asHistory] : asHistory)
+    : asTab === "진행 중" ? (inProgressRow ? [inProgressRow] : [])
+    : asTab === "완료"    ? asHistory
+    : []; // 취소/거절 이력은 백엔드 미지원
 
   return (
     <div className="ecp">
@@ -185,15 +215,36 @@ export default function EngineerCustomerPage() {
                 <span>상태</span><span>방문일</span><span>최종 결제금액</span><span></span>
               </div>
               {filteredAs.map(a => {
-                const s = AS_STATUS_MAP[a.status] ?? { label: a.status, type: "pending" };
+                // [버그 수정] asHistory 항목(진행중 아닌 것)은 status 필드가
+                // 비어있거나("") 신뢰할 수 없어도, asHistory에 있다는 것 자체가
+                // 이미 "완료"라는 뜻이므로 항상 완료 배지로 표시. 진행중 행만
+                // 실제 status(AS_STATUS_MAP)를 그대로 보여줌.
+                // [버그 수정] inProgressWork에 들어있다는 것 자체가 "아직 고객
+                // 승인 전(=미완료)"이라는 뜻인데, 그 안의 status 필드가 COMPLETED로
+                // 와서 "완료" 배지로 잘못 표시되던 문제. (보고서 제출 시
+                // as_requests.status는 COMPLETED로 바뀌지만, 이건 "고객 승인 대기"
+                // 상태일 뿐 화면상 "완료"로 보이면 안 됨.) inProgressWork에 속한
+                // 행은 status 값과 무관하게 항상 "진행 중"으로 고정 표시.
+                const s = a.__isInProgress
+                  ? { label: "진행 중", type: "accepted" }
+                  : { label: "완료", type: "completed" };
+                // [신규] asHistory 항목에는 reportId가 있어서 보고서 상세로
+                // 이동 가능. inProgressWork 행은 이 API 응답에 reportId가
+                // 없어서(보고서가 있어도 여기선 안 내려줌) 클릭 비활성화.
+                const clickable = !!a.reportId;
                 return (
-                  <div key={a.requestId} className="ecp-as-table__row">
+                  <div
+                    key={`${a.__isInProgress ? "inprogress" : "done"}-${a.requestId}`}
+                    className="ecp-as-table__row"
+                    onClick={() => { if (clickable) navigate(`/engineer/reports/${a.reportId}`); }}
+                    style={{ cursor: clickable ? "pointer" : "default" }}
+                  >
                     <span className="ecp-as-table__id">{a.requestId}</span>
-                    <span>{a.createdAt}</span>
+                    <span>{a.createdAt || "-"}</span>
                     <span>{a.productName}</span>
                     <span>{a.symptom}</span>
                     <span><span className={`ecp-as-badge ecp-as-badge--${s.type}`}>{s.label}</span></span>
-                    <span>{a.visitDate}</span>
+                    <span>{a.visitDate || "-"}</span>
                     <span className="ecp-as-table__amount">{a.finalAmount ? `${a.finalAmount.toLocaleString()}원` : "-"}</span>
                     <span><ChevronRight size={14} color="#aaa" /></span>
                   </div>
@@ -201,15 +252,12 @@ export default function EngineerCustomerPage() {
               })}
               {filteredAs.length === 0 && (
                 <p style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>
-                  {/* [확정] 백엔드 회신: asHistory는 완료(보고서 작성 완료)된 건만
-                      포함하도록 설계됨. "진행 중"/"취소" 탭은 이 배열에 해당
-                      데이터가 원래 없어서 항상 비어있는 게 정상 — 진행 중인 작업은
-                      위쪽 "진행 중인 작업" 패널에서 확인 가능. */}
-                  {asTab === "진행 중"
-                    ? "진행 중인 작업은 위의 \"진행 중인 작업\" 패널에서 확인해주세요."
-                    : asTab === "취소"
-                      ? "취소/거절 이력은 현재 이 화면에서 제공되지 않습니다."
-                      : "A/S 이력이 없습니다."}
+                  {/* [수정] 진행 중인 작업(inProgressWork)을 이제 이 테이블에도
+                      직접 표시하므로, 여기 안내가 뜨는 건 정말로 해당 데이터가
+                      없을 때(예: 진행 중인 작업 자체가 없음)뿐임. */}
+                  {asTab === "취소"
+                    ? "취소/거절 이력은 현재 이 화면에서 제공되지 않습니다."
+                    : "A/S 이력이 없습니다."}
                 </p>
               )}
             </div>
@@ -254,8 +302,11 @@ export default function EngineerCustomerPage() {
               <div className="ecp-inprogress-card">
                 <div className="ecp-inprogress-card__header">
                   <span className="ecp-inprogress-card__id">{c.inProgressWork.requestId}</span>
-                  <span className={`ecp-as-badge ecp-as-badge--${AS_STATUS_MAP[c.inProgressWork.status]?.type ?? "pending"}`}>
-                    {AS_STATUS_MAP[c.inProgressWork.status]?.label ?? c.inProgressWork.status}
+                  {/* [버그 수정] inProgressWork에 있다는 것 자체가 "아직 미완료"라는
+                      뜻인데, status 필드가 COMPLETED로 와서 "완료" 배지가 뜨던 문제.
+                      status 값과 무관하게 이 패널은 항상 "진행 중"으로 고정 표시. */}
+                  <span className="ecp-as-badge ecp-as-badge--accepted">
+                    진행 중
                   </span>
                 </div>
                 <div className="ecp-inprogress-card__body">
@@ -274,7 +325,7 @@ export default function EngineerCustomerPage() {
                   <div className="ecp-inprogress-card__row">
                     <ChevronRight size={12} color="#aaa" />
                     <span className="ecp-inprogress-card__label">진행 상태</span>
-                    <span>{c.inProgressWork.progressStatus ?? "-"}</span>
+                    <span>{PROGRESS_LOG_MAP[c.inProgressWork.progressStatus] ?? c.inProgressWork.progressStatus ?? "-"}</span>
                   </div>
                 </div>
                 <button

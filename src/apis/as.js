@@ -35,6 +35,10 @@ export const review = async(requestId, rating, content) => {
     return response.data;
 }
 
+// 고객용: 본인이 특정 A/S 요청에 작성한 리뷰 조회 (없으면 404)
+export const getMyReview = (requestId) =>
+    api.get(`/api/customer/as-requests/${requestId}/reviews`);
+
 export const createAsRequest = (payload) =>
     api.post("/api/as-requests", payload);
 
