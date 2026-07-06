@@ -76,6 +76,10 @@ export const getMonthlyWorkSchedule = (year, month) =>
 export const getDailyWorkSchedule = (date) =>
   api.get("/api/engineer/my-schedule/schedule", { params: { date } });
 
+// 근무표 수정 (workDate 기준 upsert — 슬롯 교체 또는 신규 생성, 원자적)
+export const updateEngineerWorkSchedule = (workDate, timeSlots) =>
+  api.put("/api/engineer/my-schedule", { workDate, timeSlots });
+
 export const deleteEngineerWorkSchedule = (scheduleId) =>
   api.delete(`/api/engineer/my-schedule/${scheduleId}`);
 
