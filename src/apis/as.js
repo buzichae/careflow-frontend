@@ -42,6 +42,10 @@ export const getMyReview = (requestId) =>
 export const createAsRequest = (payload) =>
     api.post("/api/as-requests", payload);
 
+// 증상별 예상 수리 비용 조회 (avgCost가 null이면 아직 집계 전 — "데이터 수집 중")
+export const getExpectedRepairCost = (symptomId) =>
+    api.get(`/api/as-requests/expected-cost/${symptomId}`);
+
 export const processPayment = (requestId) =>
     api.post(`/api/customer/as-requests/${requestId}/payment`);
 

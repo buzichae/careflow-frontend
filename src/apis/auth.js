@@ -22,9 +22,6 @@ export const getUserInfo = () => api.get("/api/users/me");
 // 고객 정보 수정
 export const updateUserProfile = (data) => api.patch("/api/users/me", data);
 
-// 지역명으로 regionId 조회 -> regionId로 넘기도록 수정 필요
-export const getRegionByName = (name) => api.get("/api/regions", { data: { name } });
-
 // 비밀번호 찾기
 export const sendPasswordResetCode = (email) =>
   api.post("/api/auth/password/send-code", { email });

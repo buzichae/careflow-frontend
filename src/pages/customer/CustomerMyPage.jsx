@@ -11,36 +11,9 @@ import {
   UserRound,
 } from "lucide-react";
 import "../../styles/Customer/CustomerMyPage.css";
-import { getUserInfo, updateUserProfile, getRegionByName } from "../../apis/auth";
+import { getUserInfo, updateUserProfile } from "../../apis/auth";
 import { PHONE_REGEX, formatPhoneInput } from "../../utils/validators";
-
-const REGIONS = {
-  서울특별시: [
-    "강남구",
-    "강서구",
-    "노원구",
-    "마포구",
-    "서초구",
-    "송파구",
-    "용산구",
-    "종로구",
-  ],
-  경기도: [
-    "부천시",
-    "성남시",
-    "수원시",
-    "시흥시",
-    "안양시",
-    "의정부시",
-    "화성시",
-  ],
-  인천광역시: ["남동구", "부평구", "서구", "연수구", "중구"],
-  부산광역시: ["동래구", "부산진구", "사상구", "수영구", "해운대구"],
-  대구광역시: ["달서구", "동구", "북구", "수성구", "중구"],
-  대전광역시: ["대덕구", "서구", "유성구", "중구"],
-  광주광역시: ["광산구", "남구", "동구", "북구", "서구"],
-  울산광역시: ["남구", "동구", "북구", "울주군", "중구"],
-};
+import { REGIONS, findRegionById } from "../../constants/regions";
 
 /* 섹션 카드 */
 function SectionCard({ icon: Icon, title, children }) {
@@ -123,6 +96,7 @@ export default function CustomerMyPage() {
   /* ── 거주지 ── */
   const [regionParent, setRegionParent] = useState("");
   const [regionSub, setRegionSub] = useState("");
+  const [regionId, setRegionId] = useState(null);
   const [addressDetail, setAddressDetail] = useState("");
   const [addrMsg, setAddrMsg] = useState(null);
 
@@ -138,14 +112,15 @@ export default function CustomerMyPage() {
       setName(d.name ?? "");
       setPhone(d.phone ?? "");
       setAddressDetail(d.addressDetail ?? "");
-      if (d.regionName) {
-        // regionName은 depth=2(구·시) 이름 — 부모 시·도 찾기
-        const parent = Object.entries(REGIONS).find(([, subs]) =>
-          subs.includes(d.regionName)
-        );
-        if (parent) {
-          setRegionParent(parent[0]);
-          setRegionSub(d.regionName);
+      // regionId(정수)로 정확히 찾는다 — 이름 매칭은 REGIONS 목록이 실제
+      // regions 테이블 전체(17개 시·도)를 담고 있지 않으면 누락된 지역에서
+      // 항상 실패하므로 사용하지 않는다.
+      if (d.regionId != null) {
+        const found = findRegionById(d.regionId);
+        if (found) {
+          setRegionParent(found.parent);
+          setRegionSub(found.sub.name);
+          setRegionId(found.sub.id);
         }
       }
     }).catch(() => {});
@@ -190,11 +165,6 @@ export default function CustomerMyPage() {
   async function handleAddrSave(e) {
     e.preventDefault();
     try {
-      let regionId = null;
-      if (regionSub) {
-        const res = await getRegionByName(regionSub);
-        regionId = res.data?.id ?? res.data?.regionId ?? null;
-      }
       await updateUserProfile({ regionId, addressDetail: addressDetail || null });
       toast(setAddrMsg, "success", "거주지가 저장되었습니다.");
     } catch (err) {
@@ -205,6 +175,12 @@ export default function CustomerMyPage() {
   function handleRegionParent(v) {
     setRegionParent(v);
     setRegionSub("");
+    setRegionId(null);
+  }
+
+  function handleRegionSub(sub) {
+    setRegionSub(sub.name);
+    setRegionId(sub.id);
   }
 
   return (
@@ -349,14 +325,19 @@ export default function CustomerMyPage() {
                 <div className="cmp-select-wrap">
                   <select
                     className="cmp-select"
-                    value={regionSub}
-                    onChange={(e) => setRegionSub(e.target.value)}
+                    value={regionId ?? ""}
+                    onChange={(e) => {
+                      const found = subRegions.find(
+                        (r) => String(r.id) === e.target.value,
+                      );
+                      if (found) handleRegionSub(found);
+                    }}
                     disabled={!regionParent}
                   >
                     <option value="">구·시 선택</option>
                     {subRegions.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
+                      <option key={r.id} value={r.id}>
+                        {r.name}
                       </option>
                     ))}
                   </select>

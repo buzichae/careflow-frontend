@@ -31,6 +31,7 @@ import {
   getAsRequestDetail,
   createAsRequest,
   processPayment,
+  getExpectedRepairCost,
 } from "../../apis/as";
 import { getMyAppliances } from "../../apis/appliances";
 import {
@@ -458,6 +459,8 @@ function ASRequestFlow({ onClose, onSuccess }) {
   /* 최종 접수 */
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  /* 예상 수리 비용 (증상 선택 시 서버 조회) */
+  const [expectedCost, setExpectedCost] = useState(null); // { avgCost, sampleCount } | null
 
   const token = localStorage.getItem("token");
   const customerId = token ? jwtDecode(token).sub : null;
@@ -553,6 +556,25 @@ function ASRequestFlow({ onClose, onSuccess }) {
   const subRegions = regionParent ? REGIONS[regionParent] : [];
   const selectedSym = symptoms.find((s) => s.code === symptomCode);
 
+  /* 증상 선택 시 예상 수리 비용 조회 (Quartz 집계 전이면 avgCost=null → "데이터 수집 중") */
+  useEffect(() => {
+    if (!selectedSym) {
+      setExpectedCost(null);
+      return;
+    }
+    let cancelled = false;
+    getExpectedRepairCost(selectedSym.id)
+      .then((res) => {
+        if (!cancelled) setExpectedCost(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setExpectedCost(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSym?.id]);
+
   /* 수동: 선택된 기사의 가능 날짜 목록 */
   const availableDates = Object.keys(availability).sort();
   /* 수동: 선택된 날짜의 가능 시간 슬롯 */
@@ -645,8 +667,8 @@ function ASRequestFlow({ onClose, onSuccess }) {
     {
       label: "예상 수리 비용",
       value:
-        selectedSym?.avgCost != null
-          ? `${selectedSym.avgCost.toLocaleString()} 원`
+        expectedCost?.avgCost != null
+          ? `${expectedCost.avgCost.toLocaleString()} 원`
           : "데이터 수집 중",
       highlight: true,
     },
