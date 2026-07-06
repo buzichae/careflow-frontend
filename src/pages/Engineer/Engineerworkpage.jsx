@@ -441,7 +441,13 @@ export default function EngineerWorkPage() {
                         const currentIdx = WORK_STEPS.findIndex((s) => s.key === selectedItem.logStatus);
                         const nextStep = WORK_STEPS[currentIdx + 1];
 
-                        if (!nextStep) {
+                        // [버그 수정] nextStep이 "COMPLETED"인 경우, 백엔드
+                        // 상태변경 API(updateEngineerTaskStatus)는 출발/도착/작업시작
+                        // 3단계만 지원하고 COMPLETED로의 전환은 지원 안 함
+                        // ("해당 API로는 출발/도착/작업시작 상태만 변경 가능합니다." 403).
+                        // 완료 처리는 보고서 제출(submitWorkReport) 시 백엔드가 자동으로
+                        // 처리하므로, 이 시점부터는 상태변경 버튼 대신 보고서 작성으로 연결.
+                        if (!nextStep || nextStep.key === "COMPLETED") {
                           return (
                             <button
                               onClick={() => handleWriteReport(selectedItem)}

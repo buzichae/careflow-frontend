@@ -16,6 +16,13 @@ export const getEngineerCustomers = (params) => {
   return api.get("/api/engineer/customers", { params });
 };
 
+// [신규 — 백엔드 확인 필요] 교체 부품 목록 조회 (드롭다운 검색용)
+// repair_parts 마스터 테이블 기준: repairPartId, partCode, partName, spec, baseUnitPrice
+// is_active=true인 것만 내려줘야 함(단종 부품 제외)
+// 응답 예시: [{ repairPartId: 1, partCode: "COMP-AC-R410A-1HP", partName: "컴프레서", spec: "1HP R410A", baseUnitPrice: 150000 }, ...]
+export const getRepairParts = (search) =>
+  api.get("/api/engineer/repair-parts", { params: { search } });
+
 // [신규 — 백엔드 확인 필요] 담당 고객들이 보유한 가전 브랜드 목록 (중복 제거)
 // brand 컬럼이 ENUM이 아니라 자유 텍스트(VARCHAR)라 마스터 테이블이 없음.
 // 실제 등록된 값 기준으로 드롭다운을 채우려면 이런 distinct 조회 API가 필요합니다.

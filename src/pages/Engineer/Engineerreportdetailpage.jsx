@@ -32,6 +32,15 @@ function formatDateOnly(isoString) {
   return isoString.split("T")[0]; // "2025-08-02T02:00:00" → "2025-08-02"
 }
 
+// [버그 수정] 도착 시간/작업 시간/진행 이력에 "2026-07-06T08:54:38"처럼
+// ISO 원본 문자열의 "T"가 그대로 노출되던 문제. "YYYY-MM-DD HH:mm" 형태로 변환.
+function formatDateTime(isoString) {
+  if (!isoString) return "-";
+  const [datePart, timePart] = isoString.split("T");
+  if (!timePart) return datePart;
+  return `${datePart} ${timePart.slice(0, 5)}`; // 초 단위는 생략하고 시:분까지만
+}
+
 export default function EngineerReportDetailPage() {
   const navigate = useNavigate();
   const { reportId } = useParams(); // 라우트가 /engineer/reports/:reportId 라고 가정
@@ -100,7 +109,11 @@ export default function EngineerReportDetailPage() {
           <span className="erdp-breadcrumb__current">보고서 상세</span>
         </div>
         <div className="erdp-topbar__actions">
-          <button className="erdp-back-btn" onClick={() => navigate(-1)}>
+          {/* [버그 수정] navigate(-1)(브라우저 뒤로가기)를 쓰고 있었는데,
+              "수정 페이지 → 상세 페이지"로 새로 이동한 직후엔 히스토리상
+              "뒤로"가 목록이 아니라 수정 페이지로 돌아가버리는 문제가 있었음.
+              → 항상 명시적으로 목록 경로로 이동하도록 변경. */}
+          <button className="erdp-back-btn" onClick={() => navigate("/engineer/report")}>
             <ChevronLeft size={13} /> 목록으로
           </button>
           {/* [수정] 승인 완료된 보고서는 수정 버튼을 아예 노출하지 않음 */}
@@ -118,7 +131,10 @@ export default function EngineerReportDetailPage() {
       </div>
 
       <div className="erdp-id-row">
-        <span className="erdp-request-id">{d.requestId}</span>
+        {/* [연동 준비] 백엔드에 형식화된 접수번호(requestCode) 필드 추가 요청함.
+            아직 응답에 없으면 지금처럼 숫자(requestId) 그대로 표시됨 — 필드가
+            추가되는 즉시 자동으로 "AS-20260620-0040" 형식으로 바뀜. */}
+        <span className="erdp-request-id">{d.requestCode ?? d.requestId}</span>
         <span className={`erdp-status-badge ${d.customerApproved ? "erdp-status-badge--approved" : "erdp-status-badge--pending"}`}>
           {d.customerApproved ? "승인 완료" : "고객 승인 대기"}
         </span>
@@ -145,9 +161,9 @@ export default function EngineerReportDetailPage() {
 
             <div className="erdp-summary-card">
               <p className="erdp-summary-card__section-label">작업 일정</p>
-              <p className="erdp-summary-card__row-icon"><Clock size={11} /> 도착 시간 &nbsp; {d.arrivedAt ?? "-"}</p>
+              <p className="erdp-summary-card__row-icon"><Clock size={11} /> 도착 시간 &nbsp; {formatDateTime(d.arrivedAt)}</p>
               <p className="erdp-summary-card__row-icon">
-                <Clock size={11} /> 작업 시간 &nbsp; {d.workStartAt ?? "-"} ~ {d.workEndAt ?? "-"} (총 {formatDuration(d.workDurationMin)})
+                <Clock size={11} /> 작업 시간 &nbsp; {formatDateTime(d.workStartAt)} ~ {formatDateTime(d.workEndAt)} (총 {formatDuration(d.workDurationMin)})
               </p>
             </div>
           </div>
@@ -237,15 +253,15 @@ export default function EngineerReportDetailPage() {
             <h3 className="erdp-panel__title">진행 이력</h3>
             <div className="erdp-timeline">
               <div className="erdp-timeline-item">
-                <span className="erdp-timeline-time">{d.arrivedAt ?? "-"}</span>
+                <span className="erdp-timeline-time">{formatDateTime(d.arrivedAt)}</span>
                 <span className="erdp-timeline-label">도착</span>
               </div>
               <div className="erdp-timeline-item">
-                <span className="erdp-timeline-time">{d.workStartAt ?? "-"}</span>
+                <span className="erdp-timeline-time">{formatDateTime(d.workStartAt)}</span>
                 <span className="erdp-timeline-label">작업 시작</span>
               </div>
               <div className="erdp-timeline-item">
-                <span className="erdp-timeline-time">{d.workEndAt ?? "-"}</span>
+                <span className="erdp-timeline-time">{formatDateTime(d.workEndAt)}</span>
                 <span className="erdp-timeline-label">작업 완료</span>
               </div>
             </div>
