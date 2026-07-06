@@ -3,7 +3,7 @@ import { X, Phone, History, ZoomIn } from "lucide-react";
 import "../../../styles/Agency/Modal/WorkDetailModal.css";
 import api from "../../../apis/axiosInstance";
 import { getRecommendedEngineers } from "../../../apis/agencyEngineer";
-import { getWorkRequestDetail, getAssignmentDetail } from "../../../apis/agency";
+import { getWorkRequestDetail, getAssignmentDetail, rejectWorkRequest } from "../../../apis/agency";
 import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
  
 const STATUS_LOG_LABEL = {
@@ -226,7 +226,24 @@ export default function WorkDetailModal({ onClose, detail: rowDetail, onSuccess 
       setSubmitting(false);
     }
   };
- 
+
+  // 접수 반려: PATCH /api/agency/work-requests/{requestId}/reject
+  // 반려 시 고객에게 재신청 안내 알림이 자동 발송됨(백엔드에서 자동/수동 배정 여부에 따라 문구 분기)
+  const handleReject = async () => {
+    if (!window.confirm("접수를 반려하시겠습니까? 고객에게 반려 안내 알림이 발송됩니다.")) return;
+    setSubmitting(true);
+    try {
+      await rejectWorkRequest(rowDetail.requestId);
+      alert("접수가 반려되었습니다.");
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      alert(e.response?.data?.message ?? "접수 반려에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // 상세 로딩 중 / 실패 처리
   if (detailLoading || !detail) {
     return (
@@ -474,7 +491,13 @@ export default function WorkDetailModal({ onClose, detail: rowDetail, onSuccess 
  
         {/* 9. 하단 액션 버튼 */}
         <div className="wdm__footer">
-          <button className="wdm__action-btn wdm__action-btn--danger">접수 반려</button>
+          <button
+            className="wdm__action-btn wdm__action-btn--danger"
+            onClick={handleReject}
+            disabled={detail.status !== "AGENCY_RECEIVED" || submitting}
+          >
+            {submitting ? "처리 중..." : "접수 반려"}
+          </button>
           <div className="wdm__footer-right">
             <button
               className="wdm__action-btn wdm__action-btn--secondary"

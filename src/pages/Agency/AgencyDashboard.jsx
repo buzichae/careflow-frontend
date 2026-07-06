@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import "../../styles/Agency/AgencyDashboard.css";
 import { getAgencyReviews } from "../../apis/agencyReview";
+import { getAgencyNotifications } from "../../apis/agencyNotification";
 
 const BASE_URL = "http://localhost:8080";
 
@@ -65,11 +66,11 @@ function calcFunnelCounts(requests) {
   return counts;
 }
 
-const noticeData = [
-  { id: 1, text: "6월 정산 일정 안내",       date: "2024.06.01" },
-  { id: 2, text: "여름철 에어컨 점검 가이드", date: "2024.05.28" },
-  { id: 3, text: "서비스 품질 향상 캠페인",   date: "2024.05.20" },
-];
+// ISO createdAt → "yyyy.MM.dd" 표시용 포맷
+function formatNoticeDate(createdAt) {
+  if (!createdAt) return "-";
+  return createdAt.slice(0, 10).replaceAll("-", ".");
+}
 
 function EngineerAvatar({ name, profileImageUrl }) {
   return (
@@ -111,6 +112,10 @@ export default function AgencyDashboard() {
   const [avgRating, setAvgRating]       = useState(null);
   const [ratingLoading, setRatingLoading] = useState(true);
 
+  // 알림 미리보기 (최근 3건)
+  const [notices, setNotices]           = useState([]);
+  const [noticesLoading, setNoticesLoading] = useState(true);
+
   // ── fetch ──────────────────────────────────
   useEffect(() => {
     // 7. 대시보드 요약 통계
@@ -142,6 +147,12 @@ export default function AgencyDashboard() {
       .then(res => setAvgRating(res.data?.stats?.avgRating ?? null))
       .catch(console.error)
       .finally(() => setRatingLoading(false));
+
+    // 알림 미리보기 (최근 3건)
+    getAgencyNotifications({ page: 0, size: 3 })
+      .then(res => setNotices(res.data?.content ?? []))
+      .catch(console.error)
+      .finally(() => setNoticesLoading(false));
   }, [settlementYear, settlementMonth]);
 
   // ── 통계 카드 값 계산 ────────────────────────
@@ -341,13 +352,19 @@ export default function AgencyDashboard() {
                 <h2 className="section-title" style={{ marginBottom: 0 }}>알림</h2>
                 <button className="more-link" onClick={() => navigate("/agency/notice")}>더보기 ›</button>
               </div>
-              {noticeData.map((n) => (
-                <div key={n.id} className="notice-item">
-                  <div className="notice-item__dot" />
-                  <span className="notice-item__text">{n.text}</span>
-                  <span className="notice-item__date">{n.date}</span>
-                </div>
-              ))}
+              {noticesLoading ? (
+                <p style={{ padding: "12px", color: "#aaa", fontSize: "13px" }}>로딩 중...</p>
+              ) : notices.length === 0 ? (
+                <p style={{ padding: "12px", color: "#aaa", fontSize: "13px" }}>알림이 없습니다.</p>
+              ) : (
+                notices.map((n) => (
+                  <div key={n.notificationId} className="notice-item">
+                    <div className="notice-item__dot" />
+                    <span className="notice-item__text">{n.title}</span>
+                    <span className="notice-item__date">{formatNoticeDate(n.createdAt)}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

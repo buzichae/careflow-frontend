@@ -9,7 +9,10 @@ import {
 } from "recharts";
 import {
   getSummary, getDailyTrend, getHourly, getCategoryDist,
-  getStatusCount, getEngineerTop5, getMonthlySummary,
+  getStatusCount, getEngineerTop5, getMonthlySummary, getRecentPeriods,
+  getEngineerStats, getSettlementTrend, getCustomerStats,
+  downloadWorkStatusReport, downloadSettlementReport,
+  downloadEngineerPerformanceReport, downloadCustomerReport,
 } from "../../apis/agencyStatistics";
 import "../../styles/Agency/AgencyStatisticsPage.css";
 
@@ -18,33 +21,25 @@ const STAT_TABS = ["대시보드", "작업 통계", "기사 통계", "정산 통
 
 const STATUS_LABEL_MAP = {
   PENDING:           { label: "접수 대기",  color: "#5B4FF5" },
-  AGENCY_RECEIVED:   { label: "대행사 접수", color: "#938cfd" },
-  ASSIGNED:          { label: "배차 완료",  color: "#938cfd" },
-  ACCEPTED:          { label: "기사 수락",  color: "#aea8ff" },
-  ENGINEER_DEPARTED: { label: "기사 출발",  color: "#938cfd" },
-  ENGINEER_ARRIVED:  { label: "기사 도착",  color: "#938cfd" },
-  IN_PROGRESS:       { label: "작업 중",    color: "#938cfd" },
-  COMPLETED:         { label: "작업 완료",  color: "#938cfd" },
-  PAID:              { label: "결제 완료",  color: "#938cfd" },
+  AGENCY_RECEIVED:   { label: "대행사 접수", color: "#7c6bff" },
+  ASSIGNED:          { label: "배차 완료",  color: "#2563eb" },
+  ACCEPTED:          { label: "기사 수락",  color: "#0ea5e9" },
+  ENGINEER_DEPARTED: { label: "기사 출발",  color: "#06b6d4" },
+  ENGINEER_ARRIVED:  { label: "기사 도착",  color: "#14b8a6" },
+  IN_PROGRESS:       { label: "작업 중",    color: "#16a34a" },
+  COMPLETED:         { label: "작업 완료",  color: "#65a30d" },
+  PAID:              { label: "결제 완료",  color: "#84cc16" },
   CANCELLED:         { label: "취소",       color: "#ddd"    },
 };
 
-const CATEGORY_COLORS = ["#5B4FF5", "#938cfd", "#bab5ff", "#e1dfff", "rgb(172, 182, 196)"];
+const CATEGORY_COLORS = ["#5B4FF5", "#2563eb", "#16a34a", "#d97706", "#aaa", "#0ea5e9", "#f43f5e"];
 
-// TODO(프론트): 아래 두 항목은 대응하는 백엔드 API가 아직 없어 임시 mock 데이터입니다. 프론트 담당자 확인 필요.
-const MOCK_MONTHLY_EXTRA = [
-  { label: "최다 정산 대행사", value: "케어플로우 수리센터", icon: Wallet },
-  { label: "고객 만족도",      value: "매우 만족 (86.3%)",   icon: Smile  },
-];
-
-
-
-// TODO(프론트): "리포트 다운로드" — 리포트 생성/다운로드 API 미구현으로 mock 데이터 사용 중. 프론트 담당자 확인 필요.
-const MOCK_REPORT_ITEMS = [
-  { label: "작업 현황 리포트",  desc: "접수/완료/미완료 등 작업 현황",   icon: FileText },
-  { label: "정산 리포트",       desc: "대행사별 정산 내역",              icon: Wallet   },
-  { label: "기사 성과 리포트",  desc: "기사별 작업 및 평가 통계",        icon: Users    },
-  { label: "고객 현황 리포트",  desc: "고객 접수 및 만족도 통계",        icon: Smile    },
+// 리포트 다운로드 4종 — 표시용 메타(라벨/설명/아이콘)만 정적이고, 실제 데이터는 다운로드 시점에 API에서 CSV로 받아옴
+const REPORT_ITEMS = [
+  { key: "work-status",         label: "작업 현황 리포트",  desc: "접수/완료/미완료 등 작업 현황",   icon: FileText, download: downloadWorkStatusReport,          filenamePrefix: "work_status_report"          },
+  { key: "settlement",          label: "정산 리포트",       desc: "이 대행사의 정산 내역",           icon: Wallet,   download: downloadSettlementReport,           filenamePrefix: "settlement_report"           },
+  { key: "engineer-performance", label: "기사 성과 리포트",  desc: "기사별 작업 및 평가 통계",        icon: Users,    download: downloadEngineerPerformanceReport,  filenamePrefix: "engineer_performance_report"  },
+  { key: "customer",            label: "고객 현황 리포트",  desc: "고객 접수 및 만족도 통계",        icon: Smile,    download: downloadCustomerReport,             filenamePrefix: "customer_status_report"      },
 ];
 
 function toDateStr(date) {
@@ -88,9 +83,14 @@ export default function AgencyStatisticsPage() {
   const maxStatusVal = Math.max(...statusData.map(s => s.value), 1);
   const [engineerTop5, setEngineerTop5] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState(null);
+  const [recentPeriods, setRecentPeriods] = useState([]);
+  const [engineerStats, setEngineerStats] = useState([]);
+  const [settlementTrend, setSettlementTrend] = useState([]);
+  const [customerStats, setCustomerStats] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [downloadingReport, setDownloadingReport] = useState(null); // 다운로드 중인 리포트 key
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -98,7 +98,8 @@ export default function AgencyStatisticsPage() {
     try {
       const [
         summaryRes, dailyTrendRes, hourlyRes,
-        categoryDistRes, statusCountRes, engineerTop5Res, monthlySummaryRes,
+        categoryDistRes, statusCountRes, engineerTop5Res, monthlySummaryRes, recentPeriodsRes,
+        engineerStatsRes, settlementTrendRes, customerStatsRes,
       ] = await Promise.all([
         getSummary(dateFrom, dateTo),
         getDailyTrend(dateFrom, dateTo),
@@ -107,6 +108,10 @@ export default function AgencyStatisticsPage() {
         getStatusCount(dateFrom, dateTo),
         getEngineerTop5(dateFrom, dateTo),
         getMonthlySummary(),
+        getRecentPeriods(),
+        getEngineerStats(dateFrom, dateTo),
+        getSettlementTrend(dateFrom, dateTo),
+        getCustomerStats(dateFrom, dateTo),
       ]);
 
       setSummary(summaryRes.data);
@@ -149,12 +154,35 @@ export default function AgencyStatisticsPage() {
       );
 
       setMonthlySummary(monthlySummaryRes.data);
+      setRecentPeriods(recentPeriodsRes.data);
+      setEngineerStats(engineerStatsRes.data);
+      setSettlementTrend(settlementTrendRes.data);
+      setCustomerStats(customerStatsRes.data);
     } catch (err) {
       setError(err);
     } finally {
       setLoading(false);
     }
   }, [dateFrom, dateTo]);
+
+  // 리포트 다운로드 공통 핸들러 — 현재 선택된 날짜 범위 기준으로 CSV 다운로드
+  const handleDownloadReport = async (item) => {
+    setDownloadingReport(item.key);
+    try {
+      const res = await item.download(dateFrom, dateTo);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${item.filenamePrefix}_${dateFrom}_${dateTo}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("리포트 다운로드 실패:", err);
+      alert("리포트 다운로드에 실패했습니다.");
+    } finally {
+      setDownloadingReport(null);
+    }
+  };
 
   useEffect(() => {
     fetchAll();
@@ -173,9 +201,48 @@ export default function AgencyStatisticsPage() {
     { label: "최다 접수 요일", value: `${monthlySummary.topReceiptDayOfWeek} (${monthlySummary.topReceiptDayCount}건)`, icon: ClipboardList },
     { label: "최다 접수 시간", value: `${monthlySummary.topReceiptHour} (${monthlySummary.topReceiptHourCount}건)`,     icon: Clock         },
     { label: "최고 평점 기사", value: `${monthlySummary.topRatingEngineerName} (${monthlySummary.topRatingEngineerScore})`, icon: Star      },
-    ...MOCK_MONTHLY_EXTRA,
+    // 고객 만족도 — 상단 통계 카드와 동일한 summary.avgRating 재사용 (기간 필터 기준)
+    { label: "고객 만족도",   value: summary ? `${summary.avgRating} / 5.0` : "-", icon: Smile },
   ] : [];
 
+  // ── 기사 통계 탭 요약 카드 ──────────────────────
+  const engineerTotalCompleted = engineerStats.reduce((sum, e) => sum + e.completedCount, 0);
+  const engineerRatedList = engineerStats.filter((e) => e.avgRating != null);
+  const engineerAvgRating = engineerRatedList.length
+    ? (engineerRatedList.reduce((sum, e) => sum + e.avgRating, 0) / engineerRatedList.length).toFixed(1)
+    : "-";
+  const engineerStatCards = [
+    { label: "전체 기사 수",   value: `${engineerStats.length}명`,               icon: Users,       color: "purple" },
+    { label: "총 완료 건수",   value: `${engineerTotalCompleted.toLocaleString()}건`, icon: Wrench,     color: "green"  },
+    { label: "평균 평점",      value: engineerAvgRating === "-" ? "-" : `${engineerAvgRating} / 5.0`, icon: Star, color: "amber" },
+  ];
+
+  // ── 정산 통계 탭 요약 카드 ──────────────────────
+  const settlementTotals = settlementTrend.reduce((acc, d) => ({
+    count: acc.count + d.count,
+    gross: acc.gross + d.grossAmount,
+    platformFee: acc.platformFee + d.platformFee,
+    agencyFee: acc.agencyFee + d.agencyFee,
+    engineerNet: acc.engineerNet + d.engineerNetAmount,
+  }), { count: 0, gross: 0, platformFee: 0, agencyFee: 0, engineerNet: 0 });
+  const settlementStatCards = [
+    { label: "총 매출액",      value: `₩${settlementTotals.gross.toLocaleString()}`,       icon: Wallet,      color: "blue"   },
+    { label: "플랫폼 수수료",  value: `₩${settlementTotals.platformFee.toLocaleString()}`,  icon: ClipboardList, color: "purple" },
+    { label: "대행사 수수료",  value: `₩${settlementTotals.agencyFee.toLocaleString()}`,    icon: Wrench,      color: "teal"   },
+    { label: "기사 지급액",    value: `₩${settlementTotals.engineerNet.toLocaleString()}`,  icon: CheckCircle, color: "green"  },
+  ];
+
+  // ── 고객 통계 탭 요약 카드 ──────────────────────
+  const customerTotalRequests = customerStats.reduce((sum, c) => sum + c.requestCount, 0);
+  const customerRatedList = customerStats.filter((c) => c.avgRating != null);
+  const customerAvgRating = customerRatedList.length
+    ? (customerRatedList.reduce((sum, c) => sum + c.avgRating, 0) / customerRatedList.length).toFixed(1)
+    : "-";
+  const customerStatCards = [
+    { label: "전체 고객 수",   value: `${customerStats.length}명`,                    icon: Users,     color: "purple" },
+    { label: "총 접수 건수",   value: `${customerTotalRequests.toLocaleString()}건`,  icon: ClipboardList, color: "blue" },
+    { label: "평균 만족도",    value: customerAvgRating === "-" ? "-" : `${customerAvgRating} / 5.0`, icon: Smile, color: "amber" },
+  ];
 
   return (
     <div className="asp2">
@@ -228,7 +295,7 @@ export default function AgencyStatisticsPage() {
 
       {activeTab === "대시보드" && !error && (
         <div className="asp2-dashboard">
-          {/* 통계 카드 - 더미 유지 */}
+          {/* 통계 카드 - GET /api/agency/statistics/summary */}
           <div className="asp2-stats">
             {(loading && !summary ? Array(6).fill(null) : statCards).map((s, i) => (
               <div key={s?.label ?? i} className="asp2-stat-card">
@@ -284,13 +351,23 @@ export default function AgencyStatisticsPage() {
               </div>
 
               <div className="asp2-chart-card">
-              
+                <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>최근 주요 지표 요약</h3>
                 <div className="asp2-summary-table">
                   <div className="asp2-summary-table__header">
-              
+                    <span>기간</span><span>접수</span><span>완료</span><span>완료율</span>
+                    <span>처리 시간</span><span>평점</span><span>정산 금액</span>
                   </div>
-                  
-                
+                  {recentPeriods.map((row, i) => (
+                    <div key={i} className="asp2-summary-table__row">
+                      <span>{row.periodLabel}</span>
+                      <span>{row.receiptCount.toLocaleString()}건</span>
+                      <span>{row.completedCount.toLocaleString()}건</span>
+                      <span>{row.completionRate}%</span>
+                      <span>{row.avgProcessingHours} 시간</span>
+                      <span>{row.avgRating}</span>
+                      <span className="asp2-summary-table__amount">₩{row.totalSettlementAmount.toLocaleString()}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -379,29 +456,226 @@ export default function AgencyStatisticsPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "작업 통계" && !error && (
+        <div className="asp2-dashboard">
+          <div className="asp2-grid asp2-grid--2col">
+            <div className="asp2-col">
+              <div className="asp2-chart-card">
+                <div className="asp2-chart-card__header">
+                  <h3 className="asp2-chart-title">접수 및 완료 추이</h3>
+                </div>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={dailyTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f8" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#aaa" }} />
+                    <YAxis tick={{ fontSize: 10, fill: "#aaa" }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="monotone" dataKey="접수" stroke="#5B4FF5" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="완료" stroke="#16a34a" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
 
               <div className="asp2-chart-card">
-                <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>리포트 다운로드</h3>
-                {MOCK_REPORT_ITEMS.map((r) => (
-                  <div key={r.label} className="asp2-report-row">
-                    <r.icon size={14} color="#5B4FF5" />
-                    <div className="asp2-report-row__info">
-                      <p className="asp2-report-row__label">{r.label}</p>
-                      <p className="asp2-report-row__desc">{r.desc}</p>
-                    </div>
-                    <button className="asp2-download-btn"><Download size={12} /> 다운로드</button>
+                <div className="asp2-chart-card__header">
+                  <h3 className="asp2-chart-title">일별 시간대별 접수 현황</h3>
+                </div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={hourlyData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f8" />
+                    <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#aaa" }} />
+                    <YAxis tick={{ fontSize: 10, fill: "#aaa" }} />
+                    <Tooltip />
+                    <Bar dataKey="건수" fill="#5B4FF5" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="asp2-col">
+              <div className="asp2-chart-card">
+                <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>가전 카테고리별 접수 분포</h3>
+                <div className="asp2-detail-table asp2-detail-table--3col">
+                  <div className="asp2-detail-table__header">
+                    <span>카테고리</span><span>건수</span><span>비율</span>
                   </div>
-                ))}
-                <button className="asp2-custom-report-btn">📋 사용자 정의 리포트 생성</button>
+                  {categoryDist.length === 0 && <p className="asp2-empty">데이터가 없습니다.</p>}
+                  {categoryDist.map((c) => (
+                    <div key={c.name} className="asp2-detail-table__row">
+                      <span>{c.name}</span><span>{c.value.toLocaleString()}건</span><span>{c.pct}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="asp2-chart-card">
+                <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>상태별 건수</h3>
+                <div className="asp2-detail-table asp2-detail-table--3col">
+                  <div className="asp2-detail-table__header">
+                    <span>상태</span><span>건수</span><span>비율</span>
+                  </div>
+                  {statusData.length === 0 && <p className="asp2-empty">데이터가 없습니다.</p>}
+                  {statusData.map((s) => (
+                    <div key={s.label} className="asp2-detail-table__row">
+                      <span>{s.label}</span><span>{s.value.toLocaleString()}건</span><span>{s.pct}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {activeTab !== "대시보드" && (
-        <div className="asp2-coming-soon">
-          {activeTab} 탭 — API 연동 후 구현 예정
+      {activeTab === "기사 통계" && !error && (
+        <div className="asp2-dashboard">
+          <div className="asp2-stats asp2-stats--3col">
+            {engineerStatCards.map((s) => (
+              <div key={s.label} className="asp2-stat-card">
+                <div className={`asp2-stat-card__icon asp2-stat-card__icon--${s.color}`}><s.icon size={20} /></div>
+                <div>
+                  <p className="asp2-stat-card__label">{s.label}</p>
+                  <p className="asp2-stat-card__value">{s.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="asp2-chart-card">
+            <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>기사별 완료 건수 · 평균 평점</h3>
+            <div className="asp2-detail-table asp2-detail-table--engineer">
+              <div className="asp2-detail-table__header">
+                <span>순위</span><span>기사명</span><span>완료 건수</span><span>평균 평점</span>
+              </div>
+              {engineerStats.length === 0 && <p className="asp2-empty">데이터가 없습니다.</p>}
+              {engineerStats.map((e) => (
+                <div key={e.engineerId} className="asp2-detail-table__row">
+                  <span>{e.rank}</span>
+                  <span>{e.engineerName}</span>
+                  <span>{e.completedCount.toLocaleString()}건</span>
+                  <span>{e.avgRating != null ? e.avgRating.toFixed(1) : "-"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "정산 통계" && !error && (
+        <div className="asp2-dashboard">
+          <div className="asp2-stats asp2-stats--4col">
+            {settlementStatCards.map((s) => (
+              <div key={s.label} className="asp2-stat-card">
+                <div className={`asp2-stat-card__icon asp2-stat-card__icon--${s.color}`}><s.icon size={20} /></div>
+                <div>
+                  <p className="asp2-stat-card__label">{s.label}</p>
+                  <p className="asp2-stat-card__value">{s.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="asp2-chart-card">
+            <div className="asp2-chart-card__header">
+              <h3 className="asp2-chart-title">일자별 정산 추이</h3>
+            </div>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={settlementTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f8" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#aaa" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#aaa" }} />
+                <Tooltip formatter={(v) => `₩${v.toLocaleString()}`} />
+                <Line type="monotone" dataKey="grossAmount" name="총 매출액" stroke="#5B4FF5" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="asp2-chart-card">
+            <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>일자별 정산 내역</h3>
+            <div className="asp2-detail-table asp2-detail-table--settlement">
+              <div className="asp2-detail-table__header">
+                <span>날짜</span><span>건수</span><span>총 매출액</span><span>플랫폼 수수료</span><span>대행사 수수료</span><span>기사 지급액</span>
+              </div>
+              {settlementTrend.length === 0 && <p className="asp2-empty">데이터가 없습니다.</p>}
+              {settlementTrend.map((d) => (
+                <div key={d.date} className="asp2-detail-table__row">
+                  <span>{d.date}</span>
+                  <span>{d.count.toLocaleString()}건</span>
+                  <span className="asp2-detail-table__amount">₩{d.grossAmount.toLocaleString()}</span>
+                  <span>₩{d.platformFee.toLocaleString()}</span>
+                  <span>₩{d.agencyFee.toLocaleString()}</span>
+                  <span>₩{d.engineerNetAmount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "고객 통계" && !error && (
+        <div className="asp2-dashboard">
+          <div className="asp2-stats asp2-stats--3col">
+            {customerStatCards.map((s) => (
+              <div key={s.label} className="asp2-stat-card">
+                <div className={`asp2-stat-card__icon asp2-stat-card__icon--${s.color}`}><s.icon size={20} /></div>
+                <div>
+                  <p className="asp2-stat-card__label">{s.label}</p>
+                  <p className="asp2-stat-card__value">{s.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="asp2-chart-card">
+            <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>고객별 접수 현황</h3>
+            <div className="asp2-detail-table asp2-detail-table--customer">
+              <div className="asp2-detail-table__header">
+                <span>고객ID</span><span>고객명</span><span>접수 건수</span><span>평균 만족도</span>
+              </div>
+              {customerStats.length === 0 && <p className="asp2-empty">데이터가 없습니다.</p>}
+              {customerStats.map((c) => (
+                <div key={c.customerId} className="asp2-detail-table__row">
+                  <span>CUST-{String(c.customerId).padStart(6, "0")}</span>
+                  <span>{c.customerName}</span>
+                  <span>{c.requestCount.toLocaleString()}건</span>
+                  <span>{c.avgRating != null ? c.avgRating.toFixed(1) : "-"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "리포트" && !error && (
+        <div className="asp2-dashboard">
+          <div className="asp2-chart-card asp2-report-card">
+            <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>리포트 다운로드</h3>
+            <p className="asp2-report-card__desc">
+              상단에서 선택한 기간({dateFrom} ~ {dateTo}) 기준으로 리포트를 CSV 파일로 내려받을 수 있습니다.
+            </p>
+            {REPORT_ITEMS.map((r) => (
+              <div key={r.key} className="asp2-report-row">
+                <r.icon size={14} color="#5B4FF5" />
+                <div className="asp2-report-row__info">
+                  <p className="asp2-report-row__label">{r.label}</p>
+                  <p className="asp2-report-row__desc">{r.desc}</p>
+                </div>
+                <button
+                  className="asp2-download-btn"
+                  disabled={downloadingReport === r.key}
+                  onClick={() => handleDownloadReport(r)}
+                >
+                  <Download size={12} /> {downloadingReport === r.key ? "다운로드 중..." : "다운로드"}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
