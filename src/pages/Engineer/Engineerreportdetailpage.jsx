@@ -234,7 +234,7 @@ export default function EngineerReportDetailPage() {
               <span>{partsTotal.toLocaleString()}원</span>
             </div>
             <div className="erdp-result-row">
-              <span>기본 점검비 등</span>
+              <span>출장비</span>
               <span>{(d.finalAmount - partsTotal).toLocaleString()}원</span>
             </div>
           </div>

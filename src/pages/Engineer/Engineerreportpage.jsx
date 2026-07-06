@@ -37,8 +37,10 @@ export default function EngineerReportPage() {
 
   useEffect(() => {
     let mounted = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩/에러 상태 초기화(의도된 동작) */
     setLoading(true);
     setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // 참고: getWorkReports가 현재 (page, size)만 받도록 되어 있어, 필터를
     // 서버로 넘길 방법이 없습니다. 백엔드/API 함수가 필터 파라미터를 지원하도록
@@ -69,7 +71,7 @@ export default function EngineerReportPage() {
 
       if (search.trim()) {
         const q = search.trim().toLowerCase();
-        const haystack = [item.customerName, item.productName, item.requestId]
+        const haystack = [item.customerName, item.productName, item.requestCode, item.requestId]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -89,6 +91,40 @@ export default function EngineerReportPage() {
       return true;
     });
   }, [reportList, statusFilter, search, dateStart, dateEnd]);
+
+  // 엑셀(CSV) 다운로드 — 현재 화면에 보이는 필터된 목록(filteredList)을 그대로 내보냄.
+  // (페이징 특성상 현재 페이지 기준. 서버 전체 export가 필요하면 백엔드 다운로드 엔드포인트로 확장)
+  const escapeCsv = (v) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const handleExcelDownload = () => {
+    if (filteredList.length === 0) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+    }
+    const header = ["접수번호", "고객명", "제품명", "모델명", "작업일", "작업시간", "상태", "작업금액(원)", "보고서제출일", "고객승인일"];
+    const rows = filteredList.map((item) => [
+      item.requestCode ?? item.requestId,
+      item.customerName,
+      item.productName,
+      item.modelNo,
+      item.workDate,
+      `${item.workTimeStart ?? ""}~${item.workTimeEnd ?? ""}`,
+      STATUS_MAP[item.status]?.label ?? item.status,
+      item.finalAmount ?? "",
+      item.submittedAt ?? "",
+      item.approvedAt ?? "",
+    ]);
+    const csv = [header, ...rows].map((r) => r.map(escapeCsv).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `작업보고서_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const statCards = [
     { label: "전체",    value: totalCount,                                                  icon: FileText,    color: "purple" },
@@ -150,7 +186,7 @@ export default function EngineerReportPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <button className="erp-excel-btn"><Download size={13} /> 엑셀 다운로드</button>
+        <button className="erp-excel-btn" onClick={handleExcelDownload}><Download size={13} /> 엑셀 다운로드</button>
       </div>
 
       {/* 통계 카드 */}
@@ -208,7 +244,7 @@ export default function EngineerReportPage() {
               const status = STATUS_MAP[item.status];
               return (
                 <div key={item.reportId ?? item.requestId} className="erp-table__row">
-                  <span className="erp-table__request-id">{item.requestId}</span>
+                  <span className="erp-table__request-id">{item.requestCode ?? item.requestId}</span>
                   <span className="erp-table__customer">{item.customerName}</span>
                   <span className="erp-table__product-col">
                     <span className="erp-table__product">{item.productName}</span>
@@ -227,23 +263,33 @@ export default function EngineerReportPage() {
                   <span className="erp-table__date">{item.submittedAt ?? "-"}</span>
                   <span className="erp-table__date">{item.approvedAt ?? "-"}</span>
                   <span className="erp-table__actions">
-                    {/* [수정] 제출완료(SUBMITTED)에서도 수정 버튼을 없애기로 함 →
-                        DRAFT만 "보고서 작성"으로 작성 화면 진입, 그 외(SUBMITTED/APPROVED)는
-                        전부 "상세보기"만 제공 (수정 기능은 목록에서 노출하지 않음) */}
                     {item.status === "DRAFT" ? (
-                      <button
-                        className="erp-write-btn"
-                        onClick={() => navigate("/engineer/reports/submit", { state: { requestId: item.requestId } })}
-                      >
-                        보고서 작성
-                      </button>
+                        <button
+                            className="erp-write-btn"
+                            // 🌟 신규: 작업 상태가 IN_PROGRESS가 아니면 시각적으로 비활성화(반투명) 처리
+                            style={{
+                              opacity: item.requestStatus !== "IN_PROGRESS" ? 0.5 : 1,
+                              cursor: item.requestStatus !== "IN_PROGRESS" ? "not-allowed" : "pointer"
+                            }}
+                            title={item.requestStatus !== "IN_PROGRESS" ? "작업 상태를 '수리 중'으로 변경해야 작성할 수 있습니다." : ""}
+                            onClick={() => {
+                              // 🌟 신규: 클릭 시 방어 로직 (알림창 띄우기)
+                              if (item.requestStatus !== "IN_PROGRESS") {
+                                alert("작업 상태를 '수리 중'으로 변경한 후 보고서를 작성할 수 있습니다.");
+                                return;
+                              }
+                              navigate("/engineer/report/submit", { state: { requestId: item.requestId } });
+                            }}
+                        >
+                          보고서 작성
+                        </button>
                     ) : (
-                      <button
-                        className="erp-detail-btn"
-                        onClick={() => navigate(`/engineer/reports/${item.reportId}`)}
-                      >
-                        상세보기
-                      </button>
+                        <button
+                            className="erp-detail-btn"
+                            onClick={() => navigate(`/engineer/reports/${item.reportId}`)}
+                        >
+                          상세보기
+                        </button>
                     )}
                     <button className="erp-more-btn"><MoreVertical size={14} /></button>
                   </span>

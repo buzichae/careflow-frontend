@@ -9,9 +9,11 @@ import {
   // 없다면 apis/engineers.js에 추가하고, 백엔드에도 대응 엔드포인트가 필요합니다.
   getWorkReportDetail,
   updateWorkReport,
-  getRepairParts,
+  getRepairParts, getReportFormData,
 } from "../../apis/engineers";
 import "../../styles/Engineer/Engineerreportsubmitpage.css";
+
+const VISIT_FEE = 28000; // 출장비(기본) — 백엔드 VISIT_FEE와 반드시 동일 값 유지
 
 const DIAGNOSIS_OPTIONS = [
   { value: "NORMAL", label: "정상 확인" },
@@ -28,12 +30,14 @@ export default function EngineerReportSubmitPage() {
   // - 신규 작성: { requestId } 만 전달됨
   // - 수정:      { reportId, requestId } 함께 전달됨 → 기존 데이터를 불러와 폼에 채움
   const requestId = location.state?.requestId;
+  const passedRequestCode = location.state?.requestCode; // 포맷팅된 접수번호 (화면 전시용)
   const reportId  = location.state?.reportId;
   const isEditMode = !!reportId;
+  // 작업 컨텍스트: 수정(reportId) 또는 신규(requestId) 중 하나는 있어야 함
+  const hasWorkContext = isEditMode || !!requestId;
 
   const [diagnosisResult, setDiagnosisResult] = useState("REPAIRED");
   const [workDurationMin, setWorkDurationMin] = useState("");
-  const [finalAmount, setFinalAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [parts, setParts] = useState([]);
 
@@ -64,6 +68,7 @@ export default function EngineerReportSubmitPage() {
   // repairPartId가 이미 있는 항목(사용자가 직접 새로 선택한 것)은 건드리지 않음.
   useEffect(() => {
     if (partOptions.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 부품 마스터 로드 후 partCode 역매칭 1회 동기화(의도된 패턴)
     setParts((prev) => {
       let changed = false;
       const next = prev.map((p) => {
@@ -77,11 +82,12 @@ export default function EngineerReportSubmitPage() {
     });
   }, [partOptions]);
 
-  const [loadingDetail, setLoadingDetail] = useState(isEditMode);
+  // 컨텍스트가 없으면 스피너 없이 바로 안내 메시지를 노출하도록 초기값을 hasWorkContext로 둠
+  const [loadingDetail, setLoadingDetail] = useState(hasWorkContext);
   const [loadError, setLoadError] = useState(null);
   // [연동 준비] 수정 모드에서 불러온 상세 데이터에 형식화된 접수번호
   // (requestCode)가 있으면 화면 표시용으로 저장. 없으면 숫자 requestId 그대로 사용.
-  const [requestDisplayCode, setRequestDisplayCode] = useState(null);
+  const [requestDisplayCode, setRequestDisplayCode] = useState(passedRequestCode || null);
   const [blockedByApproval, setBlockedByApproval] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -89,27 +95,34 @@ export default function EngineerReportSubmitPage() {
 
   // 수정 모드일 때 기존 보고서 상세를 불러와 폼에 채움
   useEffect(() => {
-    if (!isEditMode) return;
+    // 컨텍스트가 없으면 이펙트에서 상태를 건드리지 않고 종료(안내는 렌더 단에서 파생값으로 처리)
+    if (!hasWorkContext) return;
+
     let mounted = true;
+
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩/에러 상태 초기화(재조회 대비 의도된 동작) */
     setLoadingDetail(true);
     setLoadError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
-    getWorkReportDetail(reportId)
-      .then((res) => {
-        if (!mounted) return;
-        const d = res.data;
+    const fetchApi = isEditMode
+        ? getWorkReportDetail(reportId)
+        : getReportFormData(requestId);
 
-        // [안전장치] 목록 화면 버튼 자체를 숨겨놨지만, 혹시 다른 경로로 URL에
-        // 직접 진입하는 경우까지 대비해 승인 완료 보고서는 여기서도 한 번 더 차단.
-        if (d.status === "APPROVED") {
-          setBlockedByApproval(true);
-          return;
-        }
+    fetchApi
+        .then((res) => {
+          if (!mounted) return;
+          const d = res.data;
+
+          // 수정 모드일 때 승인 완료 차단 로직
+          if (isEditMode && d.status === "APPROVED") {
+            setBlockedByApproval(true);
+            return;
+          }
 
         setDiagnosisResult(d.diagnosisResult ?? "REPAIRED");
         setRequestDisplayCode(d.requestCode ?? null);
         setWorkDurationMin(d.workDurationMin != null ? String(d.workDurationMin) : "");
-        setFinalAmount(d.finalAmount != null ? String(d.finalAmount) : "");
         setMemo(d.memo ?? "");
         // [버그 수정] 이미 사용된 부품이 지금은 단종(is_active=0)이라
         // ⚠ [백엔드 확인 필요] 이 응답의 parts 항목에 repairPartId가 아예 없고
@@ -136,7 +149,16 @@ export default function EngineerReportSubmitPage() {
       .finally(() => { if (mounted) setLoadingDetail(false); });
 
     return () => { mounted = false; };
-  }, [isEditMode, reportId]);
+  }, [isEditMode, reportId, requestId, hasWorkContext]);
+
+  // 최종 금액 = 부품 합계 + 출장비 (백엔드와 동일 규칙, 기사 직접 입력 없음)
+  const partsTotal = parts.reduce((sum, p) => {
+    if (!p.repairPartId) return sum;
+    const qty = Number(p.quantity) || 1;
+    const price = Number(p.appliedUnitPrice) || 0;
+    return sum + qty * price;
+  }, 0);
+  const computedFinalAmount = partsTotal + VISIT_FEE;
 
   const addPart = () => {
     setParts((prev) => [...prev, { repairPartId: "", quantity: 1, appliedUnitPrice: "" }]);
@@ -158,8 +180,8 @@ export default function EngineerReportSubmitPage() {
       setError("연결된 작업 정보(requestId)가 없습니다. 대시보드나 작업 목록에서 다시 진입해주세요.");
       return;
     }
-    if (!workDurationMin || !finalAmount) {
-      setError("작업 시간과 최종 금액은 필수입니다.");
+    if (!workDurationMin) {
+      setError("작업 시간은 필수입니다.");
       return;
     }
 
@@ -167,7 +189,7 @@ export default function EngineerReportSubmitPage() {
       requestId,
       diagnosisResult,
       workDurationMin: Number(workDurationMin),
-      finalAmount: Number(finalAmount),
+      finalAmount: computedFinalAmount, // 서버가 재계산하지만 표시 일관성을 위해 함께 전송
       memo: memo || undefined,
       parts: parts
         .filter((p) => p.repairPartId)
@@ -233,13 +255,16 @@ export default function EngineerReportSubmitPage() {
     );
   }
 
-  if (loadError) {
+  // 로드 실패(loadError) 또는 진입 컨텍스트 없음을 하나의 파생값으로 합쳐 렌더
+  const effectiveLoadError =
+    loadError ?? (!hasWorkContext ? "연결된 작업 정보가 없습니다. 목록에서 다시 진입해주세요." : null);
+  if (effectiveLoadError) {
     return (
       <div className="ersp">
         <button className="ersp-back-btn" onClick={() => navigate(-1)}>
           <ChevronLeft size={14} /> 뒤로가기
         </button>
-        <div className="ersp-error" style={{ marginTop: 16 }}>{loadError}</div>
+        <div className="ersp-error" style={{ marginTop: 16 }}>{effectiveLoadError}</div>
       </div>
     );
   }
@@ -282,15 +307,18 @@ export default function EngineerReportSubmitPage() {
             />
           </div>
           <div className="ersp-field">
-            <label className="ersp-field__label">최종 청구 금액 (원) *</label>
+            <label className="ersp-field__label">최종 청구 금액 (원)</label>
             <input
               className="ersp-input"
-              type="number"
-              min="0"
-              value={finalAmount}
-              onChange={(e) => setFinalAmount(e.target.value)}
-              placeholder="예: 180000"
+              type="text"
+              value={`${computedFinalAmount.toLocaleString()}원`}
+              readOnly
+              style={{ background: "#f7f7fb", color: "#333", fontWeight: 700 }}
             />
+            <p className="ersp-parts-note" style={{ marginTop: 6 }}>
+              부품 합계 {partsTotal.toLocaleString()}원 + 출장비 {VISIT_FEE.toLocaleString()}원 = 최종 {computedFinalAmount.toLocaleString()}원
+              <br />※ 최종 금액은 부품 합계와 출장비로 자동 계산됩니다.
+            </p>
           </div>
         </div>
 
@@ -306,66 +334,77 @@ export default function EngineerReportSubmitPage() {
 
           {parts.map((p, idx) => {
             const selectedPart = partOptions.find((po) => String(po.repairPartId) === String(p.repairPartId));
-            // repairPartId가 끝내 안 채워졌지만(마스터 목록에서 partCode 매칭도
-            // 실패) 이름 정보는 있는 경우, 화면에만 쓰는 임시 표시값을 따로 둠
-            // (실제 저장되는 p.repairPartId는 건드리지 않음 — 제출 시 필터링됨).
             const displayValue = p.repairPartId || (!selectedPart && p._fallbackName ? "__unmatched__" : "");
+
+            // 🌟 신규: 현재 입력된 수량과 단가를 곱해서 부품 소계(총액)를 계산
+            const qty = Number(p.quantity) || 1;
+            const unitPrice = Number(p.appliedUnitPrice) || 0;
+            const partTotal = qty * unitPrice;
+
             return (
-              <div key={idx} className="ersp-part-row">
-                {/* [연동] 부품 ID 직접 입력 → 부품명 드롭다운으로 교체.
-                    선택 시 부품ID가 채워지고, 단가도 기본단가로 자동 세팅(직접 수정 가능). */}
-                <select
-                  className="ersp-part-row__id"
-                  value={displayValue}
-                  onChange={(e) => {
-                    if (e.target.value === "__unmatched__") return; // 표시 전용 값, 무시
-                    const selected = partOptions.find((po) => String(po.repairPartId) === e.target.value);
-                    updatePart(idx, "repairPartId", e.target.value);
-                    // [버그 수정] "단가가 비어있을 때만" 자동 채우던 조건 때문에,
-                    // 수정 화면처럼 이미 단가가 채워진 상태에서는 부품을 바꿔도
-                    // 단가가 절대 안 바뀌던 문제. 부품을 다시 선택하면 항상 그
-                    // 부품의 기준 단가로 갱신되도록 변경.
-                    if (selected) {
-                      updatePart(idx, "appliedUnitPrice", String(selected.baseUnitPrice));
-                    }
-                  }}
-                  disabled={partOptionsLoading}
-                >
-                  <option value="">부품 선택</option>
-                  {/* [버그 수정] 현재 활성 부품 목록(partOptions)에 없는 경우
-                      (단종 등) — 저장된 이름(_fallbackName)으로 임시 옵션을 만들어
-                      "부품 선택"으로 보이지 않고 실제 사용 부품명이 표시되게 함. */}
-                  {!selectedPart && p._fallbackName && (
-                    <option value="__unmatched__">
-                      {p._fallbackName}
-                    </option>
+                <div key={idx} className="ersp-part-row-container" style={{ marginBottom: "12px" }}>
+                  <div className="ersp-part-row" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <select
+                        className="ersp-part-row__id"
+                        value={displayValue}
+                        onChange={(e) => {
+                          if (e.target.value === "__unmatched__") return;
+                          const selected = partOptions.find((po) => String(po.repairPartId) === e.target.value);
+                          updatePart(idx, "repairPartId", e.target.value);
+                          if (selected) {
+                            updatePart(idx, "appliedUnitPrice", String(selected.baseUnitPrice));
+                          }
+                        }}
+                        disabled={partOptionsLoading}
+                    >
+                      <option value="">부품 선택</option>
+                      {!selectedPart && p._fallbackName && (
+                          <option value="__unmatched__">{p._fallbackName}</option>
+                      )}
+                      {partOptions.map((po) => (
+                          <option key={po.repairPartId} value={po.repairPartId}>
+                            {po.partName}{po.spec ? ` (${po.spec})` : ""}
+                          </option>
+                      ))}
+                      {partOptionsError && <option disabled>부품 목록을 불러오지 못했습니다</option>}
+                    </select>
+
+                    <input
+                        className="ersp-part-row__qty"
+                        type="number"
+                        min="1"
+                        placeholder="수량"
+                        value={p.quantity}
+                        onChange={(e) => updatePart(idx, "quantity", e.target.value)}
+                    />
+
+                    {/* 🌟 UX 개선: 부품 1개당 가격임을 시각적으로 명확히 표시 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <input
+                          className="ersp-part-row__price"
+                          type="number"
+                          placeholder="1개당 단가 (미입력시 기본값)" // 1. Placeholder 직관적으로 변경
+                          value={p.appliedUnitPrice}
+                          title="부품 1개의 가격(단가)을 입력하세요." // 2. 마우스 오버 시 툴팁 제공
+                          onChange={(e) => updatePart(idx, "appliedUnitPrice", e.target.value)}
+                          style={{ width: "160px" }} // 필요시 input 너비 조절
+                      />
+                      {/* 3. 단위 고정 노출로 '총액'이 아님을 각인 */}
+                      <span style={{ fontSize: "13px", color: "#666", whiteSpace: "nowrap" }}>원/개</span>
+                    </div>
+
+                    <button type="button" className="ersp-part-row__remove" onClick={() => removePart(idx)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+
+                  {/* 🌟 신규: 부품 선택 후 단가나 수량이 있으면 하단에 소계를 실시간으로 보여줌 */}
+                  {unitPrice > 0 && (
+                      <div style={{ fontSize: "12px", color: "#5B4FF5", textAlign: "right", marginTop: "4px" }}>
+                        부품 소계: {partTotal.toLocaleString()}원
+                      </div>
                   )}
-                  {partOptions.map((po) => (
-                    <option key={po.repairPartId} value={po.repairPartId}>
-                      {po.partName}{po.spec ? ` (${po.spec})` : ""}
-                    </option>
-                  ))}
-                  {partOptionsError && <option disabled>부품 목록을 불러오지 못했습니다</option>}
-                </select>
-                <input
-                  className="ersp-part-row__qty"
-                  type="number"
-                  min="1"
-                  placeholder="수량"
-                  value={p.quantity}
-                  onChange={(e) => updatePart(idx, "quantity", e.target.value)}
-                />
-                <input
-                  className="ersp-part-row__price"
-                  type="number"
-                  placeholder="단가(선택, 미입력시 기본단가)"
-                  value={p.appliedUnitPrice}
-                  onChange={(e) => updatePart(idx, "appliedUnitPrice", e.target.value)}
-                />
-                <button type="button" className="ersp-part-row__remove" onClick={() => removePart(idx)}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
+                </div>
             );
           })}
           <p className="ersp-parts-note">※ 부품을 선택하면 기준 단가가 자동으로 채워지며, 필요시 직접 수정할 수 있습니다.</p>

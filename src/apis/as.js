@@ -42,8 +42,17 @@ export const getMyReview = (requestId) =>
 export const createAsRequest = (payload) =>
     api.post("/api/as-requests", payload);
 
-export const processPayment = (requestId) =>
-    api.post(`/api/customer/as-requests/${requestId}/payment`);
+// 증상별 예상 수리 비용 조회 (avgCost가 null이면 아직 집계 전 — "데이터 수집 중")
+export const getExpectedRepairCost = (symptomId) =>
+    api.get(`/api/as-requests/expected-cost/${symptomId}`);
+
+// 토스페이먼츠 결제위젯 successUrl 리다이렉트로 받은 값을 그대로 백엔드에 전달해 승인 확정
+export const processPayment = (requestId, { paymentKey, orderId, amount }) =>
+    api.post(`/api/customer/as-requests/${requestId}/payment`, {
+        paymentKey,
+        orderId,
+        amount,
+    });
 
 export const getPaymentSummary = () =>
     api.get('/api/customer/payments/summary');

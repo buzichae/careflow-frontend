@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, Download,
+  ChevronLeft, ChevronRight, Download,
   ClipboardCheck, Wallet, Star, XCircle,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
-import { getSettlementSummary, getSettlements } from "../../apis/engineers"; // 실제 경로에 맞게 수정
+import { getSettlementSummary, getSettlements, downloadSettlementReport } from "../../apis/engineers"; // 실제 경로에 맞게 수정
 import "../../styles/Engineer/Engineersettlementpage.css";
 
 const TABS = ["실적 현황", "정산 내역"];
@@ -72,6 +72,7 @@ export default function EngineerSettlementPage() {
   // [버그 수정] 아래 두 필터는 state가 없는 장식용 UI였음
   const [brandFilter, setBrandFilter] = useState("전체 브랜드");
   const [statusFilter, setStatusFilter] = useState("전체 상태");
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   // [연동] 브랜드/상태 옵션 드롭다운용 — 필터링된 결과만으로 옵션을 뽑으면
   // 필터를 걸수록 선택 가능한 옵션이 점점 줄어드는 문제가 생기므로,
@@ -82,8 +83,10 @@ export default function EngineerSettlementPage() {
   useEffect(() => {
     if (activeTab !== "실적 현황") return;
     let mounted = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩/에러 상태 초기화(의도된 동작) */
     setLoading(true);
     setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // [연동] 백엔드가 brand/status 파라미터를 지원하도록 확장됨 확인 완료.
     // "전체 브랜드"/"전체 상태" 선택 시엔 필터링 없이 조회하도록 undefined로 전달.
@@ -131,8 +134,10 @@ export default function EngineerSettlementPage() {
   useEffect(() => {
     if (activeTab !== "정산 내역") return;
     let mounted = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩/에러 상태 초기화(의도된 동작) */
     setSettlementLoading(true);
     setSettlementError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     getSettlements(currentPage - 1, 10) // ⚠ 0-index 가정. 어긋나면 -1 제거
       .then((res) => {
@@ -156,6 +161,30 @@ export default function EngineerSettlementPage() {
   // 필터링(useMemo)은 더 이상 필요 없어 제거. performanceList를 그대로 사용.
   const brandOptions = seenBrands;
   const statusOptions = seenStatuses;
+
+  // 리포트 다운로드 — 현재 선택된 기간/브랜드/상태 필터를 그대로 백엔드에 전달(화면 수치와 동일한 CSV)
+  const handleReportDownload = async () => {
+    setDownloadingReport(true);
+    try {
+      const res = await downloadSettlementReport(
+        dateFrom,
+        dateTo,
+        brandFilter !== "전체 브랜드" ? brandFilter : undefined,
+        statusFilter !== "전체 상태" ? statusFilter : undefined
+      );
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `실적정산리포트_${dateFrom}_${dateTo}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("리포트 다운로드 실패:", err);
+      alert("리포트 다운로드에 실패했습니다.");
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
 
   return (
     <div className="estp">
@@ -215,7 +244,9 @@ export default function EngineerSettlementPage() {
           ))}
         </select>
 
-        <button className="estp-report-btn"><Download size={13} /> 리포트 다운로드</button>
+        <button className="estp-report-btn" onClick={handleReportDownload} disabled={downloadingReport}>
+          <Download size={13} /> {downloadingReport ? "다운로드 중..." : "리포트 다운로드"}
+        </button>
       </div>
 
       {activeTab === "실적 현황" && (
