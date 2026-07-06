@@ -374,8 +374,25 @@ const TIME_LABEL = Object.fromEntries(
   TIME_SLOTS.map((t) => [t.value, t.label]),
 );
 
-const ALL_BRANDS = ["LG", "삼성", "위니아", "대우"];
-const ALL_SKILLS = ["냉장고", "세탁기", "에어컨", "건조기", "TV", "공기청정기"];
+/* categoryId → 보유 기술(카테고리명), appliance_categories 시드 데이터 기준 */
+const CATEGORY_SKILL = {
+  11: "냉장고",
+  12: "전기밥솥",
+  13: "인덕션",
+  14: "오븐",
+  15: "식기세척기",
+  21: "세탁기",
+  22: "건조기",
+  23: "에어컨",
+  24: "공기청정기",
+  25: "선풍기",
+  26: "청소기",
+  31: "TV",
+  32: "빔프로젝터",
+  41: "사운드바",
+  42: "홈시어터",
+  43: "스피커",
+};
 
 const AS_STEPS = ["가전 & 증상", "방문 일정", "최종 확인", "접수 완료"];
 
@@ -425,8 +442,6 @@ function ASRequestFlow({ onClose, onSuccess }) {
   /* 배정 방식 */
   const [assignType, setAssignType] = useState(""); // "AUTO" | "MANUAL"
   /* 수동 배정 */
-  const [engBrand, setEngBrand] = useState("");
-  const [engSkill, setEngSkill] = useState("");
   const [selectedEng, setSelectedEng] = useState(null);
   /* 날짜·시간 (기사 선택 후 → 기사 가능 일정 기반) */
   const [schedDate, setSchedDate] = useState("");
@@ -492,7 +507,11 @@ function ASRequestFlow({ onClose, onSuccess }) {
       .catch((e) => console.error("가전 목록 로드 실패", e));
   }, []);
 
-  /* 수동 배정: 조건(지역/브랜드/보유기술) 필터링된 후보 기사 조회 */
+  /* 수동 배정: 지역 + 선택한 가전의 브랜드/보유기술 조건으로 후보 기사 조회
+     (브랜드·보유기술은 Step 1에서 선택한 가전으로 이미 정해져 있으므로 사용자가 따로 고르지 않는다) */
+  const engBrand = appliance?.name;
+  const engSkill = appliance ? (CATEGORY_SKILL[appliance.categoryId] ?? "") : "";
+
   useEffect(() => {
     if (assignType !== "MANUAL" || !regionId || !customerId) {
       setEngineers([]);
@@ -648,7 +667,13 @@ function ASRequestFlow({ onClose, onSuccess }) {
     },
     { label: "상세 주소", value: addressDetail },
     { label: "방문 날짜", value: schedDate },
-    { label: "방문 시간", value: TIME_LABEL[schedTime] ?? "" },
+    {
+      label: "방문 시간",
+      /* AUTO: 고객이 고른 2시간 단위 희망 시간대(TIME_LABEL로 라벨링)
+         MANUAL: 기사가 실제 등록한 시작 시각 그대로(고정 슬롯 라벨과 무관) */
+      value:
+        assignType === "AUTO" ? (TIME_LABEL[schedTime] ?? "") : schedTime,
+    },
   ];
 
   return (
@@ -938,53 +963,6 @@ function ASRequestFlow({ onClose, onSuccess }) {
           {/* ── 수동 배정: 기사 검색 + 선택 + 일정 ── */}
           {assignType === "MANUAL" && (
             <>
-              {/* 기사 필터 */}
-              <div className="cas-flow-card">
-                <h3 className="cas-flow-card__title">기사 필터</h3>
-                <div className="cas-eng-filter-section">
-                  <div className="cas-eng-filter-group">
-                    <p className="cas-eng-filter-label">브랜드</p>
-                    <div className="cas-filter-chips">
-                      <button
-                        className={`cas-filter-chip ${engBrand === "" ? "cas-filter-chip--active" : ""}`}
-                        onClick={() => setEngBrand("")}
-                      >
-                        전체
-                      </button>
-                      {ALL_BRANDS.map((b) => (
-                        <button
-                          key={b}
-                          className={`cas-filter-chip ${engBrand === b ? "cas-filter-chip--active" : ""}`}
-                          onClick={() => setEngBrand(engBrand === b ? "" : b)}
-                        >
-                          {b}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="cas-eng-filter-group">
-                    <p className="cas-eng-filter-label">보유 기술</p>
-                    <div className="cas-filter-chips">
-                      <button
-                        className={`cas-filter-chip ${engSkill === "" ? "cas-filter-chip--active" : ""}`}
-                        onClick={() => setEngSkill("")}
-                      >
-                        전체
-                      </button>
-                      {ALL_SKILLS.map((s) => (
-                        <button
-                          key={s}
-                          className={`cas-filter-chip ${engSkill === s ? "cas-filter-chip--active" : ""}`}
-                          onClick={() => setEngSkill(engSkill === s ? "" : s)}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* 기사 목록 */}
               <div className="cas-flow-card">
                 <h3 className="cas-flow-card__title">
@@ -994,6 +972,10 @@ function ASRequestFlow({ onClose, onSuccess }) {
                     — {engineers.length}명
                   </span>
                 </h3>
+                <p className="cas-req-sub">
+                  신청하신 <strong>{engBrand}</strong> {engSkill} 가전을 다룰
+                  수 있는 기사만 보여드립니다.
+                </p>
                 {!regionId ? (
                   <p className="cas-eng-empty">
                     방문 지역을 먼저 선택해주세요.
@@ -1093,6 +1075,9 @@ function ASRequestFlow({ onClose, onSuccess }) {
                       >
                         가능 시간대 <span className="cas-req-required">*</span>
                       </h3>
+                      <p className="cas-req-sub">
+                        기사님이 등록한 방문 가능 시작 시각입니다.
+                      </p>
                       <div className="cas-time-slots">
                         {availableTimes.map((t) => (
                           <button
@@ -1100,7 +1085,7 @@ function ASRequestFlow({ onClose, onSuccess }) {
                             className={`cas-time-chip ${schedTime === t ? "cas-time-chip--active" : ""}`}
                             onClick={() => setSchedTime(t)}
                           >
-                            {TIME_LABEL[t]}
+                            {t}
                           </button>
                         ))}
                       </div>
