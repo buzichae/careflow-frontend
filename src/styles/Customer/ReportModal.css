@@ -186,6 +186,39 @@
   margin: 2px 0;
 }
 
+/* 교체 부품 */
+.cas-report-parts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.cas-report-parts-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background: #fafaff;
+  border-bottom: 1px solid #ebebf6;
+  color: #888;
+  font-weight: 600;
+}
+.cas-report-parts-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f2f2f8;
+  color: #444;
+}
+.cas-report-parts-table tr:last-child td { border-bottom: none; }
+
+.cas-part-importance {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.cas-part-importance--gray   { background: #f3f3f7; color: #666; }
+.cas-part-importance--blue   { background: #eff6ff; color: #3b82f6; }
+.cas-part-importance--orange { background: #fff7e6; color: #f59e0b; }
+.cas-part-importance--red    { background: #fff0f0; color: #ef4444; }
+
 /* 기사 메모 */
 .cas-report-note {
   font-size: 13px;

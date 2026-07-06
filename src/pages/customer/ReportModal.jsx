@@ -1,5 +1,13 @@
-import { FileText, X, Timer, Receipt, Wrench, Package } from "lucide-react";
+import { FileText, X, Timer, Receipt, Wrench, Package, Settings } from "lucide-react";
 import "../../styles/Customer/ReportModal.css";
+
+/* 부품 중요도 한글 라벨 + 배지 색상 */
+const IMPORTANCE_META = {
+  MINOR: { label: "경미", color: "gray" },
+  NORMAL: { label: "보통", color: "blue" },
+  MAJOR: { label: "중요", color: "orange" },
+  CRITICAL: { label: "심각", color: "red" },
+};
 
 /* ── 수리 보고서 모달 ── */
 export default function ReportModal({ item, report, onApprove, onClose }) {
@@ -94,6 +102,48 @@ export default function ReportModal({ item, report, onApprove, onClose }) {
               </div>
             </div>
           </div>
+
+          {/* 교체 부품 */}
+          {report.parts && report.parts.length > 0 && (
+            <div className="cas-report-section">
+              <div className="cas-report-section__head">
+                <Settings size={14} color="#7c5cf7" />
+                <h4>교체 부품</h4>
+              </div>
+              <table className="cas-report-parts-table">
+                <thead>
+                  <tr>
+                    <th>부품명</th>
+                    <th>중요도</th>
+                    <th>수량</th>
+                    <th>가격</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.parts.map((p, i) => {
+                    const meta = IMPORTANCE_META[p.importance] ?? {
+                      label: p.importance ?? "—",
+                      color: "gray",
+                    };
+                    return (
+                      <tr key={i}>
+                        <td>{p.partName}</td>
+                        <td>
+                          <span
+                            className={`cas-part-importance cas-part-importance--${meta.color}`}
+                          >
+                            {meta.label}
+                          </span>
+                        </td>
+                        <td>{p.quantity}개</td>
+                        <td>{(p.appliedUnitPrice ?? 0).toLocaleString()}원</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* 기사 메모 */}
           {report.memo && (
