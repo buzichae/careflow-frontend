@@ -199,11 +199,13 @@ export default function EngineerSchedulePage() {
   // ── 일간 데이터 조회 ──────────────────────────
   useEffect(() => {
     let mounted = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩/상태 초기화(의도된 동작) */
     setLoading(true);
     setError(null);
     setWorkHours(null);
     setIsOff(false);
     setWorkScheduleError(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const dateParam = toDateParam(currentDate);
 
@@ -263,6 +265,7 @@ export default function EngineerSchedulePage() {
   useEffect(() => {
     if (view !== "주간") return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩 상태 초기화(의도된 동작)
     setWeekLoading(true);
 
     const weekDates = getWeekDates(currentDate);
@@ -287,6 +290,7 @@ export default function EngineerSchedulePage() {
   useEffect(() => {
     if (view !== "월간") return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩 상태 초기화(의도된 동작)
     setMonthLoading(true);
 
     const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
@@ -334,6 +338,79 @@ export default function EngineerSchedulePage() {
     setCalYear(now.getFullYear());
     setCalMonth(now.getMonth());
     setSelectedDate(now.getDate());
+  };
+
+  // ── 일정 내보내기 (CSV, UTF-8 BOM) ──────────────
+  // 현재 뷰(일간/주간/월간)의 범위를 새로 조회해 CSV로 내보냄(Excel에서 한글 깨짐 방지).
+  // 종료 시각은 화면과 동일하게 시작 +1시간으로 산정.
+  // (캘린더 앱으로 가져가는 .ics 내보내기는 추후 확장 기능으로 보류)
+  const [exporting, setExporting] = useState(false);
+  const escapeCsv = (v) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  // 전화번호처럼 숫자로만 이뤄진 값은 Excel이 숫자로 인식해 맨 앞 0을 떼므로,
+  // ="..." 텍스트 강제 형식으로 내보내 leading zero(예: 010...)를 그대로 보존한다.
+  const csvText = (raw) => {
+    const s = String(raw ?? "").replace(/[^0-9]/g, "");
+    return s ? `="${s}"` : "";
+  };
+  const handleExportSchedule = async () => {
+    setExporting(true);
+    try {
+      const dates =
+        view === "주간"
+          ? getWeekDates(currentDate).map(toDateParam)
+          : view === "월간"
+            ? Array.from({ length: new Date(calYear, calMonth + 1, 0).getDate() },
+                (_, i) => toDateParam(new Date(calYear, calMonth, i + 1)))
+            : [toDateParam(currentDate)];
+
+      const results = await Promise.all(dates.map((d) =>
+        getEngineerTaskSchedule(d)
+          .then((r) => ({ d, list: r.data ?? [] }))
+          .catch(() => ({ d, list: [] }))
+      ));
+
+      const pad2 = (n) => String(n).padStart(2, "0");
+      const header = ["날짜", "시작", "종료", "상태", "제품명", "고객명", "연락처", "방문지역", "주소", "증상"];
+      const rows = results.flatMap(({ d, list }) => list.map((t) => {
+        const [h, m] = t.scheduledTime.split(":").map(Number);
+        const end = `${pad2(h + 1)}:${pad2(m)}`;
+        const statusLabel = STATUS_MAP[t.assignmentStatus]?.label ?? t.assignmentStatus;
+        return [
+          d,
+          t.scheduledTime,
+          end,
+          statusLabel,
+          `${t.applianceBrand} ${t.applianceModelName}`,
+          t.customerName,
+          csvText(t.customerPhone),
+          t.visitRegionName,
+          t.visitAddressDetail,
+          t.symptomName,
+        ];
+      }));
+
+      if (rows.length === 0) {
+        alert("내보낼 일정이 없습니다.");
+        return;
+      }
+
+      const csv = [header, ...rows].map((r) => r.map(escapeCsv).join(",")).join("\n");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `careflow_일정_${view}_${toDateParam(currentDate)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("일정 내보내기 실패:", err);
+      alert("일정 내보내기에 실패했습니다.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   // [수정] assignmentId만 넘기면 EngineerWorkPage 탭이 항상 "전체"로 남아있어서,
@@ -441,7 +518,9 @@ export default function EngineerSchedulePage() {
               </div>
             )}
           </div>
-          <button className="esp-export-btn"><Download size={13} /> 일정 내보내기</button>
+          <button className="esp-export-btn" onClick={handleExportSchedule} disabled={exporting}>
+            <Download size={13} /> {exporting ? "내보내는 중..." : "일정 내보내기"}
+          </button>
         </div>
       </div>
 
