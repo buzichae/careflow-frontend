@@ -95,6 +95,22 @@
   padding: 3px 8px; cursor: pointer; font-family: inherit;
 }
 
+.asp3-device-list { padding: 8px 0 0; }
+.asp3-device-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; border-bottom: 0.5px solid #f5f4ff; gap: 8px;
+}
+.asp3-device-row:last-child { border-bottom: none; }
+.asp3-device-name {
+  font-size: 11px; color: #666; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 180px;
+}
+.asp3-device-remove {
+  font-size: 11px; color: #dc2626; font-weight: 600;
+  background: none; border: 0.5px solid #fecaca; border-radius: 6px;
+  padding: 2px 8px; cursor: pointer; font-family: inherit; flex-shrink: 0;
+}
+
 /* 데이터 관리 */
 .asp3-data-btn {
   display: flex; align-items: center; gap: 8px; width: 100%;

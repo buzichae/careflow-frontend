@@ -221,6 +221,12 @@
 
 .acp-detail__section-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 8px; margin-top: 14px; }
 
+.acp-edit-input {
+  flex: 1; margin-left: 12px; padding: 5px 8px; font-size: 12px;
+  border: 1px solid #e0dcff; border-radius: 6px; text-align: right; color: #1a1a2e;
+}
+.acp-edit-input:focus { outline: none; border-color: #5B4FF5; }
+
 /* 메모 */
 .acp-detail__memo-box {
   background: #f8f7ff; border-radius: 8px; padding: 12px;

@@ -5,11 +5,9 @@ import "../../../styles/Agency/Modal/Engineerapprovalmodal.css";
 
 // ── 기사 가입 신청 관리 모달 ──────────────────────
 // 사용 API
-//   GET  /api/account-requests/engineerlist        기사 가입 승인 대기 목록
-//   POST /api/account-requests/engineer/approval    기사 가입 승인
-//   POST /api/account-requests/engineer/rejection    기사 가입 반려
-//
-// ※ 승인/반려 요청 바디 필드명(requestId)은 스웨거 스펙 확인 후 필요시 수정하세요.
+//   GET  /api/account-requests/engineerlist                  기사 가입 승인 대기 목록 ({ totalCount, requests: [{ accountRequestId, ... }] })
+//   POST /api/account-requests/engineer/approval?accountId=  기사 가입 승인
+//   POST /api/account-requests/engineer/rejection?accountId= 기사 가입 반려
 
 function Avatar({ name, size = 36 }) {
   return (
@@ -29,7 +27,7 @@ export default function EngineerApprovalModal({ onClose, onApproved }) {
     setLoading(true);
     setError(null);
     apiFetch("/api/account-requests/engineerlist")
-      .then(data => setList(Array.isArray(data) ? data : []))
+      .then(data => setList(Array.isArray(data?.requests) ? data.requests : []))
       .catch(err => {
         console.error(err);
         setError("목록을 불러오지 못했습니다.");
@@ -43,13 +41,13 @@ export default function EngineerApprovalModal({ onClose, onApproved }) {
     setProcessingId(requestId);
     try {
       const path = type === "approve"
-        ? "/api/account-requests/engineer/approval"
-        : "/api/account-requests/engineer/rejection";
+        ? `/api/account-requests/engineer/approval?accountId=${requestId}`
+        : `/api/account-requests/engineer/rejection?accountId=${requestId}`;
       await apiFetch(path, {
         method: "POST",
-        body: JSON.stringify({ requestId }),
+        ...(type === "reject" && { body: JSON.stringify({ rejectReson: "" }) }),
       });
-      setList(prev => prev.filter(r => r.requestId !== requestId));
+      setList(prev => prev.filter(r => r.accountRequestId !== requestId));
       if (type === "approve") onApproved?.();
     } catch (err) {
       console.error(err);
@@ -76,7 +74,7 @@ export default function EngineerApprovalModal({ onClose, onApproved }) {
             <p className="eam-modal__empty">대기 중인 가입 신청이 없습니다.</p>
           ) : (
             list.map(req => (
-              <div key={req.requestId} className="eam-request-row">
+              <div key={req.accountRequestId} className="eam-request-row">
                 <Avatar name={req.name} size={36} />
                 <div className="eam-request-row__info">
                   <span className="eam-request-row__name">{req.name}</span>
@@ -90,17 +88,17 @@ export default function EngineerApprovalModal({ onClose, onApproved }) {
                 <div className="eam-request-row__actions">
                   <button
                     className="eam-btn eam-btn--reject"
-                    disabled={processingId === req.requestId}
-                    onClick={() => handleDecision(req.requestId, "reject")}
+                    disabled={processingId === req.accountRequestId}
+                    onClick={() => handleDecision(req.accountRequestId, "reject")}
                   >
                     반려
                   </button>
                   <button
                     className="eam-btn eam-btn--approve"
-                    disabled={processingId === req.requestId}
-                    onClick={() => handleDecision(req.requestId, "approve")}
+                    disabled={processingId === req.accountRequestId}
+                    onClick={() => handleDecision(req.accountRequestId, "approve")}
                   >
-                    {processingId === req.requestId
+                    {processingId === req.accountRequestId
                       ? <Loader2 size={14} className="eam-spin" />
                       : "승인"}
                   </button>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Clock, MapPin, Star, RefreshCw, XCircle, Phone, History, ZoomIn } from "lucide-react";
 import "../../../styles/Agency/Modal/AssignModals.css";
 import api from "../../../apis/axiosInstance";
@@ -89,6 +90,7 @@ function mapDetail(raw) {
 // - ACCEPTED (배정 완료):      접수 내용 표시 + 담당기사 표시 + 버튼 활성
 // ══════════════════════════════════════════
 export function AssignDetailModal({ onClose, item, onSuccess }) {
+  const navigate = useNavigate();
   const detail = mapDetail(item);
   const [zoomedImg, setZoomedImg] = useState(null);
 
@@ -353,8 +355,12 @@ export function AssignDetailModal({ onClose, item, onSuccess }) {
               <div className="am__field am__field--full"><span className="am__label">특이사항</span><span className="am__value am__value--note">{detail.note}</span></div>
             </div>
             <div className="am__btn-row">
-              <button className="am__btn am__btn--outline"><Phone size={13} /> 고객 연락하기</button>
-              <button className="am__btn am__btn--ghost"><History size={13} /> 고객 이력보기</button>
+              <a className="am__btn am__btn--outline" href={detail.phone ? `tel:${detail.phone}` : undefined}>
+                <Phone size={13} /> 고객 연락하기
+              </a>
+              <button className="am__btn am__btn--ghost" onClick={() => navigate("/agency/customers")}>
+                <History size={13} /> 고객 이력보기
+              </button>
             </div>
           </section>
 
