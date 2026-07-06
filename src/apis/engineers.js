@@ -135,6 +135,13 @@ export const getEngineerCustomerDetail = (customerId) =>
 export const getSettlementSummary = (dateFrom, dateTo, brand, status) =>
   api.get("/api/engineer/settlements/summary", { params: { dateFrom, dateTo, brand, status } });
 
+// 실적/정산 리포트 다운로드 (CSV, blob) — 화면과 동일한 기간/브랜드/상태 필터 반영
+export const downloadSettlementReport = (dateFrom, dateTo, brand, status) =>
+  api.get("/api/engineer/settlements/report/download", {
+    params: { dateFrom, dateTo, brand, status },
+    responseType: "blob",
+  });
+
 // 정산 내역 목록 
 export const getSettlements = (page = 0, size = 10) =>
   api.get("/api/engineer/settlements", { params: { page, size } });
