@@ -935,11 +935,21 @@ function SignupForm({ roleKey, onBack }) {
                       className="auth-complete__avatar-img"
                     />
                   </div>
-                  <h3 className="auth-complete__title">가입이 완료되었어요!</h3>
+                  <h3 className="auth-complete__title">
+                    {roleKey === "engineer"
+                      ? "대행사에 요청을 보냈습니다"
+                      : "가입이 완료되었어요!"}
+                  </h3>
                   <p className="auth-complete__desc">
-                    CareFlow {role.title} 계정이 생성되었습니다.
-                    <br />
-                    로그인하여 서비스를 이용해보세요.
+                    {roleKey === "engineer" ? (
+                      "대행사 승인이 올 때까지 기다려주세요."
+                    ) : (
+                      <>
+                        CareFlow {role.title} 계정이 생성되었습니다.
+                        <br />
+                        로그인하여 서비스를 이용해보세요.
+                      </>
+                    )}
                   </p>
                   <div className="auth-complete__info">
                     <div className="auth-complete__info-row">
