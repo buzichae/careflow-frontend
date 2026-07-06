@@ -1,4 +1,5 @@
 import api from "./axiosInstance";
+import { useState, useEffect } from "react";
 
 // 수동 배정 - 조건(지역/브랜드/보유기술) 필터링된 후보 기사 목록 조회
 export const getAvailableEngineers = (customerId, regionId, brand, skill) =>
@@ -99,6 +100,14 @@ export const getWorkReports = (page = 1, size = 20) =>
 // ── 작업 보고서 상세 
 export const getWorkReportDetail = (reportId) =>
   api.get(`/api/engineer/work-reports/${reportId}`);
+
+/**
+ * 작업 보고서 '신규 작성' 화면 진입 시 초기 데이터 조회 API
+ * - 백엔드의 /work-reports/{reportId} 상세 조회와의 라우팅 충돌을 피하기 위해 /form-data 경로 사용
+ * - Query String 파라미터로 requestId를 전달합니다.
+ */
+export const getReportFormData = (requestId) =>
+    api.get("/api/engineer/work-reports/form-data", { params: { requestId } });
 
 // ── 작업 보고서 제출 (기사가 보고서 작성 완료 시, 최초 생성)
 export const submitWorkReport = (data) =>

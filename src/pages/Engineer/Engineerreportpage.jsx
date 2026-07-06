@@ -69,7 +69,7 @@ export default function EngineerReportPage() {
 
       if (search.trim()) {
         const q = search.trim().toLowerCase();
-        const haystack = [item.customerName, item.productName, item.requestId]
+        const haystack = [item.customerName, item.productName, item.requestCode, item.requestId]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -208,7 +208,7 @@ export default function EngineerReportPage() {
               const status = STATUS_MAP[item.status];
               return (
                 <div key={item.reportId ?? item.requestId} className="erp-table__row">
-                  <span className="erp-table__request-id">{item.requestId}</span>
+                  <span className="erp-table__request-id">{item.requestCode ?? item.requestId}</span>
                   <span className="erp-table__customer">{item.customerName}</span>
                   <span className="erp-table__product-col">
                     <span className="erp-table__product">{item.productName}</span>
@@ -242,7 +242,7 @@ export default function EngineerReportPage() {
                                 alert("작업 상태를 '수리 중'으로 변경한 후 보고서를 작성할 수 있습니다.");
                                 return;
                               }
-                              navigate("/engineer/reports/submit", { state: { requestId: item.requestId } });
+                              navigate("/engineer/report/submit", { state: { requestId: item.requestId } });
                             }}
                         >
                           보고서 작성
