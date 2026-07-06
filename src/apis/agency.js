@@ -7,6 +7,18 @@ export async function getAgencyMe() {
 }
 
 /**
+ * 대행사 A/S 접수 반려
+ * PATCH /api/agency/work-requests/{requestId}/reject?reason=
+ * - 배정 대기(AGENCY_RECEIVED) 상태의 요청만 반려 가능 (그 외 상태는 400)
+ * - 반려 시 고객에게 재신청 안내 알림이 자동 발송됨(자동/수동 배정에 따라 문구 다름)
+ */
+export function rejectWorkRequest(requestId, reason) {
+  return api.patch(`/api/agency/work-requests/${requestId}/reject`, null, {
+    params: reason ? { reason } : undefined,
+  });
+}
+
+/**
  * 대행사 A/S 요청 단건 상세 조회
  * GET /api/agency/work-requests/{requestId}/detail
  * → AgencyAsRequestDetailResponse

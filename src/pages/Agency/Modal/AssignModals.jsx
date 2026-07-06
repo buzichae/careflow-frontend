@@ -3,7 +3,7 @@ import { X, Clock, MapPin, Star, RefreshCw, XCircle, Phone, History, ZoomIn } fr
 import "../../../styles/Agency/Modal/AssignModals.css";
 import api from "../../../apis/axiosInstance";
 import { getRecommendedEngineers } from "../../../apis/agencyEngineer";
-import { getAssignmentDetail } from "../../../apis/agency";
+import { getAssignmentDetail, rejectWorkRequest } from "../../../apis/agency";
 
 // ──────────────────────────────────────────
 // 공통 아바타
@@ -582,6 +582,28 @@ export function ReassignModal({ onClose, item, onSuccess }) {
     }
   };
 
+  // ── 접수 반려 ── PATCH /api/agency/work-requests/{requestId}/reject
+  // 반려 시 고객에게 재신청 안내 알림이 자동 발송됨(백엔드에서 자동/수동 배정 여부에 따라 문구 분기)
+  const handleReject = async () => {
+    if (!item?.requestId) {
+      alert("접수 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    if (!window.confirm("접수를 반려하시겠습니까? 고객에게 반려 안내 알림이 발송됩니다.")) return;
+    setSubmitting(true);
+    try {
+      await rejectWorkRequest(item.requestId);
+      alert("접수가 반려되었습니다.");
+      onSuccess?.();
+      onClose();
+    } catch (e) {
+      const msg = e.response?.data?.message ?? "접수 반려에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="am-overlay" onClick={onClose}>
       <div className="am" onClick={(e) => e.stopPropagation()}>
@@ -655,6 +677,13 @@ export function ReassignModal({ onClose, item, onSuccess }) {
         <div className="am__footer">
           <button className="am__btn am__btn--ghost" onClick={onClose}>취소</button>
           <div className="am__footer-right">
+            <button
+              className="am__btn am__btn--danger"
+              onClick={handleReject}
+              disabled={submitting}
+            >
+              {submitting ? "처리 중..." : "접수 반려"}
+            </button>
             <button
               className="am__btn am__btn--secondary"
               onClick={handleAutoAssign}

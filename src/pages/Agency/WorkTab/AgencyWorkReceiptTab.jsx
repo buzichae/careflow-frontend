@@ -14,6 +14,8 @@ import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
 
 
 // API 응답 AgencyAsRequestListResponse → 컴포넌트 내부 형식으로 매핑
+// assignStatus/engineerName/assignedAt/overtimeMin은 배정 데이터가 없는 기본값(아직 배정 전 건)이며,
+// enrichWithAssignment()에서 GET /api/agency/as-assignments 조회 결과로 실제 값을 덮어씀
 function mapReceiptItem(r) {
   return {
     requestId:   r.requestId,
@@ -29,10 +31,32 @@ function mapReceiptItem(r) {
     endTime:     "-",
     type:        r.assignType === "AUTO" ? "자동 A/S" : r.assignType === "MANUAL" ? "수동 A/S" : "-",
     status:      r.status,
-    assignStatus: null,   // 배정 데이터 별도 — 재배정 로직 비활성 (assignmentId 조회는 모달 내부에서 처리)
+    assignmentId: null,
+    assignStatus: null,
     engineerName: null,
     assignedAt:   null,
     overtimeMin:  0,
+  };
+}
+
+// requestId별 최신 배정 건(assignmentByRequestId)을 접수 항목에 병합
+// - assignStatus(WAITING/ACCEPTED/REJECTED/COMPLETED)로 재배정 필요 여부(getReassignReason) 판별 가능해짐
+// - WAITING 상태일 때만 assignedAt 기준 경과 시간(overtimeMin)을 계산 (30분 초과 시 재배정 대상)
+function enrichWithAssignment(item, assignmentByRequestId) {
+  const a = assignmentByRequestId[item.requestId];
+  if (!a) return item;
+
+  const overtimeMin = (a.status === "WAITING" && a.assignedAt)
+    ? Math.max(0, Math.floor((Date.now() - new Date(a.assignedAt).getTime()) / 60000))
+    : 0;
+
+  return {
+    ...item,
+    assignmentId: a.assignmentId,
+    assignStatus: a.status,
+    engineerName: a.engineerName,
+    assignedAt:   a.assignedAt,
+    overtimeMin,
   };
 }
  
@@ -175,6 +199,11 @@ export default function AgencyWorkReceiptTab() {
   // AsRequest.status는 큰 흐름만 담고 있어서, 기사가 수락/출발/도착/작업중인지는 여기서 보강
   const [latestLogByRequestId, setLatestLogByRequestId] = useState({});
 
+  // 접수건별 최신 배정 정보 (GET /api/agency/as-assignments — 날짜 제한 없이 전체 배정 내역 조회)
+  // 기사 거절(REJECTED)/30분 미수락(WAITING) 건에서 "재배정 필요" 배지·버튼을 노출하기 위해
+  // requestId별로 가장 최근 배정 건만 골라서 assignStatus/engineerName/assignedAt을 보강한다
+  const [assignmentByRequestId, setAssignmentByRequestId] = useState({});
+
   // ── 필터 상태 (기존엔 UI만 있고 실제 필터링 로직이 없었음) ──
   // 날짜는 기본적으로 "전체" 기간을 보여주도록 비워둠 (사용자가 직접 선택할 때만 필터링)
   const [filters, setFilters] = useState({
@@ -259,7 +288,7 @@ export default function AgencyWorkReceiptTab() {
   useEffect(() => {
     fetchAssignments();
   }, []);
- 
+
   // 접수건별 최신 기사 진행상태 조회 (전체 로그 중 requestId별 가장 최근 것만 추출)
   // AsRequest.status는 큰 흐름만 담고 있어서, 기사가 수락/출발/도착/작업중인지는 이 로그로 보강
   useEffect(() => {
@@ -277,13 +306,57 @@ export default function AgencyWorkReceiptTab() {
       })
       .catch(() => setLatestLogByRequestId({}));
   }, []);
- 
+
+  // 접수건별 최신 배정 정보 조회 (GET /api/agency/as-assignments — 날짜/상태 제한 없는 전체 배정 내역)
+  // 한 requestId에 배정 이력이 여러 건일 수 있어(재배정 등) assignedAt이 가장 최근인 것만 채택
+  const fetchAllAssignments = () => {
+    api.get("/api/agency/as-assignments")
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        const latest = {};
+        for (const a of list) {
+          const prev = latest[a.requestId];
+          if (!prev || new Date(a.assignedAt) > new Date(prev.assignedAt)) {
+            latest[a.requestId] = a;
+          }
+        }
+        setAssignmentByRequestId(latest);
+      })
+      .catch((err) => {
+        if (err.response?.status !== 204) console.error("배정 내역 조회 실패:", err);
+        setAssignmentByRequestId({});
+      });
+  };
+
+  useEffect(() => {
+    fetchAllAssignments();
+  }, []);
+
+  // 배정 변경/재배정/반려 등 모달 액션 성공 후 공통 갱신
+  // (접수 목록 + 실시간 배정 현황 + 배정 이력 맵 전부 다시 조회)
+  const refreshAll = () => {
+    api.get("/api/agency/work-requests")
+      .then(res => {
+        const mapped = (Array.isArray(res.data) ? res.data : []).map(mapReceiptItem);
+        setReceiptList(mapped);
+        setTotalCount(mapped.length);
+        setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
+      })
+      .catch(() => {});
+    fetchAssignments();
+    fetchAllAssignments();
+  };
+
   // 브랜드/지역 드롭다운 옵션 (실제 데이터에서 고유값 추출)
   const brandOptions  = [...new Set(receiptList.map(i => i.productName).filter(Boolean))];
   const regionOptions = [...new Set(receiptList.map(i => i.region).filter(v => v && v !== "-"))];
 
+  // 배정 정보(assignStatus/engineerName/assignedAt/overtimeMin)를 접수 목록에 병합
+  // — 필터/테이블/재배정 판별(getReassignReason)은 모두 이 병합된 목록을 사용해야 함
+  const enrichedList = receiptList.map((item) => enrichWithAssignment(item, assignmentByRequestId));
+
   // 실제 필터링 (날짜/브랜드/지역/유형/상태/검색어) — 이전엔 UI만 있고 아무 것도 걸러내지 않았음
-  const filteredList = receiptList.filter((item) => {
+  const filteredList = enrichedList.filter((item) => {
     if (filters.startDate && item.createdAt.slice(0, 10) < filters.startDate) return false;
     if (filters.endDate && item.createdAt.slice(0, 10) > filters.endDate) return false;
     if (filters.brand && item.productName !== filters.brand) return false;
@@ -572,40 +645,25 @@ export default function AgencyWorkReceiptTab() {
           </div>
         </div>
 
-      {workDetailModal   && <WorkDetailModal   onClose={() => setWorkDetailModal(null)}   detail={workDetailModal} />}
+      {workDetailModal && (
+        <WorkDetailModal
+          onClose={() => setWorkDetailModal(null)}
+          detail={workDetailModal}
+          onSuccess={refreshAll}
+        />
+      )}
       {assignDetailModal && (
         <AssignDetailModal
           onClose={() => setAssignDetailModal(null)}
           item={assignDetailModal}
-          onSuccess={() => {
-            // 배정 취소/재배정 후 목록 갱신
-            api.get("/api/agency/work-requests")
-              .then(res => {
-                const mapped = (Array.isArray(res.data) ? res.data : []).map(mapReceiptItem);
-                setReceiptList(mapped);
-                setTotalCount(mapped.length);
-                setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
-              })
-              .catch(() => {});
-            fetchAssignments();
-          }}
+          onSuccess={refreshAll}
         />
       )}
       {reassignModal && (
         <ReassignModal
           onClose={() => setReassignModal(null)}
           item={reassignModal}
-          onSuccess={() => {
-            api.get("/api/agency/work-requests")
-              .then(res => {
-                const mapped = (Array.isArray(res.data) ? res.data : []).map(mapReceiptItem);
-                setReceiptList(mapped);
-                setTotalCount(mapped.length);
-                setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
-              })
-              .catch(() => {});
-            fetchAssignments();
-          }}
+          onSuccess={refreshAll}
         />
       )}
     </div>
