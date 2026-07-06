@@ -37,8 +37,10 @@ export default function EngineerReportPage() {
 
   useEffect(() => {
     let mounted = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩/에러 상태 초기화(의도된 동작) */
     setLoading(true);
     setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // 참고: getWorkReports가 현재 (page, size)만 받도록 되어 있어, 필터를
     // 서버로 넘길 방법이 없습니다. 백엔드/API 함수가 필터 파라미터를 지원하도록
@@ -89,6 +91,40 @@ export default function EngineerReportPage() {
       return true;
     });
   }, [reportList, statusFilter, search, dateStart, dateEnd]);
+
+  // 엑셀(CSV) 다운로드 — 현재 화면에 보이는 필터된 목록(filteredList)을 그대로 내보냄.
+  // (페이징 특성상 현재 페이지 기준. 서버 전체 export가 필요하면 백엔드 다운로드 엔드포인트로 확장)
+  const escapeCsv = (v) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const handleExcelDownload = () => {
+    if (filteredList.length === 0) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+    }
+    const header = ["접수번호", "고객명", "제품명", "모델명", "작업일", "작업시간", "상태", "작업금액(원)", "보고서제출일", "고객승인일"];
+    const rows = filteredList.map((item) => [
+      item.requestCode ?? item.requestId,
+      item.customerName,
+      item.productName,
+      item.modelNo,
+      item.workDate,
+      `${item.workTimeStart ?? ""}~${item.workTimeEnd ?? ""}`,
+      STATUS_MAP[item.status]?.label ?? item.status,
+      item.finalAmount ?? "",
+      item.submittedAt ?? "",
+      item.approvedAt ?? "",
+    ]);
+    const csv = [header, ...rows].map((r) => r.map(escapeCsv).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `작업보고서_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const statCards = [
     { label: "전체",    value: totalCount,                                                  icon: FileText,    color: "purple" },
@@ -150,7 +186,7 @@ export default function EngineerReportPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <button className="erp-excel-btn"><Download size={13} /> 엑셀 다운로드</button>
+        <button className="erp-excel-btn" onClick={handleExcelDownload}><Download size={13} /> 엑셀 다운로드</button>
       </div>
 
       {/* 통계 카드 */}
