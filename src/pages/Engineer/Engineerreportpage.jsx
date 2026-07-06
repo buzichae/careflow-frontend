@@ -69,7 +69,7 @@ export default function EngineerReportPage() {
 
       if (search.trim()) {
         const q = search.trim().toLowerCase();
-        const haystack = [item.customerName, item.productName, item.requestId]
+        const haystack = [item.customerName, item.productName, item.requestCode, item.requestId]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -208,7 +208,7 @@ export default function EngineerReportPage() {
               const status = STATUS_MAP[item.status];
               return (
                 <div key={item.reportId ?? item.requestId} className="erp-table__row">
-                  <span className="erp-table__request-id">{item.requestId}</span>
+                  <span className="erp-table__request-id">{item.requestCode ?? item.requestId}</span>
                   <span className="erp-table__customer">{item.customerName}</span>
                   <span className="erp-table__product-col">
                     <span className="erp-table__product">{item.productName}</span>
@@ -227,23 +227,33 @@ export default function EngineerReportPage() {
                   <span className="erp-table__date">{item.submittedAt ?? "-"}</span>
                   <span className="erp-table__date">{item.approvedAt ?? "-"}</span>
                   <span className="erp-table__actions">
-                    {/* [수정] 제출완료(SUBMITTED)에서도 수정 버튼을 없애기로 함 →
-                        DRAFT만 "보고서 작성"으로 작성 화면 진입, 그 외(SUBMITTED/APPROVED)는
-                        전부 "상세보기"만 제공 (수정 기능은 목록에서 노출하지 않음) */}
                     {item.status === "DRAFT" ? (
-                      <button
-                        className="erp-write-btn"
-                        onClick={() => navigate("/engineer/reports/submit", { state: { requestId: item.requestId } })}
-                      >
-                        보고서 작성
-                      </button>
+                        <button
+                            className="erp-write-btn"
+                            // 🌟 신규: 작업 상태가 IN_PROGRESS가 아니면 시각적으로 비활성화(반투명) 처리
+                            style={{
+                              opacity: item.requestStatus !== "IN_PROGRESS" ? 0.5 : 1,
+                              cursor: item.requestStatus !== "IN_PROGRESS" ? "not-allowed" : "pointer"
+                            }}
+                            title={item.requestStatus !== "IN_PROGRESS" ? "작업 상태를 '수리 중'으로 변경해야 작성할 수 있습니다." : ""}
+                            onClick={() => {
+                              // 🌟 신규: 클릭 시 방어 로직 (알림창 띄우기)
+                              if (item.requestStatus !== "IN_PROGRESS") {
+                                alert("작업 상태를 '수리 중'으로 변경한 후 보고서를 작성할 수 있습니다.");
+                                return;
+                              }
+                              navigate("/engineer/report/submit", { state: { requestId: item.requestId } });
+                            }}
+                        >
+                          보고서 작성
+                        </button>
                     ) : (
-                      <button
-                        className="erp-detail-btn"
-                        onClick={() => navigate(`/engineer/reports/${item.reportId}`)}
-                      >
-                        상세보기
-                      </button>
+                        <button
+                            className="erp-detail-btn"
+                            onClick={() => navigate(`/engineer/reports/${item.reportId}`)}
+                        >
+                          상세보기
+                        </button>
                     )}
                     <button className="erp-more-btn"><MoreVertical size={14} /></button>
                   </span>

@@ -9,7 +9,7 @@ import {
   // 없다면 apis/engineers.js에 추가하고, 백엔드에도 대응 엔드포인트가 필요합니다.
   getWorkReportDetail,
   updateWorkReport,
-  getRepairParts,
+  getRepairParts, getReportFormData,
 } from "../../apis/engineers";
 import "../../styles/Engineer/Engineerreportsubmitpage.css";
 
@@ -28,6 +28,7 @@ export default function EngineerReportSubmitPage() {
   // - 신규 작성: { requestId } 만 전달됨
   // - 수정:      { reportId, requestId } 함께 전달됨 → 기존 데이터를 불러와 폼에 채움
   const requestId = location.state?.requestId;
+  const passedRequestCode = location.state?.requestCode; // 포맷팅된 접수번호 (화면 전시용)
   const reportId  = location.state?.reportId;
   const isEditMode = !!reportId;
 
@@ -77,11 +78,11 @@ export default function EngineerReportSubmitPage() {
     });
   }, [partOptions]);
 
-  const [loadingDetail, setLoadingDetail] = useState(isEditMode);
+  const [loadingDetail, setLoadingDetail] = useState(true);
   const [loadError, setLoadError] = useState(null);
   // [연동 준비] 수정 모드에서 불러온 상세 데이터에 형식화된 접수번호
   // (requestCode)가 있으면 화면 표시용으로 저장. 없으면 숫자 requestId 그대로 사용.
-  const [requestDisplayCode, setRequestDisplayCode] = useState(null);
+  const [requestDisplayCode, setRequestDisplayCode] = useState(passedRequestCode || null);
   const [blockedByApproval, setBlockedByApproval] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -89,22 +90,33 @@ export default function EngineerReportSubmitPage() {
 
   // 수정 모드일 때 기존 보고서 상세를 불러와 폼에 채움
   useEffect(() => {
-    if (!isEditMode) return;
     let mounted = true;
+
+    if (!isEditMode && !requestId) {
+      if (mounted) {
+        setLoadError("연결된 작업 정보가 없습니다. 목록에서 다시 진입해주세요.");
+        setLoadingDetail(false);
+      }
+      return;
+    }
+
     setLoadingDetail(true);
     setLoadError(null);
 
-    getWorkReportDetail(reportId)
-      .then((res) => {
-        if (!mounted) return;
-        const d = res.data;
+    const fetchApi = isEditMode
+        ? getWorkReportDetail(reportId)
+        : getReportFormData(requestId);
 
-        // [안전장치] 목록 화면 버튼 자체를 숨겨놨지만, 혹시 다른 경로로 URL에
-        // 직접 진입하는 경우까지 대비해 승인 완료 보고서는 여기서도 한 번 더 차단.
-        if (d.status === "APPROVED") {
-          setBlockedByApproval(true);
-          return;
-        }
+    fetchApi
+        .then((res) => {
+          if (!mounted) return;
+          const d = res.data;
+
+          // 수정 모드일 때 승인 완료 차단 로직
+          if (isEditMode && d.status === "APPROVED") {
+            setBlockedByApproval(true);
+            return;
+          }
 
         setDiagnosisResult(d.diagnosisResult ?? "REPAIRED");
         setRequestDisplayCode(d.requestCode ?? null);
@@ -136,7 +148,7 @@ export default function EngineerReportSubmitPage() {
       .finally(() => { if (mounted) setLoadingDetail(false); });
 
     return () => { mounted = false; };
-  }, [isEditMode, reportId]);
+  }, [isEditMode, reportId, requestId]);
 
   const addPart = () => {
     setParts((prev) => [...prev, { repairPartId: "", quantity: 1, appliedUnitPrice: "" }]);
