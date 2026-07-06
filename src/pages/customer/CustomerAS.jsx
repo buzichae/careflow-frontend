@@ -26,6 +26,7 @@ import {
   getReport,
   approveReport,
   review,
+  getMyReview,
   getAsRequestDetail,
   createAsRequest,
   processPayment,
@@ -1281,7 +1282,7 @@ function getActionsByStatus(status, hasReview) {
     case "ENGINEER_DEPARTED":
     case "ENGINEER_ARRIVED":
     case "IN_PROGRESS":
-      return ["상세보기"];
+      return [];
     case "COMPLETED":
       return ["수리 보고서 보기"];
     case "PAID":
@@ -1537,20 +1538,57 @@ export default function CustomerAS() {
   const [reportTarget, setReportTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null); // { item, existingReview? }
   const [reviews, setReviews] = useState({});
+  const checkedReviewIds = useRef(new Set());
 
-  async function handleReviewSubmit({ rating, content }) {
+  /* PAID 상태 항목은 실제로 리뷰가 이미 작성되어 있는지 서버에 확인해서
+     "기사님 리뷰 남기기" / "작성한 리뷰 보기" 버튼을 정확히 표시한다. */
+  useEffect(() => {
+    const toCheck = asList.filter(
+      (item) =>
+        item.status === "PAID" && !checkedReviewIds.current.has(item.requestId),
+    );
+    if (toCheck.length === 0) return;
+    toCheck.forEach((item) => checkedReviewIds.current.add(item.requestId));
+
+    Promise.allSettled(
+      toCheck.map((item) =>
+        getMyReview(item.requestId).then((res) => [
+          item.requestId,
+          res.data ?? res,
+        ]),
+      ),
+    ).then((results) => {
+      const found = {};
+      results.forEach((r) => {
+        if (r.status === "fulfilled") {
+          const [requestId, data] = r.value;
+          found[requestId] = {
+            rating: data.rating,
+            comment: data.content,
+            createdAt: data.createdAt?.slice(0, 10) ?? "",
+          };
+        }
+      });
+      if (Object.keys(found).length > 0) {
+        setReviews((prev) => ({ ...prev, ...found }));
+      }
+    });
+  }, [asList]);
+
+  async function handleReviewSubmit({ rating, comment }) {
     const item = reviewTarget.item;
     try {
-      await review(item.requestId, rating, content);
+      await review(item.requestId, rating, comment);
       // API 성공 후 로컬 상태 업데이트 → 버튼이 "작성한 리뷰 보기"로 전환됨
       setReviews((prev) => ({
         ...prev,
         [item.requestId]: {
           rating,
-          content,
+          comment,
           createdAt: new Date().toISOString().slice(0, 10),
         },
       }));
+      checkedReviewIds.current.add(item.requestId);
       setReviewTarget(null);
     } catch (error) {
       alert(error.response?.data?.message || "리뷰 작성에 실패했습니다.");
