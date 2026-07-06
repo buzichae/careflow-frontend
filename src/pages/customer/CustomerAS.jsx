@@ -20,6 +20,7 @@ import {
 import "../../styles/Customer/CustomerAS.css";
 import ApplianceIcon from "./ApplianceIcon";
 import ReportModal from "./ReportModal";
+import PaymentModal from "./PaymentModal";
 import {
   getMyAS,
   cancelAsRequest,
@@ -1521,6 +1522,7 @@ export default function CustomerAS() {
   }, []);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
+  const [paymentTarget, setPaymentTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null); // { item, existingReview? }
   const [reviews, setReviews] = useState({});
   const checkedReviewIds = useRef(new Set());
@@ -1661,40 +1663,49 @@ export default function CustomerAS() {
           onApprove={
             reportTarget.item.status === "COMPLETED"
               ? async () => {
-                  const requestId = reportTarget.item.requestId;
                   // 1) 보고서 승인 (customer_approved=true) — 결제 전 선행 조건
-                  try {
-                    await approveReport(reportTarget.report.reportId);
-                  } catch (error) {
-                    alert(
-                      error.response?.data?.message || "승인에 실패했습니다.",
-                    );
-                    return;
+                  //    이미 승인된 보고서를 다시 승인 시도하면 서버가 항상
+                  //    "이미 승인된 보고서입니다" 403을 반환해 결제 단계로
+                  //    못 넘어가고 막혀버림 (승인은 됐는데 결제만 실패했던
+                  //    경우 재시도가 영원히 불가능해지는 버그). 이미 승인된
+                  //    상태면 승인 호출을 건너뛰고 바로 결제로 진행한다.
+                  if (!reportTarget.report.customerApproved) {
+                    try {
+                      await approveReport(reportTarget.report.reportId);
+                    } catch (error) {
+                      alert(
+                        error.response?.data?.message || "승인에 실패했습니다.",
+                      );
+                      return;
+                    }
                   }
-                  // 2) 승인 성공 후에만 실제 결제 처리 — 승인만 하고 결제 API를
-                  //    호출하지 않으면 서버에는 결제 기록이 남지 않고 상태도
-                  //    COMPLETED에 그대로 머물러 있음 (프론트에서만 PAID로 표시되는 버그)
-                  try {
-                    await processPayment(requestId);
-                    setAsList((prev) =>
-                      prev.map((i) =>
-                        i.requestId === requestId
-                          ? { ...i, status: "PAID" }
-                          : i,
-                      ),
-                    );
-                    setReportTarget(null);
-                  } catch (error) {
-                    alert(
-                      error.response?.data?.message ||
-                        "보고서는 승인되었지만 결제 처리에 실패했습니다. 다시 시도해주세요.",
-                    );
-                    setReportTarget(null);
-                  }
+                  // 2) 승인 후 결제 모달을 열어 결제하기 버튼을 실제로 눌러야
+                  //    결제가 진행되도록 한다 (모의 결제라도 확인 절차 없이
+                  //    바로 사라지면 결제가 된 건지 알기 어려움).
+                  setPaymentTarget(reportTarget);
+                  setReportTarget(null);
                 }
               : undefined
           }
           onClose={() => setReportTarget(null)}
+        />
+      )}
+
+      {/* 결제 모달 (모의 결제) */}
+      {paymentTarget && (
+        <PaymentModal
+          item={paymentTarget.item}
+          amount={paymentTarget.report.finalAmount}
+          onConfirm={async () => {
+            const requestId = paymentTarget.item.requestId;
+            await processPayment(requestId);
+            setAsList((prev) =>
+              prev.map((i) =>
+                i.requestId === requestId ? { ...i, status: "PAID" } : i,
+              ),
+            );
+          }}
+          onClose={() => setPaymentTarget(null)}
         />
       )}
 

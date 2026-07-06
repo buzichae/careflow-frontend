@@ -1,0 +1,220 @@
+.cas-payment-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cas-payment-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  animation: cas-payment-modal-in .2s ease;
+}
+
+@keyframes cas-payment-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 헤더 */
+.cas-payment-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f0f0f8;
+}
+
+.cas-payment-modal__header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cas-payment-modal__header-left h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.cas-payment-modal__close {
+  background: #f5f5fb;
+  border: none;
+  border-radius: 7px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #888;
+}
+.cas-payment-modal__close:hover { background: #fee2e2; color: #ef4444; }
+
+/* 대상 정보 */
+.cas-payment-modal__target {
+  padding: 12px 20px;
+  background: #fafaff;
+  border-bottom: 1px solid #f0f0f8;
+}
+
+.cas-payment-modal__target-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 3px;
+}
+
+.cas-payment-modal__target-info {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+/* 본문 */
+.cas-payment-modal__body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cas-payment-amount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #f7f5ff;
+  border: 1px solid #ece7ff;
+  border-radius: 10px;
+}
+
+.cas-payment-amount__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b6b8a;
+}
+
+.cas-payment-amount__value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #7c5cf7;
+}
+
+.cas-payment-method__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3a3a5c;
+  margin: 0 0 8px;
+}
+
+.cas-payment-method__card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px;
+  border: 1.5px solid #e8e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.cas-payment-method__badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9333ea;
+  background: #f3e8ff;
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.cas-payment-modal__notice-text {
+  font-size: 11px;
+  color: #aaa;
+  line-height: 1.5;
+  margin: 8px 2px 0;
+}
+
+/* 푸터 */
+.cas-payment-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #f0f0f8;
+}
+
+.cas-payment-modal__btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 20px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+  border: none;
+}
+.cas-payment-modal__btn:hover { opacity: .87; }
+.cas-payment-modal__btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.cas-payment-modal__btn--outline { background: #f5f5fb; border: 1px solid #e8e8f0; color: #555; }
+.cas-payment-modal__btn--primary { background: #7c5cf7; color: #fff; }
+
+/* 처리 중 / 완료 / 실패 상태 화면 */
+.cas-payment-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 44px 24px 36px;
+  text-align: center;
+}
+
+.cas-payment-status__spinner {
+  color: #7c5cf7;
+  animation: cas-payment-spin 0.9s linear infinite;
+}
+
+@keyframes cas-payment-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.cas-payment-status__title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 10px 0 0;
+}
+
+.cas-payment-status__desc {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+.cas-payment-status__amount {
+  font-size: 22px;
+  font-weight: 800;
+  color: #7c5cf7;
+  margin: 2px 0 4px;
+}
+
+.cas-payment-status__confirm-btn {
+  margin-top: 16px;
+}
