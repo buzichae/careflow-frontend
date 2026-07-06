@@ -138,12 +138,20 @@ useEffect(() => {
         // [수정] 이전엔 sorted[0]을 무조건 "현재 작업"으로 고정해서, 오늘 일정이
         // 2건 이상이어도 사용자가 고를 방법이 없었음. 기본값으로만 첫 항목을
         // 선택해두고, 실제 선택은 selectWorkItem()을 통해 언제든 바꿀 수 있게 함.
-        selectWorkItem(sorted[0] ?? null);
-      })
-      .catch((err) => {
-        console.error("진행 중인 작업 조회 실패:", err);
+        setCurrentAssignmentId((prevId) => {
+          const stillExists = sorted.find((item) => item.assignmentId === prevId);
+          if (stillExists) {
+            // 상태만 최신화
+            selectWorkItem(stillExists);
+            return prevId;
+          } else {
+            // 없으면 첫 번째 항목 선택
+            selectWorkItem(sorted[0] ?? null);
+            return sorted[0]?.assignmentId ?? null;
+          }
+        });
       });
-  }, [selectWorkItem]);
+  }, [selectWorkItem]); // 의존성 배열 유지
 
   useEffect(() => {
     fetchCurrentWork();
@@ -358,7 +366,7 @@ useEffect(() => {
                   <button
                     key={a.key}
                     className={`ed-quick-btn ${isCurrent ? "ed-quick-btn--active" : isDone ? "ed-quick-btn--done" : "ed-quick-btn--disabled"}`}
-                    disabled={!(isCurrent || isNext) || !currentRequestId}
+                    disabled={!isNext || !currentRequestId}
                     onClick={() => handleQuickAction(a.key)}
                   >
                     <a.icon size={16} />
