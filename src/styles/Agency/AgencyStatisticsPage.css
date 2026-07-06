@@ -70,7 +70,12 @@
 
 /* 그리드 - 3단 */
 .asp2-grid { display: grid; grid-template-columns: 1.4fr 1fr 0.9fr; gap: 14px; align-items: start; }
+.asp2-grid--2col { grid-template-columns: 1.4fr 1fr; }
 .asp2-col  { display: flex; flex-direction: column; gap: 14px; }
+
+/* 통계 카드 - 3단/4단 (기사/정산/고객 통계 탭) */
+.asp2-stats--3col { grid-template-columns: repeat(3, 1fr); }
+.asp2-stats--4col { grid-template-columns: repeat(4, 1fr); }
 
 /* 차트 카드 */
 .asp2-chart-card {
@@ -144,6 +149,10 @@
 }
 .asp2-download-btn:hover { background: #eeeaff; }
 
+/* 리포트 탭 전용 카드 */
+.asp2-report-card { max-width: 520px; }
+.asp2-report-card__desc { font-size: 11px; color: #aaa; margin: -4px 0 10px; }
+
 .asp2-custom-report-btn {
   width: 100%; margin-top: 12px;
   background: #f8f7ff; border: 0.5px solid #e0dcff; border-radius: 8px;
@@ -177,6 +186,35 @@
 .asp2-summary-table__amount { color: #5B4FF5; font-weight: 700; }
 
 .asp2-empty { color: #aaa; font-size: 12px; padding: 12px 0; text-align: center; }
+
+/* 탭별 상세 테이블 (작업/기사/정산/고객 통계) */
+.asp2-detail-table { overflow-x: auto; }
+.asp2-detail-table__header {
+  display: grid; padding: 8px 10px; background: #f8f7ff;
+  font-size: 11px; color: #aaa; font-weight: 600;
+  border-radius: 8px 8px 0 0; border: 0.5px solid #e8e4ff;
+}
+.asp2-detail-table__row {
+  display: grid; padding: 10px 10px; font-size: 12px; color: #444;
+  border-bottom: 0.5px solid #f5f4ff;
+  border-left: 0.5px solid #e8e4ff; border-right: 0.5px solid #e8e4ff;
+}
+.asp2-detail-table__row:last-child {
+  border-bottom: 0.5px solid #e8e4ff; border-radius: 0 0 8px 8px;
+}
+.asp2-detail-table__amount { color: #5B4FF5; font-weight: 700; }
+
+.asp2-detail-table--3col .asp2-detail-table__header,
+.asp2-detail-table--3col .asp2-detail-table__row { grid-template-columns: 1.6fr 1fr 1fr; }
+
+.asp2-detail-table--engineer .asp2-detail-table__header,
+.asp2-detail-table--engineer .asp2-detail-table__row { grid-template-columns: 0.6fr 2fr 1fr 1fr; }
+
+.asp2-detail-table--customer .asp2-detail-table__header,
+.asp2-detail-table--customer .asp2-detail-table__row { grid-template-columns: 1fr 1.6fr 1fr 1fr; }
+
+.asp2-detail-table--settlement .asp2-detail-table__header,
+.asp2-detail-table--settlement .asp2-detail-table__row { grid-template-columns: 1.1fr 0.7fr 1.2fr 1.2fr 1.2fr 1.2fr; }
 
 /* 준비 중 */
 .asp2-coming-soon {

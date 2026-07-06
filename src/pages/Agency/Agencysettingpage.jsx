@@ -25,6 +25,20 @@ function isValidAccountNumber(value) {
   return /^[0-9-]+$/.test(value) && value.replace(/-/g, "").length >= 10;
 }
 
+// ISO LocalDateTime → "yyyy.MM.dd (요일) HH:mm:ss" 표시용 포맷
+function formatLastLoginAt(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${yyyy}.${mm}.${dd} (${days[d.getDay()]}) ${hh}:${min}:${ss}`;
+}
+
 export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -68,13 +82,9 @@ export default function AgencySettingPage() {
   const [feeLoading,   setFeeLoading]   = useState(true);
   const [feeSaving,    setFeeSaving]    = useState(false);
 
-  // ── 계정 정보 (더미 - 별도 API 없음) ───────────
-  const accountInfo = {
-    id:          "agency_admin",
-    name:        "대행사 관리자",
-    email:       "admin@careflow.co.kr",
-    lastLoginAt: "2024.06.18 (화) 14:35:22",
-  };
+  // ── 계정 정보 (3번 API 응답에 포함된 로그인 계정 필드 재사용) ──
+  // GET /api/agency/me 응답: { ..., name, email, lastLoginAt }
+  const [accountInfo, setAccountInfo] = useState({ name: "", email: "", lastLoginAt: null });
 
   // JWT의 isRepresentative 클레임으로 슈퍼 계정(대표 담당자) / 일반 관리자 계정 판별
   const isRepresentative = getIsRepresentativeFromToken();
@@ -93,6 +103,11 @@ export default function AgencySettingPage() {
         setAddress(data.agencyAddress ?? "");
         setBankName(data.bankName ?? "");
         setAccountNumber(data.accountNumber ?? "");
+        setAccountInfo({
+          name: data.name ?? "",
+          email: data.email ?? "",
+          lastLoginAt: data.lastLoginAt ?? null,
+        });
       })
       .catch(console.error)
       .finally(() => setInfoLoading(false));
@@ -306,17 +321,16 @@ export default function AgencySettingPage() {
 
         {/* 우측 패널 */}
         <aside className="asp3-right">
-          {/* 계정 정보 - 별도 API 없음, 더미 유지 */}
+          {/* 계정 정보 - GET /api/agency/me 응답의 name/email/lastLoginAt 사용 */}
           <div className="asp3-panel">
             <div className="asp3-panel__header">
               <h3 className="asp3-panel__title">계정 정보</h3>
               <div className="asp3-panel__avatar"><span>👤</span></div>
             </div>
-            <div className="asp3-panel__row"><span className="asp3-panel__label">아이디</span><span className="asp3-panel__value">{accountInfo.id}</span></div>
-            <div className="asp3-panel__row"><span className="asp3-panel__label">이름</span><span className="asp3-panel__value">{accountInfo.name}</span></div>
-            <div className="asp3-panel__row"><span className="asp3-panel__label">이메일</span><span className="asp3-panel__value">{accountInfo.email}</span></div>
+            <div className="asp3-panel__row"><span className="asp3-panel__label">이름</span><span className="asp3-panel__value">{infoLoading ? "..." : accountInfo.name}</span></div>
+            <div className="asp3-panel__row"><span className="asp3-panel__label">이메일</span><span className="asp3-panel__value">{infoLoading ? "..." : accountInfo.email}</span></div>
             <div className="asp3-panel__row"><span className="asp3-panel__label">계정 유형</span><span className="asp3-panel__value">{accountTypeLabel}</span></div>
-            <div className="asp3-panel__row"><span className="asp3-panel__label">마지막 로그인</span><span className="asp3-panel__value">{accountInfo.lastLoginAt}</span></div>
+            <div className="asp3-panel__row"><span className="asp3-panel__label">마지막 로그인</span><span className="asp3-panel__value">{infoLoading ? "..." : formatLastLoginAt(accountInfo.lastLoginAt)}</span></div>
             <button className="asp3-pw-btn"><LockIcon size={12} /> 비밀번호 변경</button>
             {/* 슈퍼 계정만 자기 대행사의 일반 관리자 가입 신청을 승인/반려할 수 있음 */}
             {isRepresentative && (
