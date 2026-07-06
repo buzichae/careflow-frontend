@@ -243,6 +243,10 @@ export default function EngineerCustomerListPage() {
           {brandsError && <option disabled>브랜드 목록을 불러오지 못했습니다</option>}
         </select>
 
+        <button className="eclp-adv-btn">
+          <SlidersHorizontal size={13} /> 상세 검색
+        </button>
+
         <button className="eclp-reset-btn" onClick={handleReset}>
           <RefreshCw size={13} /> 초기화
         </button>
@@ -311,9 +315,19 @@ export default function EngineerCustomerListPage() {
                 <td className="eclp-td-center">{c.totalAsCount ?? 0}</td>
 
                 <td className="eclp-td-center">
-                  {/* ⚠ "진행 중 작업" 건수 필드(inProgress 등)는 이 응답에 아직
-                      없습니다. 필요하면 백엔드에 추가 요청이 필요합니다. */}
-                  <span className="eclp-zero">-</span>
+                  {/* [연동 준비] 백엔드에 inProgressCount 필드 추가 요청함 (응답 대기 중).
+                      필드명이 확정되면 여기 c.inProgressCount만 그대로 쓰면 됨.
+                      0건일 때와 "값 자체가 아직 없음"을 구분하기 위해 null/undefined
+                      체크를 명시적으로 함. */}
+                  {c.inProgressCount != null ? (
+                    c.inProgressCount > 0 ? (
+                      <span className="eclp-inprogress-badge">{c.inProgressCount}건</span>
+                    ) : (
+                      <span className="eclp-zero">0건</span>
+                    )
+                  ) : (
+                    <span className="eclp-zero" title="백엔드 응답에 아직 필드가 없습니다">-</span>
+                  )}
                 </td>
 
                 <td>

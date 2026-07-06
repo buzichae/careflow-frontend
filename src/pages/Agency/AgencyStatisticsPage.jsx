@@ -18,18 +18,18 @@ const STAT_TABS = ["대시보드", "작업 통계", "기사 통계", "정산 통
 
 const STATUS_LABEL_MAP = {
   PENDING:           { label: "접수 대기",  color: "#5B4FF5" },
-  AGENCY_RECEIVED:   { label: "대행사 접수", color: "#7c6bff" },
-  ASSIGNED:          { label: "배차 완료",  color: "#2563eb" },
-  ACCEPTED:          { label: "기사 수락",  color: "#0ea5e9" },
-  ENGINEER_DEPARTED: { label: "기사 출발",  color: "#06b6d4" },
-  ENGINEER_ARRIVED:  { label: "기사 도착",  color: "#14b8a6" },
-  IN_PROGRESS:       { label: "작업 중",    color: "#16a34a" },
-  COMPLETED:         { label: "작업 완료",  color: "#65a30d" },
-  PAID:              { label: "결제 완료",  color: "#84cc16" },
+  AGENCY_RECEIVED:   { label: "대행사 접수", color: "#938cfd" },
+  ASSIGNED:          { label: "배차 완료",  color: "#938cfd" },
+  ACCEPTED:          { label: "기사 수락",  color: "#aea8ff" },
+  ENGINEER_DEPARTED: { label: "기사 출발",  color: "#938cfd" },
+  ENGINEER_ARRIVED:  { label: "기사 도착",  color: "#938cfd" },
+  IN_PROGRESS:       { label: "작업 중",    color: "#938cfd" },
+  COMPLETED:         { label: "작업 완료",  color: "#938cfd" },
+  PAID:              { label: "결제 완료",  color: "#938cfd" },
   CANCELLED:         { label: "취소",       color: "#ddd"    },
 };
 
-const CATEGORY_COLORS = ["#5B4FF5", "#2563eb", "#16a34a", "#d97706", "#aaa", "#0ea5e9", "#f43f5e"];
+const CATEGORY_COLORS = ["#5B4FF5", "#938cfd", "#bab5ff", "#e1dfff", "rgb(172, 182, 196)"];
 
 // TODO(프론트): 아래 두 항목은 대응하는 백엔드 API가 아직 없어 임시 mock 데이터입니다. 프론트 담당자 확인 필요.
 const MOCK_MONTHLY_EXTRA = [
@@ -37,12 +37,7 @@ const MOCK_MONTHLY_EXTRA = [
   { label: "고객 만족도",      value: "매우 만족 (86.3%)",   icon: Smile  },
 ];
 
-// TODO(프론트): "최근 주요 지표 요약" 테이블 — 기간별 비교 API 미구현으로 mock 데이터 사용 중. 프론트 담당자 확인 필요.
-const MOCK_SUMMARY_TABLE = [
-  { period: "2024.06.01 ~ 2024.06.18", receipt: "1,248건", done: "1,086건", rate: "87.0%", avgTime: "2.4 시간", avgRating: "4.8", totalAmount: "₩98,420,000" },
-  { period: "2024.05.01 ~ 2024.05.31", receipt: "1,083건", done: "963건",   rate: "89.0%", avgTime: "2.7 시간", avgRating: "4.6", totalAmount: "₩87,450,000" },
-  { period: "2024.04.01 ~ 2024.04.30", receipt: "972건",   done: "842건",   rate: "86.6%", avgTime: "2.6 시간", avgRating: "4.7", totalAmount: "₩76,320,000" },
-];
+
 
 // TODO(프론트): "리포트 다운로드" — 리포트 생성/다운로드 API 미구현으로 mock 데이터 사용 중. 프론트 담당자 확인 필요.
 const MOCK_REPORT_ITEMS = [
@@ -289,23 +284,13 @@ export default function AgencyStatisticsPage() {
               </div>
 
               <div className="asp2-chart-card">
-                <h3 className="asp2-chart-title" style={{ marginBottom: 12 }}>최근 주요 지표 요약</h3>
+              
                 <div className="asp2-summary-table">
                   <div className="asp2-summary-table__header">
-                    <span>기간</span><span>접수</span><span>완료</span><span>완료율</span>
-                    <span>처리 시간</span><span>평점</span><span>정산 금액</span>
+              
                   </div>
-                  {MOCK_SUMMARY_TABLE.map((row, i) => (
-                    <div key={i} className="asp2-summary-table__row">
-                      <span>{row.period}</span>
-                      <span>{row.receipt}</span>
-                      <span>{row.done}</span>
-                      <span>{row.rate}</span>
-                      <span>{row.avgTime}</span>
-                      <span>{row.avgRating}</span>
-                      <span className="asp2-summary-table__amount">{row.totalAmount}</span>
-                    </div>
-                  ))}
+                  
+                
                 </div>
               </div>
             </div>
