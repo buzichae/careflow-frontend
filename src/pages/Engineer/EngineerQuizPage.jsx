@@ -118,7 +118,7 @@ export default function EngineerQuizPage({ engineerInfo }) {
                 {/* 상단 공지 배너 */}
                 <div className="equiz-notice">
                     <AlertCircle size={14} />
-                    3회 불합격 시 LMS 교육 콘텐츠를 재이수해야 합니다.
+                    3회 불합격 시 LMS 교육 콘텐츠를 재이수해야 합니다.(5문항 중 4문항 이상 맞춰야 합격)
                 </div>
 
                 {/* 진행 바 */}
