@@ -50,6 +50,7 @@ import EngineerReportSubmitPage from "../src/pages/Engineer/Engineerreportsubmit
 
 import OAuth2Callback from "../src/pages/auth/OAuth2Callback.jsx"
 import ForgotPasswordPage from "../src/pages/auth/ForgotPasswordPage.jsx"
+import PaymentResultPage from "./pages/customer/PaymentResultPage.jsx"
 
 function TempPage({ title }) {
   return <div style={{ padding: "32px" }}><h1>{title}</h1></div>;
@@ -171,9 +172,13 @@ export default function App() {
 
         </Route>
 
-        <Route 
+        <Route
           path="/oauth2/redirect"
           element={<OAuth2Callback />} />
+
+        {/* 토스페이먼츠 결제창 리다이렉트 대상 (MainLayout 밖) */}
+        <Route path="/customer/payment/success" element={<PaymentResultPage success />} />
+        <Route path="/customer/payment/fail" element={<PaymentResultPage success={false} />} />
 
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>

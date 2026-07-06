@@ -30,7 +30,6 @@ import {
   getMyReview,
   getAsRequestDetail,
   createAsRequest,
-  processPayment,
   getExpectedRepairCost,
 } from "../../apis/as";
 import { getMyAppliances } from "../../apis/appliances";
@@ -1713,20 +1712,12 @@ export default function CustomerAS() {
         />
       )}
 
-      {/* 결제 모달 (모의 결제) */}
+      {/* 결제 모달 (토스페이먼츠 결제창 연동) — 결제하기를 누르면 결제창으로 이동하고,
+          승인 결과는 /customer/payment/success·fail 페이지에서 처리된다. */}
       {paymentTarget && (
         <PaymentModal
           item={paymentTarget.item}
           amount={paymentTarget.report.finalAmount}
-          onConfirm={async () => {
-            const requestId = paymentTarget.item.requestId;
-            await processPayment(requestId);
-            setAsList((prev) =>
-              prev.map((i) =>
-                i.requestId === requestId ? { ...i, status: "PAID" } : i,
-              ),
-            );
-          }}
           onClose={() => setPaymentTarget(null)}
         />
       )}
