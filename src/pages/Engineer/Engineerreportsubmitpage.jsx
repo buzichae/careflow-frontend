@@ -13,6 +13,8 @@ import {
 } from "../../apis/engineers";
 import "../../styles/Engineer/Engineerreportsubmitpage.css";
 
+const VISIT_FEE = 28000; // 출장비(기본) — 백엔드 VISIT_FEE와 반드시 동일 값 유지
+
 const DIAGNOSIS_OPTIONS = [
   { value: "NORMAL", label: "정상 확인" },
   { value: "REPAIRED", label: "수리 완료" },
@@ -31,10 +33,11 @@ export default function EngineerReportSubmitPage() {
   const passedRequestCode = location.state?.requestCode; // 포맷팅된 접수번호 (화면 전시용)
   const reportId  = location.state?.reportId;
   const isEditMode = !!reportId;
+  // 작업 컨텍스트: 수정(reportId) 또는 신규(requestId) 중 하나는 있어야 함
+  const hasWorkContext = isEditMode || !!requestId;
 
   const [diagnosisResult, setDiagnosisResult] = useState("REPAIRED");
   const [workDurationMin, setWorkDurationMin] = useState("");
-  const [finalAmount, setFinalAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [parts, setParts] = useState([]);
 
@@ -65,6 +68,7 @@ export default function EngineerReportSubmitPage() {
   // repairPartId가 이미 있는 항목(사용자가 직접 새로 선택한 것)은 건드리지 않음.
   useEffect(() => {
     if (partOptions.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 부품 마스터 로드 후 partCode 역매칭 1회 동기화(의도된 패턴)
     setParts((prev) => {
       let changed = false;
       const next = prev.map((p) => {
@@ -78,7 +82,8 @@ export default function EngineerReportSubmitPage() {
     });
   }, [partOptions]);
 
-  const [loadingDetail, setLoadingDetail] = useState(true);
+  // 컨텍스트가 없으면 스피너 없이 바로 안내 메시지를 노출하도록 초기값을 hasWorkContext로 둠
+  const [loadingDetail, setLoadingDetail] = useState(hasWorkContext);
   const [loadError, setLoadError] = useState(null);
   // [연동 준비] 수정 모드에서 불러온 상세 데이터에 형식화된 접수번호
   // (requestCode)가 있으면 화면 표시용으로 저장. 없으면 숫자 requestId 그대로 사용.
@@ -90,18 +95,15 @@ export default function EngineerReportSubmitPage() {
 
   // 수정 모드일 때 기존 보고서 상세를 불러와 폼에 채움
   useEffect(() => {
+    // 컨텍스트가 없으면 이펙트에서 상태를 건드리지 않고 종료(안내는 렌더 단에서 파생값으로 처리)
+    if (!hasWorkContext) return;
+
     let mounted = true;
 
-    if (!isEditMode && !requestId) {
-      if (mounted) {
-        setLoadError("연결된 작업 정보가 없습니다. 목록에서 다시 진입해주세요.");
-        setLoadingDetail(false);
-      }
-      return;
-    }
-
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩/에러 상태 초기화(재조회 대비 의도된 동작) */
     setLoadingDetail(true);
     setLoadError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const fetchApi = isEditMode
         ? getWorkReportDetail(reportId)
@@ -121,7 +123,6 @@ export default function EngineerReportSubmitPage() {
         setDiagnosisResult(d.diagnosisResult ?? "REPAIRED");
         setRequestDisplayCode(d.requestCode ?? null);
         setWorkDurationMin(d.workDurationMin != null ? String(d.workDurationMin) : "");
-        setFinalAmount(d.finalAmount != null ? String(d.finalAmount) : "");
         setMemo(d.memo ?? "");
         // [버그 수정] 이미 사용된 부품이 지금은 단종(is_active=0)이라
         // ⚠ [백엔드 확인 필요] 이 응답의 parts 항목에 repairPartId가 아예 없고
@@ -148,7 +149,16 @@ export default function EngineerReportSubmitPage() {
       .finally(() => { if (mounted) setLoadingDetail(false); });
 
     return () => { mounted = false; };
-  }, [isEditMode, reportId, requestId]);
+  }, [isEditMode, reportId, requestId, hasWorkContext]);
+
+  // 최종 금액 = 부품 합계 + 출장비 (백엔드와 동일 규칙, 기사 직접 입력 없음)
+  const partsTotal = parts.reduce((sum, p) => {
+    if (!p.repairPartId) return sum;
+    const qty = Number(p.quantity) || 1;
+    const price = Number(p.appliedUnitPrice) || 0;
+    return sum + qty * price;
+  }, 0);
+  const computedFinalAmount = partsTotal + VISIT_FEE;
 
   const addPart = () => {
     setParts((prev) => [...prev, { repairPartId: "", quantity: 1, appliedUnitPrice: "" }]);
@@ -170,8 +180,8 @@ export default function EngineerReportSubmitPage() {
       setError("연결된 작업 정보(requestId)가 없습니다. 대시보드나 작업 목록에서 다시 진입해주세요.");
       return;
     }
-    if (!workDurationMin || !finalAmount) {
-      setError("작업 시간과 최종 금액은 필수입니다.");
+    if (!workDurationMin) {
+      setError("작업 시간은 필수입니다.");
       return;
     }
 
@@ -179,7 +189,7 @@ export default function EngineerReportSubmitPage() {
       requestId,
       diagnosisResult,
       workDurationMin: Number(workDurationMin),
-      finalAmount: Number(finalAmount),
+      finalAmount: computedFinalAmount, // 서버가 재계산하지만 표시 일관성을 위해 함께 전송
       memo: memo || undefined,
       parts: parts
         .filter((p) => p.repairPartId)
@@ -245,13 +255,16 @@ export default function EngineerReportSubmitPage() {
     );
   }
 
-  if (loadError) {
+  // 로드 실패(loadError) 또는 진입 컨텍스트 없음을 하나의 파생값으로 합쳐 렌더
+  const effectiveLoadError =
+    loadError ?? (!hasWorkContext ? "연결된 작업 정보가 없습니다. 목록에서 다시 진입해주세요." : null);
+  if (effectiveLoadError) {
     return (
       <div className="ersp">
         <button className="ersp-back-btn" onClick={() => navigate(-1)}>
           <ChevronLeft size={14} /> 뒤로가기
         </button>
-        <div className="ersp-error" style={{ marginTop: 16 }}>{loadError}</div>
+        <div className="ersp-error" style={{ marginTop: 16 }}>{effectiveLoadError}</div>
       </div>
     );
   }
@@ -294,15 +307,18 @@ export default function EngineerReportSubmitPage() {
             />
           </div>
           <div className="ersp-field">
-            <label className="ersp-field__label">최종 청구 금액 (원) *</label>
+            <label className="ersp-field__label">최종 청구 금액 (원)</label>
             <input
               className="ersp-input"
-              type="number"
-              min="0"
-              value={finalAmount}
-              onChange={(e) => setFinalAmount(e.target.value)}
-              placeholder="예: 180000"
+              type="text"
+              value={`${computedFinalAmount.toLocaleString()}원`}
+              readOnly
+              style={{ background: "#f7f7fb", color: "#333", fontWeight: 700 }}
             />
+            <p className="ersp-parts-note" style={{ marginTop: 6 }}>
+              부품 합계 {partsTotal.toLocaleString()}원 + 출장비 {VISIT_FEE.toLocaleString()}원 = 최종 {computedFinalAmount.toLocaleString()}원
+              <br />※ 최종 금액은 부품 합계와 출장비로 자동 계산됩니다.
+            </p>
           </div>
         </div>
 
