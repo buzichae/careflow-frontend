@@ -306,66 +306,77 @@ export default function EngineerReportSubmitPage() {
 
           {parts.map((p, idx) => {
             const selectedPart = partOptions.find((po) => String(po.repairPartId) === String(p.repairPartId));
-            // repairPartId가 끝내 안 채워졌지만(마스터 목록에서 partCode 매칭도
-            // 실패) 이름 정보는 있는 경우, 화면에만 쓰는 임시 표시값을 따로 둠
-            // (실제 저장되는 p.repairPartId는 건드리지 않음 — 제출 시 필터링됨).
             const displayValue = p.repairPartId || (!selectedPart && p._fallbackName ? "__unmatched__" : "");
+
+            // 🌟 신규: 현재 입력된 수량과 단가를 곱해서 부품 소계(총액)를 계산
+            const qty = Number(p.quantity) || 1;
+            const unitPrice = Number(p.appliedUnitPrice) || 0;
+            const partTotal = qty * unitPrice;
+
             return (
-              <div key={idx} className="ersp-part-row">
-                {/* [연동] 부품 ID 직접 입력 → 부품명 드롭다운으로 교체.
-                    선택 시 부품ID가 채워지고, 단가도 기본단가로 자동 세팅(직접 수정 가능). */}
-                <select
-                  className="ersp-part-row__id"
-                  value={displayValue}
-                  onChange={(e) => {
-                    if (e.target.value === "__unmatched__") return; // 표시 전용 값, 무시
-                    const selected = partOptions.find((po) => String(po.repairPartId) === e.target.value);
-                    updatePart(idx, "repairPartId", e.target.value);
-                    // [버그 수정] "단가가 비어있을 때만" 자동 채우던 조건 때문에,
-                    // 수정 화면처럼 이미 단가가 채워진 상태에서는 부품을 바꿔도
-                    // 단가가 절대 안 바뀌던 문제. 부품을 다시 선택하면 항상 그
-                    // 부품의 기준 단가로 갱신되도록 변경.
-                    if (selected) {
-                      updatePart(idx, "appliedUnitPrice", String(selected.baseUnitPrice));
-                    }
-                  }}
-                  disabled={partOptionsLoading}
-                >
-                  <option value="">부품 선택</option>
-                  {/* [버그 수정] 현재 활성 부품 목록(partOptions)에 없는 경우
-                      (단종 등) — 저장된 이름(_fallbackName)으로 임시 옵션을 만들어
-                      "부품 선택"으로 보이지 않고 실제 사용 부품명이 표시되게 함. */}
-                  {!selectedPart && p._fallbackName && (
-                    <option value="__unmatched__">
-                      {p._fallbackName}
-                    </option>
+                <div key={idx} className="ersp-part-row-container" style={{ marginBottom: "12px" }}>
+                  <div className="ersp-part-row" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <select
+                        className="ersp-part-row__id"
+                        value={displayValue}
+                        onChange={(e) => {
+                          if (e.target.value === "__unmatched__") return;
+                          const selected = partOptions.find((po) => String(po.repairPartId) === e.target.value);
+                          updatePart(idx, "repairPartId", e.target.value);
+                          if (selected) {
+                            updatePart(idx, "appliedUnitPrice", String(selected.baseUnitPrice));
+                          }
+                        }}
+                        disabled={partOptionsLoading}
+                    >
+                      <option value="">부품 선택</option>
+                      {!selectedPart && p._fallbackName && (
+                          <option value="__unmatched__">{p._fallbackName}</option>
+                      )}
+                      {partOptions.map((po) => (
+                          <option key={po.repairPartId} value={po.repairPartId}>
+                            {po.partName}{po.spec ? ` (${po.spec})` : ""}
+                          </option>
+                      ))}
+                      {partOptionsError && <option disabled>부품 목록을 불러오지 못했습니다</option>}
+                    </select>
+
+                    <input
+                        className="ersp-part-row__qty"
+                        type="number"
+                        min="1"
+                        placeholder="수량"
+                        value={p.quantity}
+                        onChange={(e) => updatePart(idx, "quantity", e.target.value)}
+                    />
+
+                    {/* 🌟 UX 개선: 부품 1개당 가격임을 시각적으로 명확히 표시 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <input
+                          className="ersp-part-row__price"
+                          type="number"
+                          placeholder="1개당 단가 (미입력시 기본값)" // 1. Placeholder 직관적으로 변경
+                          value={p.appliedUnitPrice}
+                          title="부품 1개의 가격(단가)을 입력하세요." // 2. 마우스 오버 시 툴팁 제공
+                          onChange={(e) => updatePart(idx, "appliedUnitPrice", e.target.value)}
+                          style={{ width: "160px" }} // 필요시 input 너비 조절
+                      />
+                      {/* 3. 단위 고정 노출로 '총액'이 아님을 각인 */}
+                      <span style={{ fontSize: "13px", color: "#666", whiteSpace: "nowrap" }}>원/개</span>
+                    </div>
+
+                    <button type="button" className="ersp-part-row__remove" onClick={() => removePart(idx)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+
+                  {/* 🌟 신규: 부품 선택 후 단가나 수량이 있으면 하단에 소계를 실시간으로 보여줌 */}
+                  {unitPrice > 0 && (
+                      <div style={{ fontSize: "12px", color: "#5B4FF5", textAlign: "right", marginTop: "4px" }}>
+                        부품 소계: {partTotal.toLocaleString()}원
+                      </div>
                   )}
-                  {partOptions.map((po) => (
-                    <option key={po.repairPartId} value={po.repairPartId}>
-                      {po.partName}{po.spec ? ` (${po.spec})` : ""}
-                    </option>
-                  ))}
-                  {partOptionsError && <option disabled>부품 목록을 불러오지 못했습니다</option>}
-                </select>
-                <input
-                  className="ersp-part-row__qty"
-                  type="number"
-                  min="1"
-                  placeholder="수량"
-                  value={p.quantity}
-                  onChange={(e) => updatePart(idx, "quantity", e.target.value)}
-                />
-                <input
-                  className="ersp-part-row__price"
-                  type="number"
-                  placeholder="단가(선택, 미입력시 기본단가)"
-                  value={p.appliedUnitPrice}
-                  onChange={(e) => updatePart(idx, "appliedUnitPrice", e.target.value)}
-                />
-                <button type="button" className="ersp-part-row__remove" onClick={() => removePart(idx)}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
+                </div>
             );
           })}
           <p className="ersp-parts-note">※ 부품을 선택하면 기준 단가가 자동으로 채워지며, 필요시 직접 수정할 수 있습니다.</p>
