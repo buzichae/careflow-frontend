@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronRight, Lock as LockIcon, UserPlus } from "lucide-react";
 import { getIsRepresentativeFromToken } from "../../utils/auth";
 import AgencyStaffApprovalModal from "./Modal/AgencyStaffApprovalModal";
@@ -58,7 +58,11 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
+
+  // 204 No Content 등 바디가 없는 응답은 res.json()이 파싱 에러를 던지므로 그 전에 걸러낸다
+  if (res.status === 204) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export default function AgencySettingPage() {
@@ -93,6 +97,18 @@ export default function AgencySettingPage() {
   // ── 일반 관리자 가입 신청 관리 모달 (슈퍼 계정 전용) ──
   const [isStaffApprovalModalOpen, setIsStaffApprovalModalOpen] = useState(false);
 
+  // ── 계정 탈퇴 (7번 API) ───────────────────────
+  // DELETE /api/agency/me/withdraw, 요청: { password }
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  // ── 로그인 보안 (2단계 인증 / 로그인 알림 / 신뢰 기기) ──
+  // GET /api/agency/me/security → { twoFactorEnabled, loginAlertEnabled, trustedDeviceCount }
+  const [security, setSecurity] = useState({ twoFactorEnabled: false, loginAlertEnabled: false, trustedDeviceCount: 0 });
+  const [securityToggling, setSecurityToggling] = useState(false);
+  const [showDeviceList, setShowDeviceList] = useState(false);
+  const [trustedDevices, setTrustedDevices] = useState([]);
+  const [deviceListLoading, setDeviceListLoading] = useState(false);
+
   // ── 초기 데이터 로드 ──────────────────────────
   useEffect(() => {
     // 3번: 대행사 내 정보 조회
@@ -118,6 +134,11 @@ export default function AgencySettingPage() {
       .then(data => setFeeRate(data.agencyFeeRate ?? ""))
       .catch(console.error)
       .finally(() => setFeeLoading(false));
+
+    // 로그인 보안 설정 조회
+    apiFetch("/api/agency/me/security")
+      .then(data => setSecurity(data))
+      .catch(console.error);
   }, []);
 
   // 계좌번호 입력 시 숫자와 '-'만 허용
@@ -191,6 +212,181 @@ export default function AgencySettingPage() {
       alert("수수료율 변경에 실패했습니다.");
     } finally {
       setFeeSaving(false);
+    }
+  };
+
+  // ── 7번: 계정 탈퇴 ────────────────────────────
+  // DELETE /api/agency/me/withdraw
+  const handleWithdraw = async () => {
+    if (isRepresentative) {
+      alert("대표 담당자는 탈퇴할 수 없습니다. 먼저 대표를 위임하거나 대행사 해지를 문의해주세요.");
+      return;
+    }
+    const password = window.prompt("본인 확인을 위해 현재 비밀번호를 입력해주세요.");
+    if (!password) return;
+    if (!window.confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+
+    setWithdrawing(true);
+    try {
+      await apiFetch("/api/agency/me/withdraw", {
+        method: "DELETE",
+        body: JSON.stringify({ password }),
+      });
+      alert("탈퇴 처리가 완료되었습니다.");
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    } catch (e) {
+      console.error(e);
+      if (e.message === "400") {
+        alert("현재 비밀번호가 일치하지 않습니다.");
+      } else if (e.message === "403") {
+        alert("대표 담당자는 탈퇴할 수 없습니다.");
+      } else {
+        alert("탈퇴 처리에 실패했습니다.");
+      }
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
+  // ── 2단계 인증 / 로그인 알림 토글 ──────────────
+  const handleToggleTwoFactor = async () => {
+    const next = !security.twoFactorEnabled;
+    if (!window.confirm(`2단계 인증을 ${next ? "사용" : "사용 안 함"}으로 변경하시겠습니까?`)) return;
+    setSecurityToggling(true);
+    try {
+      await apiFetch("/api/agency/me/security/two-factor", {
+        method: "PATCH",
+        body: JSON.stringify({ enabled: next }),
+      });
+      setSecurity(prev => ({ ...prev, twoFactorEnabled: next }));
+    } catch (e) {
+      console.error(e);
+      alert("설정 변경에 실패했습니다.");
+    } finally {
+      setSecurityToggling(false);
+    }
+  };
+
+  const handleToggleLoginAlert = async () => {
+    const next = !security.loginAlertEnabled;
+    if (!window.confirm(`로그인 알림을 ${next ? "사용" : "사용 안 함"}으로 변경하시겠습니까?`)) return;
+    setSecurityToggling(true);
+    try {
+      await apiFetch("/api/agency/me/security/login-alert", {
+        method: "PATCH",
+        body: JSON.stringify({ enabled: next }),
+      });
+      setSecurity(prev => ({ ...prev, loginAlertEnabled: next }));
+    } catch (e) {
+      console.error(e);
+      alert("설정 변경에 실패했습니다.");
+    } finally {
+      setSecurityToggling(false);
+    }
+  };
+
+  // ── 신뢰 기기 관리 ────────────────────────────
+  const handleToggleDeviceList = async () => {
+    const next = !showDeviceList;
+    setShowDeviceList(next);
+    if (next) {
+      setDeviceListLoading(true);
+      try {
+        const data = await apiFetch("/api/agency/me/trusted-devices");
+        setTrustedDevices(data ?? []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setDeviceListLoading(false);
+      }
+    }
+  };
+
+  const handleDeleteDevice = async (deviceId) => {
+    if (!window.confirm("이 기기의 신뢰를 해제하시겠습니까?")) return;
+    try {
+      await apiFetch(`/api/agency/me/trusted-devices/${deviceId}`, { method: "DELETE" });
+      setTrustedDevices(prev => prev.filter(d => d.deviceId !== deviceId));
+      setSecurity(prev => ({ ...prev, trustedDeviceCount: Math.max(0, prev.trustedDeviceCount - 1) }));
+    } catch (e) {
+      console.error(e);
+      alert("기기 삭제에 실패했습니다.");
+    }
+  };
+
+  // ── 데이터 내보내기 / 가져오기 ─────────────────
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importFileInputRef = useRef(null);
+
+  const handleExportData = async () => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${BASE_URL}/api/agency/me/data-export`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="(.+)"/);
+      const filename = match ? match[1] : "engineers.csv";
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert("데이터 내보내기에 실패했습니다.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportButtonClick = () => {
+    importFileInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 동일 파일 재선택 시에도 change 이벤트가 발생하도록 초기화
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${BASE_URL}/api/agency/me/data-import`, {
+        method: "POST",
+        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+
+      const result = await res.json();
+      let message = `성공 ${result.successCount}건, 실패 ${result.failCount}건`;
+      if (result.errors?.length > 0) {
+        message += `\n\n${result.errors.join("\n")}`;
+      }
+      alert(message);
+    } catch (e) {
+      console.error(e);
+      if (e.message === "401") {
+        alert("대표 담당자만 기사 로스터를 일괄 등록할 수 있습니다.");
+      } else {
+        alert("데이터 가져오기에 실패했습니다.");
+      }
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -346,37 +542,69 @@ export default function AgencySettingPage() {
             <div className="asp3-security-row">
               <p className="asp3-security-label">2단계 인증</p>
               <div className="asp3-security-right">
-                <span className="asp3-security-badge asp3-security-badge--on">사용 중</span>
-                <button className="asp3-manage-btn">관리</button>
+                <span className={`asp3-security-badge ${security.twoFactorEnabled ? "asp3-security-badge--on" : "asp3-security-badge--neutral"}`}>
+                  {security.twoFactorEnabled ? "사용 중" : "사용 안 함"}
+                </span>
+                <button className="asp3-manage-btn" disabled={securityToggling} onClick={handleToggleTwoFactor}>관리</button>
               </div>
             </div>
             <div className="asp3-security-row">
               <p className="asp3-security-label">로그인 알림</p>
               <div className="asp3-security-right">
-                <span className="asp3-security-badge asp3-security-badge--on">사용 중</span>
-                <button className="asp3-manage-btn">관리</button>
+                <span className={`asp3-security-badge ${security.loginAlertEnabled ? "asp3-security-badge--on" : "asp3-security-badge--neutral"}`}>
+                  {security.loginAlertEnabled ? "사용 중" : "사용 안 함"}
+                </span>
+                <button className="asp3-manage-btn" disabled={securityToggling} onClick={handleToggleLoginAlert}>관리</button>
               </div>
             </div>
             <div className="asp3-security-row">
               <p className="asp3-security-label">신뢰 기기 관리</p>
               <div className="asp3-security-right">
-                <span className="asp3-security-badge asp3-security-badge--neutral">3개 등록됨</span>
-                <button className="asp3-manage-btn">관리</button>
+                <span className="asp3-security-badge asp3-security-badge--neutral">{security.trustedDeviceCount}개 등록됨</span>
+                <button className="asp3-manage-btn" onClick={handleToggleDeviceList}>{showDeviceList ? "닫기" : "관리"}</button>
               </div>
             </div>
+            {showDeviceList && (
+              <div className="asp3-device-list">
+                {deviceListLoading ? (
+                  <p style={{ fontSize: "12px", color: "#aaa", padding: "8px 0" }}>불러오는 중...</p>
+                ) : trustedDevices.length === 0 ? (
+                  <p style={{ fontSize: "12px", color: "#aaa", padding: "8px 0" }}>등록된 신뢰 기기가 없습니다.</p>
+                ) : (
+                  trustedDevices.map(device => (
+                    <div key={device.deviceId} className="asp3-device-row">
+                      <span className="asp3-device-name" title={device.deviceName}>{device.deviceName}</span>
+                      <button className="asp3-device-remove" onClick={() => handleDeleteDevice(device.deviceId)}>삭제</button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           {/* 데이터 관리 */}
           <div className="asp3-panel">
             <h3 className="asp3-panel__title">데이터 관리</h3>
-            <button className="asp3-data-btn">
-              <LockIcon size={12} color="#5B4FF5" /> 데이터 내보내기 <ChevronRight size={13} />
+            <button className="asp3-data-btn" disabled={exporting} onClick={handleExportData}>
+              <LockIcon size={12} color="#5B4FF5" /> {exporting ? "내보내는 중..." : "데이터 내보내기"} <ChevronRight size={13} />
             </button>
-            <button className="asp3-data-btn">
-              <LockIcon size={12} color="#5B4FF5" /> 데이터 가져오기 <ChevronRight size={13} />
+            <button className="asp3-data-btn" disabled={importing} onClick={handleImportButtonClick}>
+              <LockIcon size={12} color="#5B4FF5" /> {importing ? "가져오는 중..." : "데이터 가져오기"} <ChevronRight size={13} />
             </button>
-            <button className="asp3-data-btn asp3-data-btn--danger">
-              <LockIcon size={12} color="#dc2626" /> 계정 탈퇴 <ChevronRight size={13} />
+            <input
+              ref={importFileInputRef}
+              type="file"
+              accept=".csv"
+              style={{ display: "none" }}
+              onChange={handleImportFileChange}
+            />
+            <button
+              className="asp3-data-btn asp3-data-btn--danger"
+              disabled={withdrawing || isRepresentative}
+              title={isRepresentative ? "대표 담당자는 탈퇴할 수 없습니다" : undefined}
+              onClick={handleWithdraw}
+            >
+              <LockIcon size={12} color="#dc2626" /> {withdrawing ? "처리 중..." : "계정 탈퇴"} <ChevronRight size={13} />
             </button>
           </div>
         </aside>

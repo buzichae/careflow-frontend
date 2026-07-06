@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Phone, History, ZoomIn } from "lucide-react";
 import "../../../styles/Agency/Modal/WorkDetailModal.css";
 import api from "../../../apis/axiosInstance";
@@ -110,6 +111,7 @@ function mapDetail(raw) {
 }
  
 export default function WorkDetailModal({ onClose, detail: rowDetail, onSuccess }) {
+  const navigate = useNavigate();
   const requestId = rowDetail?.requestId;
  
   // 접수 상세: GET /api/agency/work-requests/{requestId}/detail
@@ -309,8 +311,12 @@ export default function WorkDetailModal({ onClose, detail: rowDetail, onSuccess 
               <div className="wdm__field wdm__field--full"><span className="wdm__label">주소</span><span className="wdm__value">{detail.address}</span></div>
             </div>
             <div className="wdm__btn-row">
-              <button className="wdm__btn wdm__btn--outline"><Phone size={13} /> 고객 연락하기</button>
-              <button className="wdm__btn wdm__btn--ghost"><History size={13} /> 고객 이력보기</button>
+              <a className="wdm__btn wdm__btn--outline" href={detail.phone ? `tel:${detail.phone}` : undefined}>
+                <Phone size={13} /> 고객 연락하기
+              </a>
+              <button className="wdm__btn wdm__btn--ghost" onClick={() => navigate("/agency/customers")}>
+                <History size={13} /> 고객 이력보기
+              </button>
             </div>
           </section>
  

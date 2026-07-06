@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ClipboardList, Clock, MapPin, Users, Hourglass, XCircle,
   Search, ChevronDown, ChevronLeft, ChevronRight,
@@ -178,6 +179,7 @@ function downloadCsv(rows) {
  
 // ══════════════════════════════════════════════
 export default function AgencyWorkReceiptTab() {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages,  setTotalPages]  = useState(1);
  
@@ -417,7 +419,10 @@ export default function AgencyWorkReceiptTab() {
         <div className="aw-realtime__header">
           <h2 className="aw-section-title" style={{ marginBottom: 0 }}>실시간 배정 현황</h2>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <button className="aw-schedule-btn aw-schedule-btn--compact">
+            <button
+              className="aw-schedule-btn aw-schedule-btn--compact"
+              onClick={() => navigate("/agency/engineers")}
+            >
               <Calendar size={14} /> 기사 근무표 보기
             </button>
             <button className="aw-more-link" onClick={fetchAssignments}>

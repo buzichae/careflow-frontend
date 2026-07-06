@@ -3,13 +3,17 @@ import {
   Users, UserCheck, UserX, UserPlus,
   Search, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw, X,
-  Phone, Mail, Pencil, Lock, Ban,
+  Phone, Mail, Pencil, Lock, Ban, Save,
 } from "lucide-react";
 import {
   getAgencyCustomers,
   getAgencyCustomerAppliances,
   getAgencyCustomerAsRequests,
   getAgencyCustomerPayments,
+  updateAgencyCustomer,
+  resetAgencyCustomerPassword,
+  blockAgencyCustomer,
+  unblockAgencyCustomer,
 } from "../../apis/agencyCustomers";
 import "../../styles/Agency/AgencyCustomerPage.css";
 
@@ -26,14 +30,14 @@ const GRADE_MAP = {
 const STATUS_MAP = {
   ACTIVE:    { label: "활성",   type: "active"    },
   INACTIVE:  { label: "비활성", type: "inactive"  },
-  SUSPENDED: { label: "휴면",   type: "suspended" },
+  SUSPENDED: { label: "차단됨", type: "suspended" },
 };
 
 const STATUS_OPTIONS = [
   { value: "", label: "활동 상태 전체" },
   { value: "ACTIVE", label: "활성" },
   { value: "INACTIVE", label: "비활성" },
-  { value: "SUSPENDED", label: "휴면" },
+  { value: "SUSPENDED", label: "차단됨" },
 ];
 
 const PAGE_SIZE = 10;
@@ -87,6 +91,11 @@ export default function AgencyCustomerPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState(null);
 
+  // 관리(수정/비밀번호 초기화/차단) 상태
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", addressDetail: "" });
+  const [manageProcessing, setManageProcessing] = useState(false);
+
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
@@ -131,6 +140,71 @@ export default function AgencyCustomerPage() {
     setAsRequests([]);
     setPayments([]);
     setDetailError(null);
+    setIsEditingCustomer(false);
+  }
+
+  function startEditCustomer() {
+    setEditForm({
+      name: selectedItem.name ?? "",
+      phone: selectedItem.phone ?? "",
+      addressDetail: selectedItem.address ?? "",
+    });
+    setIsEditingCustomer(true);
+  }
+
+  async function handleSaveCustomerEdit() {
+    setManageProcessing(true);
+    try {
+      await updateAgencyCustomer(selectedItem.userId, editForm);
+      setSelectedItem(prev => ({
+        ...prev,
+        name: editForm.name,
+        phone: editForm.phone,
+        address: editForm.addressDetail,
+      }));
+      setIsEditingCustomer(false);
+      fetchCustomers();
+    } catch {
+      alert("고객 정보 수정에 실패했습니다.");
+    } finally {
+      setManageProcessing(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!window.confirm(`${selectedItem.name} 고객의 비밀번호를 초기화하시겠습니까?\n임시 비밀번호가 고객 이메일로 발송됩니다.`)) return;
+    setManageProcessing(true);
+    try {
+      await resetAgencyCustomerPassword(selectedItem.userId);
+      alert("임시 비밀번호가 고객 이메일로 발송되었습니다.");
+    } catch (e) {
+      alert(e?.response?.data?.message || "비밀번호 초기화에 실패했습니다.");
+    } finally {
+      setManageProcessing(false);
+    }
+  }
+
+  async function handleToggleBlock() {
+    const isBlocked = selectedItem.status === "SUSPENDED";
+    const confirmMsg = isBlocked
+      ? `${selectedItem.name} 고객의 차단을 해제하시겠습니까?`
+      : `${selectedItem.name} 고객을 차단하시겠습니까?\n차단된 고객은 로그인할 수 없습니다.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setManageProcessing(true);
+    try {
+      if (isBlocked) {
+        await unblockAgencyCustomer(selectedItem.userId);
+      } else {
+        await blockAgencyCustomer(selectedItem.userId);
+      }
+      setSelectedItem(prev => ({ ...prev, status: isBlocked ? "ACTIVE" : "SUSPENDED" }));
+      fetchCustomers();
+    } catch {
+      alert("처리에 실패했습니다.");
+    } finally {
+      setManageProcessing(false);
+    }
   }
 
   // 상세 패널 탭 전환 시 필요한 데이터를 그때그때 불러온다
@@ -336,37 +410,90 @@ export default function AgencyCustomerPage() {
             <div className="acp-detail__body">
               {detailTab === "기본 정보" && (
                 <div>
-                  <div className="acp-detail__info-row"><span className="acp-detail__label">연락처</span><span className="acp-detail__value">{selectedItem.phone} <Phone size={11} /></span></div>
-                  <div className="acp-detail__info-row"><span className="acp-detail__label">이메일</span><span className="acp-detail__value">{selectedItem.email} <Mail size={11} /></span></div>
+                  {isEditingCustomer ? (
+                    <>
+                      <div className="acp-detail__info-row">
+                        <span className="acp-detail__label">이름</span>
+                        <input
+                          className="acp-edit-input"
+                          value={editForm.name}
+                          onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                        />
+                      </div>
+                      <div className="acp-detail__info-row">
+                        <span className="acp-detail__label">연락처</span>
+                        <input
+                          className="acp-edit-input"
+                          value={editForm.phone}
+                          onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                        />
+                      </div>
+                      <div className="acp-detail__info-row">
+                        <span className="acp-detail__label">주소</span>
+                        <input
+                          className="acp-edit-input"
+                          value={editForm.addressDetail}
+                          onChange={e => setEditForm(f => ({ ...f, addressDetail: e.target.value }))}
+                        />
+                      </div>
+                      <div className="acp-detail__manage-section">
+                        <div className="acp-detail__manage-btns">
+                          <button
+                            className="acp-manage-btn acp-manage-btn--edit"
+                            disabled={manageProcessing}
+                            onClick={handleSaveCustomerEdit}
+                          >
+                            <Save size={12} /> {manageProcessing ? "저장 중..." : "저장"}
+                          </button>
+                          <button
+                            className="acp-manage-btn"
+                            disabled={manageProcessing}
+                            onClick={() => setIsEditingCustomer(false)}
+                          >
+                            <X size={12} /> 취소
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="acp-detail__info-row"><span className="acp-detail__label">연락처</span><span className="acp-detail__value">{selectedItem.phone} <Phone size={11} /></span></div>
+                      <div className="acp-detail__info-row"><span className="acp-detail__label">이메일</span><span className="acp-detail__value">{selectedItem.email} <Mail size={11} /></span></div>
 
-                  <div className="acp-detail__info-row"><span className="acp-detail__label">주소</span><span className="acp-detail__value">{selectedItem.address || "-"}</span></div>
-                  <div className="acp-detail__info-row"><span className="acp-detail__label">가입일</span><span className="acp-detail__value">{formatDate(selectedItem.joinedAt)}</span></div>
-                  <div className="acp-detail__info-row"><span className="acp-detail__label">가입 경로</span><span className="acp-detail__value">{selectedItem.joinPath || "-"}</span></div>
-                  <div className="acp-detail__info-row">
-                    <span className="acp-detail__label">고객 등급</span>
-                    <span className="acp-grade-badge acp-grade-badge--normal">
-                      {(GRADE_MAP[selectedItem.grade] ?? GRADE_MAP.UNKNOWN).label} {(GRADE_MAP[selectedItem.grade] ?? GRADE_MAP.UNKNOWN).icon}
-                    </span>
-                  </div>
-                  <div className="acp-detail__info-row">
-                    <span className="acp-detail__label">활동 상태</span>
-                    <span className={`acp-status-badge acp-status-badge--${(STATUS_MAP[selectedItem.status] ?? STATUS_MAP.ACTIVE).type}`}>
-                      {(STATUS_MAP[selectedItem.status] ?? STATUS_MAP.ACTIVE).label}
-                    </span>
-                  </div>
+                      <div className="acp-detail__info-row"><span className="acp-detail__label">주소</span><span className="acp-detail__value">{selectedItem.address || "-"}</span></div>
+                      <div className="acp-detail__info-row"><span className="acp-detail__label">가입일</span><span className="acp-detail__value">{formatDate(selectedItem.joinedAt)}</span></div>
+                      <div className="acp-detail__info-row"><span className="acp-detail__label">가입 경로</span><span className="acp-detail__value">{selectedItem.joinPath || "-"}</span></div>
+                      <div className="acp-detail__info-row">
+                        <span className="acp-detail__label">고객 등급</span>
+                        <span className="acp-grade-badge acp-grade-badge--normal">
+                          {(GRADE_MAP[selectedItem.grade] ?? GRADE_MAP.UNKNOWN).label} {(GRADE_MAP[selectedItem.grade] ?? GRADE_MAP.UNKNOWN).icon}
+                        </span>
+                      </div>
+                      <div className="acp-detail__info-row">
+                        <span className="acp-detail__label">활동 상태</span>
+                        <span className={`acp-status-badge acp-status-badge--${(STATUS_MAP[selectedItem.status] ?? STATUS_MAP.ACTIVE).type}`}>
+                          {(STATUS_MAP[selectedItem.status] ?? STATUS_MAP.ACTIVE).label}
+                        </span>
+                      </div>
 
-                  <div className="acp-detail__info-row"><span className="acp-detail__label">최근 로그인</span><span className="acp-detail__value">{formatDateTime(selectedItem.lastLoginAt)}</span></div>
+                      <div className="acp-detail__info-row"><span className="acp-detail__label">최근 로그인</span><span className="acp-detail__value">{formatDateTime(selectedItem.lastLoginAt)}</span></div>
 
-
-                  {/* 관리 버튼 (추후 API 연동 예정) */}
-                  <div className="acp-detail__manage-section">
-                    <p className="acp-detail__section-label">관리</p>
-                    <div className="acp-detail__manage-btns">
-                      <button className="acp-manage-btn acp-manage-btn--edit"><Pencil size={12} /> 수정</button>
-                      <button className="acp-manage-btn acp-manage-btn--reset"><Lock size={12} /> 비밀번호 초기화</button>
-                      <button className="acp-manage-btn acp-manage-btn--ban"><Ban size={12} /> 고객 차단</button>
-                    </div>
-                  </div>
+                      <div className="acp-detail__manage-section">
+                        <p className="acp-detail__section-label">관리</p>
+                        <div className="acp-detail__manage-btns">
+                          <button className="acp-manage-btn acp-manage-btn--edit" disabled={manageProcessing} onClick={startEditCustomer}>
+                            <Pencil size={12} /> 수정
+                          </button>
+                          <button className="acp-manage-btn acp-manage-btn--reset" disabled={manageProcessing} onClick={handleResetPassword}>
+                            <Lock size={12} /> 비밀번호 초기화
+                          </button>
+                          <button className="acp-manage-btn acp-manage-btn--ban" disabled={manageProcessing} onClick={handleToggleBlock}>
+                            <Ban size={12} /> {selectedItem.status === "SUSPENDED" ? "차단 해제" : "고객 차단"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

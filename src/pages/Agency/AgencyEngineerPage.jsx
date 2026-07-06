@@ -470,7 +470,6 @@ export default function AgencyEngineerPage() {
   // ── 필터 / 페이지 ────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 15;
 
   const token    = localStorage.getItem("token");
   const decoded  = token ? jwtDecode(token) : null;
@@ -500,6 +499,8 @@ export default function AgencyEngineerPage() {
   }, [agencyId]);
 
   useEffect(() => { fetchEngineers(); }, [fetchEngineers]);
+  // 검색어가 바뀌면 필터링된 목록 기준으로 1페이지부터 다시 보여줌
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
   useEffect(() => { fetchLmsDetail(); }, [fetchLmsDetail]);
 
   const handleSelectEngineer = useCallback(async (engineer) => {
@@ -531,6 +532,16 @@ export default function AgencyEngineerPage() {
     e.name?.includes(searchQuery) ||
     String(e.engineerUserId).includes(searchQuery)
   );
+
+  // 소속 기사 평균 평점 — avgRating이 없거나(NULL) 0인 기사(리뷰 없음)는 제외하고 평균 계산
+  const ratedEngineers = engineerList.filter(e => e.avgRating != null && Number(e.avgRating) > 0);
+  const avgRatingDisplay = ratedEngineers.length === 0
+    ? "-"
+    : (ratedEngineers.reduce((sum, e) => sum + Number(e.avgRating), 0) / ratedEngineers.length).toFixed(1);
+
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  const pagedList = filteredList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div className="aep">
@@ -579,7 +590,7 @@ export default function AgencyEngineerPage() {
 
         <div className="aep-stat-card">
           <div className="aep-stat-card__text">
-            <p className="aep-stat-card__value">4.8<span>/5.0</span></p>
+            <p className="aep-stat-card__value">{listLoading ? "..." : avgRatingDisplay}<span>/5.0</span></p>
             <p className="aep-stat-card__label">평균 평점</p>
           </div>
           <div className="aep-stat-card__icon aep-stat-card__icon--amber">
@@ -630,7 +641,7 @@ export default function AgencyEngineerPage() {
             ) : filteredList.length === 0 ? (
               <p style={{ padding: "16px", color: "#aaa", fontSize: "13px" }}>소속 기사가 없습니다.</p>
             ) : (
-              filteredList.map((item) => {
+              pagedList.map((item) => {
                 const skill    = SKILL_MAP[item.skillLevel] ?? { label: item.skillLevel, type: "beginner", en: item.skillLevel };
                 const schedule = SCHEDULE_STATUS_MAP[item.currentWorkStatus] ?? { label: "-", type: "off" };
                 const isSelected = selectedItem?.engineerUserId === item.engineerUserId;
@@ -678,11 +689,9 @@ export default function AgencyEngineerPage() {
             <div className="aep-pagination__left">
               <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-              {[1,2,3,4,5].map(p => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                 <button key={p} className={currentPage === p ? "aep-pagination__active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
               ))}
-              <span className="aep-pagination__ellipsis">...</span>
-              <button className={currentPage === totalPages ? "aep-pagination__active" : ""} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
               <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
             </div>
