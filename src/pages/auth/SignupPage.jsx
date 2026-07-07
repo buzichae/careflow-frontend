@@ -938,11 +938,19 @@ function SignupForm({ roleKey, onBack }) {
                   <h3 className="auth-complete__title">
                     {roleKey === "engineer"
                       ? "대행사에 요청을 보냈습니다"
+                      : isAgency
+                      ? "계정 생성 요청을 하였습니다"
                       : "가입이 완료되었어요!"}
                   </h3>
                   <p className="auth-complete__desc">
                     {roleKey === "engineer" ? (
                       "대행사 승인이 올 때까지 기다려주세요."
+                    ) : isAgency ? (
+                      <>
+                        관리자 승인 후 계정이 생성됩니다.
+                        <br />
+                        승인을 기다려주세요.
+                      </>
                     ) : (
                       <>
                         CareFlow {role.title} 계정이 생성되었습니다.
