@@ -24,17 +24,30 @@ import {
   getAdminUserKpi,
   getAdminMemberTrend,
   getAgencyRequests,
+  getAdminAsRequests,
 } from "../../apis/admin";
 
-/* ── 실시간 A/S 현황 (mock — A/S 통계 API 미구현) ── */
-const AS_STAGES = [
-  { key: "접수", count: 128, color: "#6366f1" },
-  { key: "배정 대기", count: 15, color: "#f59e0b" },
-  { key: "방문 예정", count: 42, color: "#3b82f6" },
-  { key: "수리 진행", count: 31, color: "#8b5cf6" },
-  { key: "완료", count: 40, color: "#16a34a" },
+/* ── 실시간 A/S 현황 (GET /api/admin/as-requests?from=&to= 의 stats — AsStatus 10개 → 6단계로 합산) ── */
+const AS_STAGE_CONFIG = [
+  { key: "접수", statuses: ["PENDING"], color: "#6366f1" },
+  { key: "배정 대기", statuses: ["AGENCY_RECEIVED"], color: "#f59e0b" },
+  { key: "방문 예정", statuses: ["ASSIGNED", "ACCEPTED"], color: "#3b82f6" },
+  {
+    key: "수리 진행",
+    statuses: ["ENGINEER_DEPARTED", "ENGINEER_ARRIVED", "IN_PROGRESS"],
+    color: "#8b5cf6",
+  },
+  { key: "완료", statuses: ["COMPLETED", "PAID"], color: "#16a34a" },
+  { key: "취소", statuses: ["CANCELLED"], color: "#94a3b8", flex: 0.6 },
 ];
-const AS_TOTAL = AS_STAGES.reduce((s, a) => s + a.count, 0);
+
+// yyyy-MM-dd (로컬 기준, UTC 변환으로 인한 날짜 밀림 방지)
+function toDateParam(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 function TrendTooltip({ active, payload, label, unit }) {
   if (!active || !payload?.length) return null;
@@ -62,6 +75,7 @@ export default function AdminDashboard() {
   const [kpi, setKpi] = useState(null);
   const [memberTrend, setMemberTrend] = useState([]);
   const [pendingAgencies, setPendingAgencies] = useState([]);
+  const [asStats, setAsStats] = useState(null);
 
   useEffect(() => {
     // customer + agency + engineer 합산
@@ -110,7 +124,29 @@ export default function AdminDashboard() {
         );
       })
       .catch(() => {});
+
+    // 최근 7일(오늘 포함) 기준 상태별 집계 — /stats는 필터 없는 전체 누적이라 "실시간" 취지에 맞지 않아 목록 API의 stats를 사용
+    // 호출마다 오늘 날짜를 새로 계산하므로, 폴링 중 자정이 지나면 7일 범위도 자동으로 밀림
+    const fetchAsStats = () => {
+      const today = new Date();
+      const weekAgo = new Date();
+      weekAgo.setDate(today.getDate() - 6);
+      getAdminAsRequests({ from: toDateParam(weekAgo), to: toDateParam(today) })
+        .then((res) => setAsStats(res.data?.stats ?? null))
+        .catch(() => setAsStats(null));
+    };
+    fetchAsStats();
+    const asStatsInterval = setInterval(fetchAsStats, 30000);
+    return () => clearInterval(asStatsInterval);
   }, []);
+
+  const asStages = asStats
+    ? AS_STAGE_CONFIG.map((c) => ({
+        ...c,
+        count: c.statuses.reduce((sum, s) => sum + (asStats[s] ?? 0), 0),
+      }))
+    : null;
+  const asTotal = asStages ? asStages.reduce((s, a) => s + a.count, 0) : 0;
 
   const KPI_CARDS = [
     {
@@ -179,51 +215,71 @@ export default function AdminDashboard() {
           <span style={{ fontSize: 12, color: "#aaa" }}>최근 일주일 기준</span>
         </div>
         <div className="admin-section__body">
-          <div className="adash-as-flow">
-            {AS_STAGES.map((s, i) => (
-              <div key={s.key} className="adash-as-flow__item">
-                <div
-                  className="adash-as-flow__card"
-                  style={{ borderColor: s.color }}
-                >
-                  <p
-                    className="adash-as-flow__count"
-                    style={{ color: s.color }}
+          {!asStages ? (
+            <p
+              style={{
+                textAlign: "center",
+                color: "#aaa",
+                padding: "40px 0",
+                fontSize: 13,
+              }}
+            >
+              데이터를 불러오는 중...
+            </p>
+          ) : (
+            <>
+              <div className="adash-as-flow">
+                {asStages.map((s, i) => (
+                  <div
+                    key={s.key}
+                    className="adash-as-flow__item"
+                    style={{ flex: s.flex ?? 1 }}
                   >
-                    {s.count}
-                  </p>
-                  <p className="adash-as-flow__label">{s.key}</p>
-                </div>
-                {i < AS_STAGES.length - 1 && (
-                  <ArrowRight size={16} className="adash-as-flow__arrow" />
-                )}
+                    <div
+                      className="adash-as-flow__card"
+                      style={{ borderColor: s.color }}
+                    >
+                      <p
+                        className="adash-as-flow__count"
+                        style={{ color: s.color }}
+                      >
+                        {s.count}
+                      </p>
+                      <p className="adash-as-flow__label">{s.key}</p>
+                    </div>
+                    {i < asStages.length - 1 && (
+                      <ArrowRight size={16} className="adash-as-flow__arrow" />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="adash-as-bar">
-            {AS_STAGES.map((s) => (
-              <div
-                key={s.key}
-                className="adash-as-bar__seg"
-                style={{
-                  width: `${(s.count / AS_TOTAL) * 100}%`,
-                  background: s.color,
-                }}
-                title={`${s.key}: ${s.count}건 (${((s.count / AS_TOTAL) * 100).toFixed(1)}%)`}
-              />
-            ))}
-          </div>
-          <div className="adash-as-bar-labels">
-            {AS_STAGES.map((s) => (
-              <span key={s.key} className="adash-as-bar-label">
-                <span
-                  className="adash-as-bar-label__dot"
-                  style={{ background: s.color }}
-                />
-                {s.key} {((s.count / AS_TOTAL) * 100).toFixed(1)}%
-              </span>
-            ))}
-          </div>
+              <div className="adash-as-bar">
+                {asStages.map((s) => (
+                  <div
+                    key={s.key}
+                    className="adash-as-bar__seg"
+                    style={{
+                      width: `${asTotal > 0 ? (s.count / asTotal) * 100 : 0}%`,
+                      background: s.color,
+                    }}
+                    title={`${s.key}: ${s.count}건 (${asTotal > 0 ? ((s.count / asTotal) * 100).toFixed(1) : "0.0"}%)`}
+                  />
+                ))}
+              </div>
+              <div className="adash-as-bar-labels">
+                {asStages.map((s) => (
+                  <span key={s.key} className="adash-as-bar-label">
+                    <span
+                      className="adash-as-bar-label__dot"
+                      style={{ background: s.color }}
+                    />
+                    {s.key}{" "}
+                    {asTotal > 0 ? ((s.count / asTotal) * 100).toFixed(1) : "0.0"}%
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

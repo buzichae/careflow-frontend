@@ -30,3 +30,17 @@ export const getAdminUsers = ({ role, status, keyword, page = 0 } = {}) => {
     if (keyword) params.keyword = keyword;
     return api.get('/api/admin/users', { params });
 };
+
+// 실시간 A/S 현황 통계 (AsStatus 10개 전부, 필터 없는 전체 누적 집계)
+export const getAdminAsStats = () =>
+    api.get('/api/admin/as-requests/stats');
+
+// 기간(지역) 필터가 반영된 A/S 상태별 통계 — 목록 API의 stats 필드만 사용 (size=1로 목록은 최소화)
+export const getAdminAsRequests = ({ status, region, from, to, page = 0, size = 1 } = {}) => {
+    const params = { page, size };
+    if (status) params.status = status;
+    if (region) params.region = region;
+    if (from) params.from = from;
+    if (to) params.to = to;
+    return api.get('/api/admin/as-requests', { params });
+};

@@ -1098,7 +1098,7 @@ function ASRequestFlow({ onClose, onSuccess }) {
                         가능 시간대 <span className="cas-req-required">*</span>
                       </h3>
                       <p className="cas-req-sub">
-                        기사님이 등록한 방문 가능 시작 시각입니다.
+                        기사님이 등록한 방문 가능 시간대입니다.
                       </p>
                       <div className="cas-time-slots">
                         {availableTimes.map((t) => (
@@ -1107,7 +1107,7 @@ function ASRequestFlow({ onClose, onSuccess }) {
                             className={`cas-time-chip ${schedTime === t ? "cas-time-chip--active" : ""}`}
                             onClick={() => setSchedTime(t)}
                           >
-                            {t}
+                            {TIME_LABEL[t] ?? t}
                           </button>
                         ))}
                       </div>

@@ -103,6 +103,21 @@
 }
 .ed-section__title { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 14px; }
 
+/* 선택된 작업 요약칩 (현재 작업 상태 / 빠른 액션 헤더 옆) */
+.ed-current-chip {
+  display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 4px 10px; border-radius: 999px;
+  background: #f8f7ff; border: 1px solid #e6e2ff;
+  font-size: 11px; color: var(--text-mid); line-height: 1.4;
+}
+.ed-current-chip__badge {
+  font-size: 10px; font-weight: 700; color: #fff;
+  background: var(--primary); border-radius: 999px; padding: 1px 8px;
+}
+.ed-current-chip__product { font-weight: 700; color: var(--text-dark); }
+.ed-current-chip__meta { color: var(--text-muted); }
+.ed-current-chip__code { color: var(--primary); font-weight: 600; }
+
 /* 작업 상태 스텝 */
 .ed-work-steps { display: flex; align-items: flex-start; justify-content: space-between; }
 .ed-step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
@@ -158,8 +173,9 @@
 .ed-schedule-item:last-child { border-bottom: none; }
 .ed-schedule-item__time {
   display: flex; flex-direction: column; align-items: center;
-  gap: 4px; flex-shrink: 0; width: 44px;
+  gap: 4px; flex-shrink: 0; width: 72px;
 }
+.ed-schedule-item__date  { font-size: 11px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
 .ed-schedule-item__hour  { font-size: 13px; font-weight: 700; color: var(--text-dark); }
 .ed-schedule-item__badge {
   font-size: 9px; font-weight: 700;
