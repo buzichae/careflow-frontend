@@ -1,0 +1,67 @@
+/* ─────────────────────────────────
+   전체 실적 목록 모달
+───────────────────────────────── */
+.epam-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 20px;
+}
+.epam-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,.18);
+}
+.epam-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f0f0f8;
+  background: #fafaff;
+  flex-shrink: 0;
+}
+.epam-modal__header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.epam-modal__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+.epam-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  display: flex;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background .15s;
+}
+.epam-modal__close:hover { background: #f0f0f8; color: #555; }
+
+.epam-modal__body {
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+.epam-modal__notice {
+  padding: 20px;
+  text-align: center;
+  color: #aaa;
+  font-size: 13px;
+}
+.epam-modal__notice--error { color: #dc2626; }

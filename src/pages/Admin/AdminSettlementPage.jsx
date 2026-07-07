@@ -43,6 +43,19 @@ const ITEM_STATUS_META = {
   DISPUTED: { label: "보류",     badge: "red" },
 };
 
+/* 선택된 월이 이번 달(당월)인지 여부 — 당월 정산 배치는 다음 달 1일에야 생성되므로 항상 비어있음 */
+function isCurrentMonth(selected) {
+  const now = new Date();
+  return selected.year === now.getFullYear() && selected.month === now.getMonth() + 1;
+}
+
+/* 다음 정산 배치 생성일(다음 달 1일) 라벨 */
+function getNextBatchDateLabel() {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return `${next.getFullYear()}년 ${next.getMonth() + 1}월 1일`;
+}
+
 export default function AdminSettlementPage() {
   const monthOptions = useMemo(() => getRecentMonths(6), []);
   const [selected, setSelected] = useState(monthOptions[0]);
@@ -182,6 +195,30 @@ export default function AdminSettlementPage() {
           </button>
         )}
       </div>
+
+      {/* 당월 선택 시 안내 배너 — 당월 정산 배치는 다음 달 1일 새벽에 생성되므로 아직 지급 승인 대상이 없음 */}
+      {isCurrentMonth(selected) && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "12px 16px",
+            background: "#fff7ed",
+            border: "1px solid #fed7aa",
+            borderRadius: 10,
+            fontSize: 13,
+            color: "#92400e",
+            marginBottom: 20,
+          }}
+        >
+          <AlertTriangle size={16} color="#f59e0b" />
+          <span>
+            {selected.label}은(는) 아직 정산 대상 기간입니다. 이번 달 정산 배치는{" "}
+            <strong>{getNextBatchDateLabel()}</strong> 새벽에 자동 생성되며, 그 이후부터 지급 승인이 가능합니다.
+          </span>
+        </div>
+      )}
 
       {/* KPI 카드 */}
       <div className="admin-stat-grid" style={{ marginBottom: 20 }}>

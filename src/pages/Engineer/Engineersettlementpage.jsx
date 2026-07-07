@@ -7,7 +7,9 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
-import { getSettlementSummary, getSettlements, downloadSettlementReport } from "../../apis/engineers"; // 실제 경로에 맞게 수정
+import { getSettlementSummary, getSettlements, downloadSettlementReport, getRecentPerformance } from "../../apis/engineers"; // 실제 경로에 맞게 수정
+import EngineerPerformanceAllModal from "./Modal/EngineerPerformanceAllModal.jsx";
+import { DIAGNOSIS_MAP } from "../../utils/diagnosisMap.js";
 import "../../styles/Engineer/Engineersettlementpage.css";
 
 const TABS = ["실적 현황", "정산 내역"];
@@ -23,13 +25,6 @@ const CHART_PALETTE = [
 function getChartColor(i) {
   return CHART_PALETTE[i % CHART_PALETTE.length];
 }
-
-const DIAGNOSIS_MAP = {
-  NORMAL:        { label: "정상 완료", type: "done"    },
-  REPAIRED:      { label: "정상 완료", type: "done"    },
-  PART_REPLACED: { label: "부분 해결", type: "partial" },
-  UNREPAIRABLE:  { label: "제방문",   type: "revisit" },
-};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -53,8 +48,12 @@ export default function EngineerSettlementPage() {
   const [dailyTrend, setDailyTrend] = useState([]);
   const [brandDist, setBrandDist] = useState([]);
   const [statusDist, setStatusDist] = useState([]);
-  const [performanceList, setPerformanceList] = useState([]);
   const [settlementSummary, setSettlementSummary] = useState(null);
+
+  // 최근 5개 실적 목록 — 날짜/브랜드/상태 필터와 무관하게 항상 "최근 5건"만 별도 API로 조회
+  const [recentPerformance, setRecentPerformance] = useState([]);
+  const [recentPerformanceLoading, setRecentPerformanceLoading] = useState(true);
+  const [showAllPerformanceModal, setShowAllPerformanceModal] = useState(false);
 
   // 정산 내역 데이터
   const [settlementLoading, setSettlementLoading] = useState(false);
@@ -111,7 +110,6 @@ export default function EngineerSettlementPage() {
         setDailyTrend(d.dailyTrends ?? []);
         setBrandDist(d.brandDistributions ?? []);
         setStatusDist(d.statusDistributions ?? []);
-        setPerformanceList(d.performanceList ?? []);
         setSettlementSummary(d.settlementSummary ?? null);
 
         // 옵션 목록 누적 (필터링 없이 봤던 값들도 계속 선택 가능하도록)
@@ -130,6 +128,28 @@ export default function EngineerSettlementPage() {
 
     return () => { mounted = false; };
   }, [activeTab, dateFrom, dateTo, brandFilter, statusFilter]);
+
+  // 최근 5개 실적 — 필터와 무관하게 항상 최신순 5건만 조회
+  useEffect(() => {
+    if (activeTab !== "실적 현황") return;
+    let mounted = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- 비동기 조회 직전 로딩 상태 초기화(의도된 동작) */
+    setRecentPerformanceLoading(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    getRecentPerformance()
+      .then((res) => {
+        if (mounted) setRecentPerformance(res.data ?? []);
+      })
+      .catch((err) => {
+        console.error("최근 실적 조회 실패:", err);
+      })
+      .finally(() => {
+        if (mounted) setRecentPerformanceLoading(false);
+      });
+
+    return () => { mounted = false; };
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab !== "정산 내역") return;
@@ -366,8 +386,8 @@ export default function EngineerSettlementPage() {
               <div className="estp-bottom">
                 <div className="estp-list-section">
                   <div className="estp-list-header">
-                    <h3 className="estp-list-title">실적 상세 목록</h3>
-                    <button className="estp-list-more">전체 보기 ›</button>
+                    <h3 className="estp-list-title">최근 5개 실적 목록</h3>
+                    <button className="estp-list-more" onClick={() => setShowAllPerformanceModal(true)}>전체 보기 ›</button>
                   </div>
                   <div className="estp-list-table">
                     <div className="estp-list-table__header">
@@ -381,7 +401,10 @@ export default function EngineerSettlementPage() {
                       <span>평점</span>
                       <span></span>
                     </div>
-                    {performanceList.map((item, i) => {
+                    {recentPerformanceLoading && (
+                      <p style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>불러오는 중...</p>
+                    )}
+                    {!recentPerformanceLoading && recentPerformance.map((item, i) => {
                       const diag = DIAGNOSIS_MAP[item.diagnosisResult] ?? { label: item.diagnosisResult, type: "done" };
                       return (
                         <div key={i} className="estp-list-table__row">
@@ -399,9 +422,9 @@ export default function EngineerSettlementPage() {
                         </div>
                       );
                     })}
-                    {performanceList.length === 0 && (
+                    {!recentPerformanceLoading && recentPerformance.length === 0 && (
                       <p style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>
-                        조건에 맞는 실적이 없습니다.
+                        완료된 실적이 없습니다.
                       </p>
                     )}
                   </div>
@@ -482,6 +505,10 @@ export default function EngineerSettlementPage() {
             </>
           )}
         </>
+      )}
+
+      {showAllPerformanceModal && (
+        <EngineerPerformanceAllModal onClose={() => setShowAllPerformanceModal(false)} />
       )}
     </div>
   );

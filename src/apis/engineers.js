@@ -139,6 +139,14 @@ export const getEngineerCustomerDetail = (customerId) =>
 export const getSettlementSummary = (dateFrom, dateTo, brand, status) =>
   api.get("/api/engineer/settlements/summary", { params: { dateFrom, dateTo, brand, status } });
 
+// 최근 실적 5건 (필터 없음, 작업일 최신순) — "최근 5개 실적 목록" 섹션
+export const getRecentPerformance = () =>
+  api.get("/api/engineer/settlements/performance/recent");
+
+// 실적 전체 목록 (필터 없음, 작업일 최신순, 15건씩 페이징) — "전체 보기" 모달
+export const getAllPerformance = (page = 0, size = 15) =>
+  api.get("/api/engineer/settlements/performance", { params: { page, size } });
+
 // 실적/정산 리포트 다운로드 (CSV, blob) — 화면과 동일한 기간/브랜드/상태 필터 반영
 export const downloadSettlementReport = (dateFrom, dateTo, brand, status) =>
   api.get("/api/engineer/settlements/report/download", {
