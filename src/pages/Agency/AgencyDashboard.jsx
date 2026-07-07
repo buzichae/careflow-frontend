@@ -41,7 +41,7 @@ const STATUS_MAP = {
 const SKILL_MAP = {
   BEGINNER:     "초급",
   INTERMEDIATE: "중급",
-  EXPERT:       "고급",   // API 명세 기준 EXPERT
+  ADVANCED:     "고급",   // 백엔드 SkillLevel enum 기준 (BEGINNER/INTERMEDIATE/ADVANCED)
 };
 
 // ── 진행 중 작업 현황 퍼널 버킷 매핑 ──────────────

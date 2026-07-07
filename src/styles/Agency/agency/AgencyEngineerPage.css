@@ -75,6 +75,12 @@
   cursor: pointer; white-space: nowrap;
 }
 
+.aep-filter-select__input {
+  border: none; outline: none; background: transparent;
+  font: inherit; color: inherit; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+}
+
 .aep-reset-btn {
   display: flex; align-items: center; gap: 5px;
   border: 0.5px solid #e0dcff; border-radius: 8px;

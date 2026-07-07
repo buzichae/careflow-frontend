@@ -54,7 +54,7 @@ function formatLogTime(isoStr) {
  
 // 기사 기술 등급 라벨 (AgencyEngineerPage의 SKILL_MAP과 동일 ENUM)
 const SKILL_LEVEL_LABEL = {
-  EXPERT:       "고급",
+  ADVANCED:     "고급",
   INTERMEDIATE: "중급",
   BEGINNER:     "초급",
 };

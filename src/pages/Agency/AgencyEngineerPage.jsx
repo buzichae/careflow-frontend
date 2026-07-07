@@ -40,7 +40,7 @@ export async function apiFetch(path, options = {}) {
 
 // ── 상수 매핑 ──────────────────────────────
 const SKILL_MAP = {
-  EXPERT:       { label: "고급", type: "advanced",     en: "EXPERT"        },
+  ADVANCED:     { label: "고급", type: "advanced",     en: "ADVANCED"      },
   INTERMEDIATE: { label: "중급", type: "intermediate", en: "INTERMEDIATE"  },
   BEGINNER:     { label: "초급", type: "beginner",     en: "BEGINNER"      },
 };
@@ -68,7 +68,7 @@ function previewSkillLevel(startYear) {
   const year = Number(startYear);
   if (!year || Number.isNaN(year)) return "BEGINNER";
   const years = new Date().getFullYear() - year;
-  if (years >= 11) return "EXPERT";
+  if (years >= 11) return "ADVANCED";
   if (years >= 6) return "INTERMEDIATE";
   return "BEGINNER";
 }
@@ -205,6 +205,9 @@ function ScheduleCalendar({ engineerUserId }) {
   const scheduleMap = {};
   schedules.forEach(s => { scheduleMap[s.workDate] = s; });
 
+  // timeSlots는 { start, end } 객체 배열이므로 join() 전에 문자열로 변환해야 함
+  const formatTimeSlots = (slots) => (slots ?? []).map(slot => `${slot.start} - ${slot.end}`).join(", ");
+
   const firstDay = new Date(year, month - 1, 1).getDay();
   const lastDate = new Date(year, month, 0).getDate();
   const cells = [];
@@ -253,7 +256,7 @@ function ScheduleCalendar({ engineerUserId }) {
                     color: sch ? STATUS_TEXT_COLOR[sch.status] : "#444",
                     fontSize: "11px", fontWeight: sch ? 700 : 400,
                   }}
-                  title={sch ? `${sch.status}\n${sch.timeSlots?.join(", ")}` : ""}
+                  title={sch ? `${sch.status}\n${formatTimeSlots(sch.timeSlots)}` : ""}
                 >
                   {day}
                 </div>
@@ -287,7 +290,7 @@ function ScheduleCalendar({ engineerUserId }) {
                     {SCHEDULE_STATUS_MAP[s.status]?.label ?? s.status}
                   </span>
                   {s.timeSlots?.length > 0 && (
-                    <p style={{ marginTop: "3px", color: "#888" }}>{s.timeSlots.join(" · ")}</p>
+                    <p style={{ marginTop: "3px", color: "#888" }}>{formatTimeSlots(s.timeSlots)}</p>
                   )}
                 </div>
               ))}
@@ -469,6 +472,9 @@ export default function AgencyEngineerPage() {
 
   // ── 필터 / 페이지 ────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
+  const [skillFilter, setSkillFilter] = useState("");
+  const [lmsFilter, setLmsFilter] = useState("");
+  const [workStatusFilter, setWorkStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const token    = localStorage.getItem("token");
@@ -499,8 +505,8 @@ export default function AgencyEngineerPage() {
   }, [agencyId]);
 
   useEffect(() => { fetchEngineers(); }, [fetchEngineers]);
-  // 검색어가 바뀌면 필터링된 목록 기준으로 1페이지부터 다시 보여줌
-  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
+  // 검색어·필터가 바뀌면 필터링된 목록 기준으로 1페이지부터 다시 보여줌
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, skillFilter, lmsFilter, workStatusFilter]);
   useEffect(() => { fetchLmsDetail(); }, [fetchLmsDetail]);
 
   const handleSelectEngineer = useCallback(async (engineer) => {
@@ -527,11 +533,15 @@ export default function AgencyEngineerPage() {
     fetchLmsDetail();
   }, [fetchEngineers, fetchLmsDetail]);
 
-  const filteredList = engineerList.filter(e =>
-    !searchQuery ||
-    e.name?.includes(searchQuery) ||
-    String(e.engineerUserId).includes(searchQuery)
-  );
+  const filteredList = engineerList.filter(e => {
+    const matchesSearch = !searchQuery
+      || e.name?.includes(searchQuery)
+      || String(e.engineerUserId).includes(searchQuery);
+    const matchesSkill = !skillFilter || e.skillLevel === skillFilter;
+    const matchesLms = !lmsFilter || String(e.lmsCompleted) === lmsFilter;
+    const matchesWorkStatus = !workStatusFilter || e.currentWorkStatus === workStatusFilter;
+    return matchesSearch && matchesSkill && matchesLms && matchesWorkStatus;
+  });
 
   // 소속 기사 평균 평점 — avgRating이 없거나(NULL) 0인 기사(리뷰 없음)는 제외하고 평균 계산
   const ratedEngineers = engineerList.filter(e => e.avgRating != null && Number(e.avgRating) > 0);
@@ -610,10 +620,53 @@ export default function AgencyEngineerPage() {
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="aep-filter-select"><span>기술 등급</span><ChevronDown size={13} /></div>
-        <div className="aep-filter-select"><span>교육 상태</span><ChevronDown size={13} /></div>
-        <div className="aep-filter-select"><span>근무 상태</span><ChevronDown size={13} /></div>
-        <button className="aep-reset-btn" onClick={() => setSearchQuery("")}>
+        <label className="aep-filter-select">
+          <select
+            value={skillFilter}
+            onChange={e => setSkillFilter(e.target.value)}
+            className="aep-filter-select__input"
+          >
+            <option value="">기술 등급</option>
+            <option value="BEGINNER">초급</option>
+            <option value="INTERMEDIATE">중급</option>
+            <option value="ADVANCED">고급</option>
+          </select>
+          <ChevronDown size={13} />
+        </label>
+        <label className="aep-filter-select">
+          <select
+            value={lmsFilter}
+            onChange={e => setLmsFilter(e.target.value)}
+            className="aep-filter-select__input"
+          >
+            <option value="">교육 상태</option>
+            <option value="true">이수 완료</option>
+            <option value="false">미이수</option>
+          </select>
+          <ChevronDown size={13} />
+        </label>
+        <label className="aep-filter-select">
+          <select
+            value={workStatusFilter}
+            onChange={e => setWorkStatusFilter(e.target.value)}
+            className="aep-filter-select__input"
+          >
+            <option value="">근무 상태</option>
+            <option value="AVAILABLE">근무 중</option>
+            <option value="BOOKED">작업 중</option>
+            <option value="OFF">휴무</option>
+          </select>
+          <ChevronDown size={13} />
+        </label>
+        <button
+          className="aep-reset-btn"
+          onClick={() => {
+            setSearchQuery("");
+            setSkillFilter("");
+            setLmsFilter("");
+            setWorkStatusFilter("");
+          }}
+        >
           <RefreshCw size={13} /> 필터 초기화
         </button>
         {isRepresentative && (
@@ -783,8 +836,8 @@ export default function AgencyEngineerPage() {
                         <span className="aep-detail__info-value">{detailData.expertBrands?.join(", ") ?? "-"}</span>
                       </div>
                       <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">활동 지역 ID</span>
-                        <span className="aep-detail__info-value">{detailData.serviceRegionIds?.join(", ") ?? "-"}</span>
+                        <span className="aep-detail__info-label">활동 지역</span>
+                        <span className="aep-detail__info-value">{detailData.serviceRegionNames?.join(", ") ?? "-"}</span>
                       </div>
                       <div className="aep-detail__info-row">
                         <span className="aep-detail__info-label">경력 시작</span>
