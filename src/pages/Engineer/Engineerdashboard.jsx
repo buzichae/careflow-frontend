@@ -248,6 +248,28 @@ useEffect(() => {
     (item) => item.assignmentId === currentAssignmentId
   ) ?? todaySchedule[0];
 
+  // [신규] "현재 작업 상태" / "빠른 액션" 헤더 옆에 붙는 선택된 작업 요약칩.
+  // 목록에서 클릭한 작업(nextCustomer와 동일 대상)의 핵심 정보만 한 줄로 노출.
+  const selectedWork = nextCustomer;
+  const selectedStatusLabel = WORK_STATUS_STEPS.find((s) => s.key === workStatus)?.label;
+  const selectedWorkChip = selectedWork ? (
+    <span className="ed-current-chip">
+      {selectedStatusLabel && (
+        <span className="ed-current-chip__badge">{selectedStatusLabel}</span>
+      )}
+      <span className="ed-current-chip__product">{selectedWork.productName}</span>
+      <span className="ed-current-chip__meta">{selectedWork.customerName} 고객</span>
+      {selectedWork.requestId && (
+        <span className="ed-current-chip__code">{selectedWork.requestId}</span>
+      )}
+      {(selectedWork.scheduledDate || selectedWork.scheduledTime) && (
+        <span className="ed-current-chip__meta">
+          {selectedWork.scheduledDate} {selectedWork.scheduledTime}
+        </span>
+      )}
+    </span>
+  ) : null;
+
   return (
     <div className="ed">
       <div className="ed-greeting">
@@ -302,8 +324,11 @@ useEffect(() => {
       <div className="ed-body">
         <div className="ed-left">
           <div className="ed-section">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 className="ed-section__title">현재 작업 상태</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h2 className="ed-section__title" style={{ marginBottom: 0 }}>현재 작업 상태</h2>
+                {selectedWorkChip}
+              </div>
               <button
                 className="ed-panel__link"
                 onClick={() => navigate("/engineer/work", { state: { assignmentId: currentAssignmentId } })}
