@@ -295,7 +295,8 @@
 }
 .wmt-table__row:last-child { border-bottom: none; }
 .wmt-table__row:hover { background: #fafaff; }
-.wmt-table__row--selected { background: #f4f2ff; box-shadow: inset 3px 0 0 #5B4FF5; }
+.wmt-table__row--selected { background: #e0d9ff; border-left: 3px solid #5B4FF5; }
+.wmt-table__row--selected:hover { background: #e0d9ff; }
 
 .wmt-loading,
 .wmt-empty {

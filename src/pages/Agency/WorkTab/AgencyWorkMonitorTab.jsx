@@ -1,59 +1,78 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  ClipboardList, Clock, MapPin, Wrench, CheckCircle,
-  Search, ChevronDown, ChevronLeft, ChevronRight,
-  ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw, Phone,
+  ClipboardList,
+  Clock,
+  MapPin,
+  Wrench,
+  CheckCircle,
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreVertical,
+  RefreshCw,
+  Phone,
 } from "lucide-react";
 import "../../../styles/Agency/WorkTab/AgencyWorkMonitorTab.css";
-import "../../../styles/Agency/WorkTab/Agencyworkmonitortab.additions.css"
+import "../../../styles/Agency/WorkTab/Agencyworkmonitortab.additions.css";
 import { getInProgressAssignments } from "../../../apis/agencyAssignment";
 import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
 
 // as_status_logs.to_status ENUM → UI 표현 매핑
 const STATUS_LOG_MAP = {
-  WAITING:           { label: "방문 대기",   type: "waiting"  },
-  ENGINEER_DEPARTED: { label: "기사 이동 중", type: "moving"   },
-  ENGINEER_ARRIVED:  { label: "기사 도착",   type: "arrived"  },
-  IN_PROGRESS:       { label: "작업 진행 중", type: "working"  },
-  COMPLETED:         { label: "작업 완료",   type: "done"     },
+  WAITING: { label: "방문 대기", type: "waiting" },
+  ENGINEER_DEPARTED: { label: "기사 이동 중", type: "moving" },
+  ENGINEER_ARRIVED: { label: "기사 도착", type: "arrived" },
+  IN_PROGRESS: { label: "작업 진행 중", type: "working" },
+  COMPLETED: { label: "작업 완료", type: "done" },
 };
 
 // 진행 단계 순서 (stepTimes 키와 동일)
 const WORK_STEPS = [
-  { key: "ACCEPTED",          label: "배정 완료" },
-  { key: "WAITING",           label: "방문 대기" },
-  { key: "ENGINEER_DEPARTED", label: "이동 중"   },
-  { key: "ENGINEER_ARRIVED",  label: "도착"      },
-  { key: "IN_PROGRESS",       label: "작업 중"   },
-  { key: "COMPLETED",         label: "완료"      },
+  { key: "ACCEPTED", label: "배정 완료" },
+  { key: "WAITING", label: "방문 대기" },
+  { key: "ENGINEER_DEPARTED", label: "이동 중" },
+  { key: "ENGINEER_ARRIVED", label: "도착" },
+  { key: "IN_PROGRESS", label: "작업 중" },
+  { key: "COMPLETED", label: "완료" },
 ];
 
 // latestLogStatus 필터 옵션
 const LOG_STATUS_OPTIONS = [
-  { value: "",                  label: "전체 상태" },
-  { value: "WAITING",           label: "방문 대기" },
+  { value: "", label: "전체 상태" },
+  { value: "WAITING", label: "방문 대기" },
   { value: "ENGINEER_DEPARTED", label: "기사 이동 중" },
-  { value: "ENGINEER_ARRIVED",  label: "기사 도착" },
-  { value: "IN_PROGRESS",       label: "작업 진행 중" },
-  { value: "COMPLETED",         label: "작업 완료" },
+  { value: "ENGINEER_ARRIVED", label: "기사 도착" },
+  { value: "IN_PROGRESS", label: "작업 진행 중" },
+  { value: "COMPLETED", label: "작업 완료" },
 ];
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
-const INTERVAL_OPTIONS  = [10, 30, 60];
+const INTERVAL_OPTIONS = [10, 30, 60];
 
 // 아직 상태 로그(as_status_logs)가 없더라도, 배정이 수락(ACCEPTED)된 순간부터는
 // 논리적으로 "방문 대기" 상태이므로 이를 기본값으로 보정해서 상태를 계산
 function resolveStatus(latestLogStatus, assignmentStatus) {
-  if (latestLogStatus && STATUS_LOG_MAP[latestLogStatus]) return STATUS_LOG_MAP[latestLogStatus];
+  if (latestLogStatus && STATUS_LOG_MAP[latestLogStatus])
+    return STATUS_LOG_MAP[latestLogStatus];
   if (assignmentStatus === "ACCEPTED") return STATUS_LOG_MAP.WAITING;
   return { label: "대기", type: "waiting" };
 }
 
 // 현재 스텝 인덱스 계산 (WORK_STEPS 기준) — 반환값은 "현재 활성 단계"의 인덱스
 function getCurrentStepIdx(latestLogStatus, assignmentStatus) {
-  if (assignmentStatus === "COMPLETED" || latestLogStatus === "COMPLETED") return 5;
-  const map = { WAITING: 1, ENGINEER_DEPARTED: 2, ENGINEER_ARRIVED: 3, IN_PROGRESS: 4 };
-  if (latestLogStatus && map[latestLogStatus] != null) return map[latestLogStatus];
+  if (assignmentStatus === "COMPLETED" || latestLogStatus === "COMPLETED")
+    return 5;
+  const map = {
+    WAITING: 1,
+    ENGINEER_DEPARTED: 2,
+    ENGINEER_ARRIVED: 3,
+    IN_PROGRESS: 4,
+  };
+  if (latestLogStatus && map[latestLogStatus] != null)
+    return map[latestLogStatus];
   // 상태 로그가 아직 안 쌓였어도 배정 수락(ACCEPTED) 상태라면 "방문 대기" 단계로 간주
   if (assignmentStatus === "ACCEPTED") return 1;
   return 0;
@@ -80,15 +99,20 @@ function formatUpdatedAt(isoStr) {
 function formatCreatedAt(isoStr) {
   if (!isoStr) return "-";
   const d = new Date(isoStr);
-  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function Avatar({ name, profileImageUrl, size = 32 }) {
   return (
-    <div className="wmt-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
-      {profileImageUrl
-        ? <img src={profileImageUrl} alt={name} />
-        : <span>{name?.charAt(0) ?? "?"}</span>}
+    <div
+      className="wmt-avatar"
+      style={{ width: size, height: size, fontSize: size * 0.38 }}
+    >
+      {profileImageUrl ? (
+        <img src={profileImageUrl} alt={name} />
+      ) : (
+        <span>{name?.charAt(0) ?? "?"}</span>
+      )}
     </div>
   );
 }
@@ -96,46 +120,49 @@ function Avatar({ name, profileImageUrl, size = 32 }) {
 export default function AgencyWorkMonitorTab() {
   // ── 필터 상태 ──
   const [filters, setFilters] = useState({
-    date:            "",
+    date: "",
     latestLogStatus: "",
-    brand:           "",
-    keyword:         "",
+    brand: "",
+    keyword: "",
   });
 
   // ── 페이지네이션 상태 ──
-  const [page, setPage]   = useState(0); // 0-based (API 기준)
-  const [size, setSize]   = useState(10);
+  const [page, setPage] = useState(0); // 0-based (API 기준)
+  const [size, setSize] = useState(10);
 
   // ── API 응답 상태 (진행 중 배정 목록) ──
-  const [content,      setContent]      = useState([]);
+  const [content, setContent] = useState([]);
   const [totalElements, setTotalElements] = useState(0);
-  const [totalPages,   setTotalPages]   = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // ── 상태 요약 통계 ──
   // 기존엔 별도 API(status-summary)를 썼는데, 그 API는 as_status_logs가 있는 건만 카운트해서
   // "방금 수락돼서 로그가 아직 없는 건"(=방문 대기여야 함)이 어디에도 안 잡히는 문제가 있었음.
   // → 테이블에 실제로 보여주는 것과 동일한 resolveStatus() 기준으로 직접 집계해서 항상 일치하게 함.
   const [summary, setSummary] = useState({
-    waitingCount: 0, engineerDepartedCount: 0, engineerArrivedCount: 0,
-    inProgressCount: 0, completedCount: 0,
+    waitingCount: 0,
+    engineerDepartedCount: 0,
+    engineerArrivedCount: 0,
+    inProgressCount: 0,
+    completedCount: 0,
   });
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   // ── 전체 상태 변경 이력 (GET /api/as-status-logs/agency) ──
-  const [statusLogs,        setStatusLogs]        = useState([]);
-  const [statusLogsTotal,   setStatusLogsTotal]   = useState(0);
+  const [statusLogs, setStatusLogs] = useState([]);
+  const [statusLogsTotal, setStatusLogsTotal] = useState(0);
   const [statusLogsLoading, setStatusLogsLoading] = useState(false);
-  const [statusLogsError,   setStatusLogsError]   = useState(null);
+  const [statusLogsError, setStatusLogsError] = useState(null);
   const [statusLogsVisible, setStatusLogsVisible] = useState(20); // 더보기용
 
   // ── UI 상태 ──
-  const [selectedItem,          setSelectedItem]          = useState(null);
-  const [autoRefresh,           setAutoRefresh]           = useState(true);
-  const [refreshInterval,       setRefreshInterval]       = useState(30);
-  const [showIntervalDropdown,  setShowIntervalDropdown]  = useState(false);
-  const [showSizeDropdown,      setShowSizeDropdown]      = useState(false);
-  const [loading,               setLoading]               = useState(false);
-  const [error,                 setError]                 = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(30);
+  const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
+  const [showSizeDropdown, setShowSizeDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // ── 진행 중 배정 목록 조회 (좌측 테이블) ──
   const fetchData = useCallback(async () => {
@@ -145,17 +172,19 @@ export default function AgencyWorkMonitorTab() {
       const { data } = await getInProgressAssignments({
         page,
         size,
-        date:            filters.date            || undefined,
+        date: filters.date || undefined,
         latestLogStatus: filters.latestLogStatus || undefined,
-        brand:           filters.brand           || undefined,
-        keyword:         filters.keyword         || undefined,
+        brand: filters.brand || undefined,
+        keyword: filters.keyword || undefined,
       });
       setContent(data.content ?? []);
       setTotalElements(data.totalElements ?? 0);
       setTotalPages(data.totalPages ?? 0);
       // 선택 항목이 있었으면 갱신된 데이터로 교체
       if (selectedItem) {
-        const refreshed = (data.content ?? []).find(i => i.assignmentId === selectedItem.assignmentId);
+        const refreshed = (data.content ?? []).find(
+          (i) => i.assignmentId === selectedItem.assignmentId,
+        );
         setSelectedItem(refreshed ?? null);
       }
     } catch (err) {
@@ -174,16 +203,19 @@ export default function AgencyWorkMonitorTab() {
       const { data } = await getInProgressAssignments({ page: 0, size: 1000 });
       const list = data.content ?? [];
       const counts = {
-        waitingCount: 0, engineerDepartedCount: 0, engineerArrivedCount: 0,
-        inProgressCount: 0, completedCount: 0,
+        waitingCount: 0,
+        engineerDepartedCount: 0,
+        engineerArrivedCount: 0,
+        inProgressCount: 0,
+        completedCount: 0,
       };
       list.forEach((item) => {
         const s = resolveStatus(item.latestLogStatus, item.assignmentStatus);
-        if (s.type === "waiting")      counts.waitingCount += 1;
-        else if (s.type === "moving")  counts.engineerDepartedCount += 1;
+        if (s.type === "waiting") counts.waitingCount += 1;
+        else if (s.type === "moving") counts.engineerDepartedCount += 1;
         else if (s.type === "arrived") counts.engineerArrivedCount += 1;
         else if (s.type === "working") counts.inProgressCount += 1;
-        else if (s.type === "done")    counts.completedCount += 1;
+        else if (s.type === "done") counts.completedCount += 1;
       });
       setSummary(counts);
     } catch (err) {
@@ -199,9 +231,9 @@ export default function AgencyWorkMonitorTab() {
     setStatusLogsError(null);
     try {
       const { data } = await getAgencyStatusLogs({
-        date:     filters.date            || undefined,
+        date: filters.date || undefined,
         toStatus: filters.latestLogStatus || undefined,
-        keyword:  filters.keyword         || undefined,
+        keyword: filters.keyword || undefined,
       });
       setStatusLogs(data.logs ?? []);
       setStatusLogsTotal(data.totalCount ?? 0);
@@ -243,7 +275,7 @@ export default function AgencyWorkMonitorTab() {
 
   // ── 필터 핸들러 ──
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(0); // 필터 변경 시 첫 페이지로
   };
 
@@ -254,19 +286,47 @@ export default function AgencyWorkMonitorTab() {
 
   // ── 통계 카드 목록 (status-summary API 기반, 5개) ──
   const statCards = [
-    { label: "방문 대기",   value: summary.waitingCount,           icon: ClipboardList, color: "purple" },
-    { label: "기사 이동 중", value: summary.engineerDepartedCount,  icon: Clock,          color: "purple"  },
-    { label: "기사 도착",   value: summary.engineerArrivedCount,   icon: MapPin,         color: "purple"    },
-    { label: "작업 진행 중", value: summary.inProgressCount,        icon: Wrench,         color: "purple"},
-    { label: "완료",       value: summary.completedCount,          icon: CheckCircle,    color: "purple"  },
+    {
+      label: "방문 대기",
+      value: summary.waitingCount,
+      icon: ClipboardList,
+      color: "purple",
+    },
+    {
+      label: "기사 이동 중",
+      value: summary.engineerDepartedCount,
+      icon: Clock,
+      color: "purple",
+    },
+    {
+      label: "기사 도착",
+      value: summary.engineerArrivedCount,
+      icon: MapPin,
+      color: "purple",
+    },
+    {
+      label: "작업 진행 중",
+      value: summary.inProgressCount,
+      icon: Wrench,
+      color: "purple",
+    },
+    {
+      label: "완료",
+      value: summary.completedCount,
+      icon: CheckCircle,
+      color: "purple",
+    },
   ];
 
   // ── 선택 항목 상태 ──
-  const selectedStatus  = selectedItem
+  const selectedStatus = selectedItem
     ? resolveStatus(selectedItem.latestLogStatus, selectedItem.assignmentStatus)
     : null;
   const selectedStepIdx = selectedItem
-    ? getCurrentStepIdx(selectedItem.latestLogStatus, selectedItem.assignmentStatus)
+    ? getCurrentStepIdx(
+        selectedItem.latestLogStatus,
+        selectedItem.assignmentStatus,
+      )
     : 0;
 
   // ── 페이지 버튼 목록 (최대 5개 표시) ──
@@ -284,13 +344,16 @@ export default function AgencyWorkMonitorTab() {
           <span className="wmt-refresh-label">자동 갱신</span>
           <div
             className={`wmt-toggle ${autoRefresh ? "wmt-toggle--on" : ""}`}
-            onClick={() => setAutoRefresh(p => !p)}
+            onClick={() => setAutoRefresh((p) => !p)}
           >
             <div className="wmt-toggle__thumb" />
           </div>
         </div>
         <div className="wmt-refresh-select-wrap">
-          <div className="wmt-refresh-select" onClick={() => setShowIntervalDropdown(p => !p)}>
+          <div
+            className="wmt-refresh-select"
+            onClick={() => setShowIntervalDropdown((p) => !p)}
+          >
             {refreshInterval}초 <ChevronDown size={13} />
           </div>
           {showIntervalDropdown && (
@@ -299,7 +362,10 @@ export default function AgencyWorkMonitorTab() {
                 <button
                   key={sec}
                   className={`wmt-refresh-dropdown__item ${refreshInterval === sec ? "wmt-refresh-dropdown__item--active" : ""}`}
-                  onClick={() => { setRefreshInterval(sec); setShowIntervalDropdown(false); }}
+                  onClick={() => {
+                    setRefreshInterval(sec);
+                    setShowIntervalDropdown(false);
+                  }}
                 >
                   {sec}초
                 </button>
@@ -307,7 +373,11 @@ export default function AgencyWorkMonitorTab() {
             </div>
           )}
         </div>
-        <button className="wmt-refresh-now-btn" onClick={handleRefreshNow} title="지금 새로고침">
+        <button
+          className="wmt-refresh-now-btn"
+          onClick={handleRefreshNow}
+          title="지금 새로고침"
+        >
           <RefreshCw size={13} />
         </button>
       </div>
@@ -317,66 +387,77 @@ export default function AgencyWorkMonitorTab() {
         {statCards.map((s) => (
           <div key={s.label} className="wmt-stat-card">
             <div className="wmt-stat-card__text">
-              <p className="wmt-stat-card__value">{summaryLoading ? "..." : s.value}<span>건</span></p>
+              <p className="wmt-stat-card__value">
+                {summaryLoading ? "..." : s.value}
+                <span>건</span>
+              </p>
               <p className="wmt-stat-card__label">{s.label}</p>
             </div>
-            <div className={`wmt-stat-card__icon wmt-stat-card__icon--${s.color}`}>
+            <div
+              className={`wmt-stat-card__icon wmt-stat-card__icon--${s.color}`}
+            >
               <s.icon size={40} strokeWidth={1} />
             </div>
           </div>
         ))}
       </div>
 
+      <div className="wmt-filters">
+        {/* 날짜 필터 */}
+        <input
+          type="date"
+          className="wmt-filter-date"
+          value={filters.date}
+          onChange={(e) => handleFilterChange("date", e.target.value)}
+        />
+
+        {/* 진행 상태 필터 */}
+        <select
+          className="wmt-filter-select"
+          value={filters.latestLogStatus}
+          onChange={(e) =>
+            handleFilterChange("latestLogStatus", e.target.value)
+          }
+        >
+          {LOG_STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+
+        {/* 브랜드 필터 */}
+        <input
+          type="text"
+          className="wmt-filter-brand"
+          placeholder="브랜드"
+          value={filters.brand}
+          onChange={(e) => handleFilterChange("brand", e.target.value)}
+        />
+
+        {/* 키워드 검색 */}
+        <div className="wmt-search">
+          <Search size={13} color="#aaa" />
+          <input
+            type="text"
+            placeholder="접수번호, 고객명, 제품명 검색"
+            value={filters.keyword}
+            onChange={(e) => handleFilterChange("keyword", e.target.value)}
+          />
+        </div>
+
+        <button className="wmt-reset-btn" onClick={handleResetFilters}>
+          <RefreshCw size={13} /> 필터 초기화
+        </button>
+      </div>
+
       <div className="wmt-body">
         {/* 좌측 테이블 */}
         <div className="wmt-left">
-          <div className="wmt-filters">
-            {/* 날짜 필터 */}
-            <input
-              type="date"
-              className="wmt-filter-date"
-              value={filters.date}
-              onChange={e => handleFilterChange("date", e.target.value)}
-            />
-
-            {/* 진행 상태 필터 */}
-            <select
-              className="wmt-filter-select"
-              value={filters.latestLogStatus}
-              onChange={e => handleFilterChange("latestLogStatus", e.target.value)}
-            >
-              {LOG_STATUS_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-
-            {/* 브랜드 필터 */}
-            <input
-              type="text"
-              className="wmt-filter-brand"
-              placeholder="브랜드"
-              value={filters.brand}
-              onChange={e => handleFilterChange("brand", e.target.value)}
-            />
-
-            {/* 키워드 검색 */}
-            <div className="wmt-search">
-              <Search size={13} color="#aaa" />
-              <input
-                type="text"
-                placeholder="접수번호, 고객명, 제품명 검색"
-                value={filters.keyword}
-                onChange={e => handleFilterChange("keyword", e.target.value)}
-              />
-            </div>
-
-            <button className="wmt-reset-btn" onClick={handleResetFilters}>
-              <RefreshCw size={13} /> 필터 초기화
-            </button>
-          </div>
-
           <div className="wmt-table-meta">
-            <span className="wmt-total">진행 작업 목록 ({totalElements}건)</span>
+            <span className="wmt-total">
+              진행 작업 목록 ({totalElements}건)
+            </span>
           </div>
 
           {/* 에러 메시지 */}
@@ -401,56 +482,88 @@ export default function AgencyWorkMonitorTab() {
               <div className="wmt-empty">진행 중인 배정이 없습니다.</div>
             )}
 
-            {!loading && content.map((item) => {
-              const s = resolveStatus(item.latestLogStatus, item.assignmentStatus);
-              const isSelected = selectedItem?.assignmentId === item.assignmentId;
-              return (
-                <div
-                  key={item.assignmentId}
-                  className={`wmt-table__row ${isSelected ? "wmt-table__row--selected" : ""}`}
-                >
-                  <span className="wmt-table__id-col">
-                    <span className="wmt-table__id">#{item.requestId}</span>
-                    <span className="wmt-table__date">접수일 {formatCreatedAt(item.createdAt)}</span>
-                  </span>
-                  <span className="wmt-table__customer-col">
-                    <span className="wmt-table__customer">{item.customerName}</span>
-                    <span className="wmt-table__phone">{item.customerPhone}</span>
-                  </span>
-                  <span className="wmt-table__product-col">
-                    <span className="wmt-table__product-name">{item.productName}</span>
-                    <span className="wmt-table__model">{item.modelNo}</span>
-                  </span>
-                  <span className="wmt-table__engineer-col">
-                    {item.engineerName
-                      ? <span className="wmt-table__engineer-name">{item.engineerName}</span>
-                      : <span className="wmt-table__no-engineer">-</span>
-                    }
-                  </span>
-                  <span>
-                    <span className={`wmt-badge wmt-badge--${s.type}`}>{s.label}</span>
-                  </span>
-                  <span className="wmt-table__updated">{formatUpdatedAt(item.updatedAt)}</span>
-                  <span className="wmt-table__actions" onClick={e => e.stopPropagation()}>
-                    <button
-                      className={`wmt-detail-btn ${isSelected ? "wmt-detail-btn--active" : ""}`}
-                      onClick={() => setSelectedItem(isSelected ? null : item)}
+            {!loading &&
+              content.map((item) => {
+                const s = resolveStatus(
+                  item.latestLogStatus,
+                  item.assignmentStatus,
+                );
+                const isSelected =
+                  selectedItem?.assignmentId === item.assignmentId;
+                return (
+                  <div
+                    key={item.assignmentId}
+                    className={`wmt-table__row ${isSelected ? "wmt-table__row--selected" : ""}`}
+                  >
+                    <span className="wmt-table__id-col">
+                      <span className="wmt-table__id">#{item.requestId}</span>
+                      <span className="wmt-table__date">
+                        접수일 {formatCreatedAt(item.createdAt)}
+                      </span>
+                    </span>
+                    <span className="wmt-table__customer-col">
+                      <span className="wmt-table__customer">
+                        {item.customerName}
+                      </span>
+                      <span className="wmt-table__phone">
+                        {item.customerPhone}
+                      </span>
+                    </span>
+                    <span className="wmt-table__product-col">
+                      <span className="wmt-table__product-name">
+                        {item.productName}
+                      </span>
+                      <span className="wmt-table__model">{item.modelNo}</span>
+                    </span>
+                    <span className="wmt-table__engineer-col">
+                      {item.engineerName ? (
+                        <span className="wmt-table__engineer-name">
+                          {item.engineerName}
+                        </span>
+                      ) : (
+                        <span className="wmt-table__no-engineer">-</span>
+                      )}
+                    </span>
+                    <span>
+                      <span className={`wmt-badge wmt-badge--${s.type}`}>
+                        {s.label}
+                      </span>
+                    </span>
+                    <span className="wmt-table__updated">
+                      {formatUpdatedAt(item.updatedAt)}
+                    </span>
+                    <span
+                      className="wmt-table__actions"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {isSelected ? "닫기" : "상세보기"}
-                    </button>
-                    <button className="wmt-more-btn"><MoreVertical size={14} /></button>
-                  </span>
-                </div>
-              );
-            })}
+                      <button
+                        className={`wmt-detail-btn ${isSelected ? "wmt-detail-btn--active" : ""}`}
+                        onClick={() =>
+                          setSelectedItem(isSelected ? null : item)
+                        }
+                      >
+                        {isSelected ? "닫기" : "상세보기"}
+                      </button>
+                      {/* <button className="wmt-more-btn"><MoreVertical size={14} /></button> */}
+                    </span>
+                  </div>
+                );
+              })}
           </div>
 
           {/* 페이지네이션 */}
           <div className="wmt-pagination">
             <div className="wmt-pagination__left">
-              <button onClick={() => setPage(0)} disabled={page === 0}><ChevronsLeft size={14} /></button>
-              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}><ChevronLeft size={14} /></button>
-              {pageNumbers.map(p => (
+              <button onClick={() => setPage(0)} disabled={page === 0}>
+                <ChevronsLeft size={14} />
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {pageNumbers.map((p) => (
                 <button
                   key={p}
                   className={page === p ? "wmt-pagination__active" : ""}
@@ -459,8 +572,18 @@ export default function AgencyWorkMonitorTab() {
                   {p + 1}
                 </button>
               ))}
-              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronRight size={14} /></button>
-              <button onClick={() => setPage(Math.max(0, totalPages - 1))} disabled={page >= totalPages - 1}><ChevronsRight size={14} /></button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronRight size={14} />
+              </button>
+              <button
+                onClick={() => setPage(Math.max(0, totalPages - 1))}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronsRight size={14} />
+              </button>
             </div>
             {/* 페이지 크기 선택 */}
             {/* <div className="wmt-page-size-wrap">
@@ -485,7 +608,9 @@ export default function AgencyWorkMonitorTab() {
 
           {/* 상태 변경 이력 (GET /api/as-status-logs/agency) */}
           <div className="wmt-table-meta">
-            <span className="wmt-total">상태 변경 이력 ({statusLogsTotal}건)</span>
+            <span className="wmt-total">
+              상태 변경 이력 ({statusLogsTotal}건)
+            </span>
           </div>
 
           {statusLogsError && <p className="wmt-error">{statusLogsError}</p>}
@@ -498,25 +623,41 @@ export default function AgencyWorkMonitorTab() {
             ) : (
               <>
                 {statusLogs.slice(0, statusLogsVisible).map((log) => {
-                  const toStatus = STATUS_LOG_MAP[log.toStatus] ?? { label: log.toStatus, type: "waiting" };
-                  const fromLabel = log.fromStatus ? (STATUS_LOG_MAP[log.fromStatus]?.label ?? log.fromStatus) : "접수";
+                  const toStatus = STATUS_LOG_MAP[log.toStatus] ?? {
+                    label: log.toStatus,
+                    type: "waiting",
+                  };
+                  const fromLabel = log.fromStatus
+                    ? (STATUS_LOG_MAP[log.fromStatus]?.label ?? log.fromStatus)
+                    : "접수";
                   return (
                     <div key={log.logId} className="wmt-log-row">
                       <span className="wmt-log-row__id">#{log.requestId}</span>
                       <span className="wmt-log-row__transition">
-                        {fromLabel} <span className="wmt-log-row__arrow">→</span>{" "}
-                        <span className={`wmt-badge wmt-badge--${toStatus.type}`}>{toStatus.label}</span>
+                        {fromLabel}{" "}
+                        <span className="wmt-log-row__arrow">→</span>{" "}
+                        <span
+                          className={`wmt-badge wmt-badge--${toStatus.type}`}
+                        >
+                          {toStatus.label}
+                        </span>
                       </span>
-                      <span className="wmt-log-row__memo">{log.memo || "-"}</span>
-                      <span className="wmt-log-row__by">{log.changedByName ?? "-"}</span>
-                      <span className="wmt-log-row__time">{formatUpdatedAt(log.changedAt)}</span>
+                      <span className="wmt-log-row__memo">
+                        {log.memo || "-"}
+                      </span>
+                      <span className="wmt-log-row__by">
+                        {log.changedByName ?? "-"}
+                      </span>
+                      <span className="wmt-log-row__time">
+                        {formatUpdatedAt(log.changedAt)}
+                      </span>
                     </div>
                   );
                 })}
                 {statusLogsVisible < statusLogs.length && (
                   <button
                     className="wmt-logs-more-btn"
-                    onClick={() => setStatusLogsVisible(v => v + 20)}
+                    onClick={() => setStatusLogsVisible((v) => v + 20)}
                   >
                     더보기 ({statusLogs.length - statusLogsVisible}건 남음)
                   </button>
@@ -531,27 +672,35 @@ export default function AgencyWorkMonitorTab() {
           <aside className="wmt-detail">
             <div className="wmt-detail__header">
               <span className="wmt-detail__title">작업 상세 정보</span>
-              <span className={`wmt-badge wmt-badge--${selectedStatus?.type ?? "waiting"}`}>
+              <span
+                className={`wmt-badge wmt-badge--${selectedStatus?.type ?? "waiting"}`}
+              >
                 {selectedStatus?.label ?? "대기"}
               </span>
             </div>
 
             <p className="wmt-detail__id">#{selectedItem.requestId}</p>
-            <p className="wmt-detail__created">접수일 {formatCreatedAt(selectedItem.createdAt)}</p>
+            <p className="wmt-detail__created">
+              접수일 {formatCreatedAt(selectedItem.createdAt)}
+            </p>
 
             {/* 고객 정보 */}
             <div className="wmt-detail__section">
               <p className="wmt-detail__section-label">고객 정보</p>
               <div className="wmt-detail__row">
                 <span>{selectedItem.customerName} 고객</span>
-                <span className="wmt-detail__phone"><Phone size={11} /> {selectedItem.customerPhone}</span>
+                <span className="wmt-detail__phone">
+                  <Phone size={11} /> {selectedItem.customerPhone}
+                </span>
               </div>
             </div>
 
             {/* 제품 정보 */}
             <div className="wmt-detail__section">
               <p className="wmt-detail__section-label">제품 정보</p>
-              <p className="wmt-detail__value">{selectedItem.productName} ({selectedItem.modelNo ?? "-"})</p>
+              <p className="wmt-detail__value">
+                {selectedItem.productName} ({selectedItem.modelNo ?? "-"})
+              </p>
             </div>
 
             {/* 담당 기사 */}
@@ -560,16 +709,25 @@ export default function AgencyWorkMonitorTab() {
                 <p className="wmt-detail__section-label">담당 기사</p>
               </div>
               <div className="wmt-detail__engineer-card">
-                <Avatar name={selectedItem.engineerName} profileImageUrl={selectedItem.engineerImg} size={36} />
+                <Avatar
+                  name={selectedItem.engineerName}
+                  profileImageUrl={selectedItem.engineerImg}
+                  size={36}
+                />
                 <div>
                   <p className="wmt-detail__engineer-name">
                     {selectedItem.engineerName ?? "-"}
                     {selectedItem.engineerRating != null && (
-                      <span className="wmt-detail__rating"> ⭐ {selectedItem.engineerRating}</span>
+                      <span className="wmt-detail__rating">
+                        {" "}
+                        ⭐ {selectedItem.engineerRating}
+                      </span>
                     )}
                   </p>
                   {selectedItem.engineerPhone && (
-                    <p className="wmt-detail__engineer-phone">{selectedItem.engineerPhone}</p>
+                    <p className="wmt-detail__engineer-phone">
+                      {selectedItem.engineerPhone}
+                    </p>
                   )}
                 </div>
               </div>
@@ -579,7 +737,10 @@ export default function AgencyWorkMonitorTab() {
             <div className="wmt-detail__section">
               <p className="wmt-detail__section-label">예약 정보</p>
               <p className="wmt-detail__value">
-                {formatVisitDateTime(selectedItem.visitDate, selectedItem.visitTime)}
+                {formatVisitDateTime(
+                  selectedItem.visitDate,
+                  selectedItem.visitTime,
+                )}
               </p>
               <p className="wmt-detail__address">{selectedItem.visitAddress}</p>
             </div>
@@ -589,17 +750,27 @@ export default function AgencyWorkMonitorTab() {
               <p className="wmt-detail__section-label">진행 현황</p>
               <div className="wmt-steps">
                 {WORK_STEPS.map((step, i) => {
-                  const isDone    = i < selectedStepIdx;
+                  const isDone = i < selectedStepIdx;
                   const isCurrent = i === selectedStepIdx;
-                  const stepTime  = selectedItem.stepTimes?.[step.key];
+                  const stepTime = selectedItem.stepTimes?.[step.key];
                   return (
                     <div key={step.key} className="wmt-step-item">
-                      <div className={`wmt-step-dot ${isDone ? "wmt-step-dot--done" : ""} ${isCurrent ? "wmt-step-dot--current" : ""}`} />
+                      <div
+                        className={`wmt-step-dot ${isDone ? "wmt-step-dot--done" : ""} ${isCurrent ? "wmt-step-dot--current" : ""}`}
+                      />
                       {i < WORK_STEPS.length - 1 && (
-                        <div className={`wmt-step-line ${isDone ? "wmt-step-line--done" : ""}`} />
+                        <div
+                          className={`wmt-step-line ${isDone ? "wmt-step-line--done" : ""}`}
+                        />
                       )}
-                      <span className={`wmt-step-label ${isDone ? "wmt-step-label--done" : ""} ${isCurrent ? "wmt-step-label--current" : ""}`}>{step.label}</span>
-                      {stepTime && <span className="wmt-step-time">{stepTime}</span>}
+                      <span
+                        className={`wmt-step-label ${isDone ? "wmt-step-label--done" : ""} ${isCurrent ? "wmt-step-label--current" : ""}`}
+                      >
+                        {step.label}
+                      </span>
+                      {stepTime && (
+                        <span className="wmt-step-time">{stepTime}</span>
+                      )}
                     </div>
                   );
                 })}
@@ -608,7 +779,9 @@ export default function AgencyWorkMonitorTab() {
 
             {/* 단계별 로그 (해당 건의 전체 이력에서 requestId로 필터링) */}
             {(() => {
-              const itemLogs = statusLogs.filter(l => l.requestId === selectedItem.requestId);
+              const itemLogs = statusLogs.filter(
+                (l) => l.requestId === selectedItem.requestId,
+              );
               if (itemLogs.length === 0) return null;
               return (
                 <div className="wmt-detail__section">
@@ -616,9 +789,14 @@ export default function AgencyWorkMonitorTab() {
                   <div className="wmt-logs">
                     {itemLogs.map((log) => (
                       <div key={log.logId} className="wmt-log-item">
-                        <span className="wmt-log-time">{log.changedAt?.slice(11, 16)}</span>
+                        <span className="wmt-log-time">
+                          {log.changedAt?.slice(11, 16)}
+                        </span>
                         <div>
-                          <p className="wmt-log-label">{STATUS_LOG_MAP[log.toStatus]?.label ?? log.toStatus}</p>
+                          <p className="wmt-log-label">
+                            {STATUS_LOG_MAP[log.toStatus]?.label ??
+                              log.toStatus}
+                          </p>
                           <p className="wmt-log-desc">{log.memo}</p>
                         </div>
                       </div>

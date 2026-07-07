@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle,
-  CalendarDays,
   ClipboardList,
   Clock,
   Search,
@@ -86,6 +85,7 @@ function mapItem(r) {
     engineerRating: r.engineerRating ?? null,
     engineerPhone: r.engineerPhone ?? "-",
     submittedAt: submittedAtDisplay,
+    submittedAtRaw: r.submittedAt ?? null,
     workDurationMin: r.workDurationMin ?? null,
     diagnosisResult: r.diagnosisResult ?? "NORMAL",
     finalAmount: r.finalAmount ?? 0,
@@ -113,42 +113,33 @@ export default function AgencyWorkCompleteTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState(null);
   const [keyword, setKeyword] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(30);
   const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
 
-  // API 상태
+  // API 상태 — 완료 목록은 전체를 받아와서 날짜/키워드 필터링과 페이지네이션을 프론트에서 처리
+  // (백엔드가 date 파라미터를 지원하지 않거나 배열 그대로 내려주는 경우가 있어, 서버 응답 형태와 무관하게
+  //  항상 클라이언트에서 필터링/페이지네이션이 정확히 동작하도록 함)
   const [completeList, setCompleteList] = useState([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const fetchCompleted = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get("/api/agency/as-assignments/completed", {
-        params: { page: currentPage - 1, size: 10 },
+        params: { page: 0, size: 1000, date: dateFilter || undefined },
       });
       const data = res.data;
       // Page<AssignmentCompletedResponse> 또는 배열 모두 처리
-      if (Array.isArray(data)) {
-        // 백엔드가 페이지네이션 없이 전체 배열을 내려주는 경우 → 프론트에서 10개씩 끊어서 표시
-        const mapped = data.map(mapItem);
-        const start = (currentPage - 1) * 10;
-        setCompleteList(mapped.slice(start, start + 10));
-        setTotalPages(Math.max(1, Math.ceil(mapped.length / 10)));
-        setTotalElements(mapped.length);
-      } else {
-        setCompleteList((data.content ?? []).map(mapItem));
-        setTotalPages(data.totalPages || 1);
-        setTotalElements(data.totalElements ?? 0);
-      }
+      const rawList = Array.isArray(data) ? data : (data.content ?? []);
+      setCompleteList(rawList.map(mapItem));
     } catch {
       // 오류 시 빈 목록 유지
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [dateFilter]);
 
   useEffect(() => {
     fetchCompleted();
@@ -171,17 +162,22 @@ export default function AgencyWorkCompleteTab() {
     ? (RESULT_MAP[selectedItem.diagnosisResult] ?? RESULT_MAP["NORMAL"])
     : null;
 
-  // 키워드 클라이언트 필터 (접수번호·고객명·기사명)
-  const filteredList = keyword.trim()
-    ? completeList.filter(
-        (it) =>
-          String(it.requestId).includes(keyword) ||
-          it.customer.includes(keyword) ||
-          it.engineerName.includes(keyword),
-      )
-    : completeList;
+  // 날짜 + 키워드 클라이언트 필터 (접수번호·고객명·기사명)
+  const trimmedKeyword = keyword.trim();
+  const filteredList = completeList.filter((it) => {
+    const matchesDate = !dateFilter || it.submittedAtRaw?.slice(0, 10) === dateFilter;
+    const matchesKeyword =
+      !trimmedKeyword ||
+      String(it.requestId).includes(trimmedKeyword) ||
+      it.customer.includes(trimmedKeyword) ||
+      it.engineerName.includes(trimmedKeyword);
+    return matchesDate && matchesKeyword;
+  });
 
+  const totalElements = filteredList.length;
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / 10));
   const pageNumbers = buildPageNumbers(currentPage, totalPages);
+  const pageList = filteredList.slice((currentPage - 1) * 10, currentPage * 10);
 
   return (
     <div className="wct">
@@ -242,12 +238,12 @@ export default function AgencyWorkCompleteTab() {
           {
             label: "평균 작업 시간",
             value:
-              completeList.length > 0
+              filteredList.length > 0
                 ? Math.round(
-                    completeList.reduce(
+                    filteredList.reduce(
                       (s, r) => s + (r.workDurationMin ?? 0),
                       0,
-                    ) / completeList.length,
+                    ) / filteredList.length,
                   )
                 : 0,
             unit: "분",
@@ -274,23 +270,32 @@ export default function AgencyWorkCompleteTab() {
 
       {/* 필터 */}
       <div className="wct-filters">
-        <div className="wct-filter-date">
-          <CalendarDays size={13} color="#aaa" />
-          <span>날짜 필터</span>
-        </div>
+        <input
+          type="date"
+          className="wct-filter-date"
+          value={dateFilter}
+          onChange={(e) => {
+            setDateFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+        />
         <div className="wct-search">
           <Search size={13} color="#aaa" />
           <input
             type="text"
             placeholder="접수번호, 고객명, 기사명 검색"
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={(e) => {
+              setKeyword(e.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
         <button
           className="wct-reset-btn"
           onClick={() => {
             setKeyword("");
+            setDateFilter("");
             setCurrentPage(1);
           }}
         >
@@ -345,7 +350,7 @@ export default function AgencyWorkCompleteTab() {
             )}
 
             {!loading &&
-              filteredList.map((item) => {
+              pageList.map((item) => {
                 const result = RESULT_MAP[item.diagnosisResult] ?? {
                   label: item.diagnosisResult,
                   type: "normal",
@@ -399,10 +404,10 @@ export default function AgencyWorkCompleteTab() {
                     </span>
                     <span>
                       <button
-                        className={`wct-detail-btn ${selectedItem?.id === item.id ? "wct-detail-btn--active" : ""}`}
-                        onClick={() => setSelectedItem(item)}
+                        className={`wct-detail-btn ${isSelected ? "wct-detail-btn--active" : ""}`}
+                        onClick={() => setSelectedItem(isSelected ? null : item)}
                       >
-                        상세보기
+                        {isSelected ? "닫기" : "상세보기"}
                       </button>
                     </span>
                   </div>
