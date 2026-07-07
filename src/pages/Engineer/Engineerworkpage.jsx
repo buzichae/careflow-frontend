@@ -90,6 +90,8 @@ export default function EngineerWorkPage() {
   const [workList, setWorkList] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedItem, setSelectedItem] = useState(null);
+  // 상태변경 요청 진행 여부 — 연타/중복 전송 차단용 (대시보드와 동일)
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   // [버그 수정] 검색/지역/날짜 필터가 전부 state 없는 장식용 UI였음
   const [search, setSearch] = useState("");
@@ -215,14 +217,22 @@ export default function EngineerWorkPage() {
   }));
 
   const handleChangeWorkStatus = async (asRequestId, nextStatus) => {
+    if (statusUpdating) return; // 진행 중이면 연타 무시 (중복 전송 차단)
+    setStatusUpdating(true);
     try {
       // ⚠ 백엔드 /api/engineer/tasks/{requestId}/status 는 AsAssignment PK가 아니라
       // AsRequest PK(asRequestId)를 받음.
       await updateAssignmentStatus(asRequestId, nextStatus);
-      fetchList();
+      await fetchList();
     } catch (err) {
       console.error("작업 상태 변경 실패:", err);
-      alert("작업 상태 변경에 실패했습니다.");
+      // 백엔드가 내려준 구체 사유(예: "수락(ACCEPTED) 상태에서만 도착 처리할 수 있습니다. (현재 상태: XXX)")를 노출
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error;
+      alert(serverMsg
+        ? `작업 상태 변경에 실패했습니다.\n\n[사유] ${serverMsg}`
+        : "작업 상태 변경에 실패했습니다.");
+    } finally {
+      setStatusUpdating(false);
     }
   };
 
@@ -481,9 +491,12 @@ export default function EngineerWorkPage() {
                         return (
                           <button
                             onClick={() => handleChangeWorkStatus(selectedItem.asRequestId, nextStep.key)}
+                            disabled={statusUpdating}
                             style={{
                               flex: 1, padding: "10px", borderRadius: 8, border: "none",
-                              background: "#5B4FF5", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                              background: "#5B4FF5", color: "#fff", fontWeight: 600, fontSize: 13,
+                              cursor: statusUpdating ? "not-allowed" : "pointer",
+                              opacity: statusUpdating ? 0.6 : 1,
                             }}
                           >
                             {nextStep.icon} {nextStep.label}(으)로 변경
