@@ -101,13 +101,10 @@ export default function AgencySettingPage() {
   // DELETE /api/agency/me/withdraw, 요청: { password }
   const [withdrawing, setWithdrawing] = useState(false);
 
-  // ── 로그인 보안 (2단계 인증 / 로그인 알림 / 신뢰 기기) ──
-  // GET /api/agency/me/security → { twoFactorEnabled, loginAlertEnabled, trustedDeviceCount }
-  const [security, setSecurity] = useState({ twoFactorEnabled: false, loginAlertEnabled: false, trustedDeviceCount: 0 });
+  // ── 로그인 보안 (2단계 인증 / 로그인 알림) ──
+  // GET /api/agency/me/security → { twoFactorEnabled, loginAlertEnabled }
+  const [security, setSecurity] = useState({ twoFactorEnabled: false, loginAlertEnabled: false });
   const [securityToggling, setSecurityToggling] = useState(false);
-  const [showDeviceList, setShowDeviceList] = useState(false);
-  const [trustedDevices, setTrustedDevices] = useState([]);
-  const [deviceListLoading, setDeviceListLoading] = useState(false);
 
   // ── 초기 데이터 로드 ──────────────────────────
   useEffect(() => {
@@ -283,35 +280,6 @@ export default function AgencySettingPage() {
       alert("설정 변경에 실패했습니다.");
     } finally {
       setSecurityToggling(false);
-    }
-  };
-
-  // ── 신뢰 기기 관리 ────────────────────────────
-  const handleToggleDeviceList = async () => {
-    const next = !showDeviceList;
-    setShowDeviceList(next);
-    if (next) {
-      setDeviceListLoading(true);
-      try {
-        const data = await apiFetch("/api/agency/me/trusted-devices");
-        setTrustedDevices(data ?? []);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setDeviceListLoading(false);
-      }
-    }
-  };
-
-  const handleDeleteDevice = async (deviceId) => {
-    if (!window.confirm("이 기기의 신뢰를 해제하시겠습니까?")) return;
-    try {
-      await apiFetch(`/api/agency/me/trusted-devices/${deviceId}`, { method: "DELETE" });
-      setTrustedDevices(prev => prev.filter(d => d.deviceId !== deviceId));
-      setSecurity(prev => ({ ...prev, trustedDeviceCount: Math.max(0, prev.trustedDeviceCount - 1) }));
-    } catch (e) {
-      console.error(e);
-      alert("기기 삭제에 실패했습니다.");
     }
   };
 
@@ -557,29 +525,6 @@ export default function AgencySettingPage() {
                 <button className="asp3-manage-btn" disabled={securityToggling} onClick={handleToggleLoginAlert}>관리</button>
               </div>
             </div>
-            <div className="asp3-security-row">
-              <p className="asp3-security-label">신뢰 기기 관리</p>
-              <div className="asp3-security-right">
-                <span className="asp3-security-badge asp3-security-badge--neutral">{security.trustedDeviceCount}개 등록됨</span>
-                <button className="asp3-manage-btn" onClick={handleToggleDeviceList}>{showDeviceList ? "닫기" : "관리"}</button>
-              </div>
-            </div>
-            {showDeviceList && (
-              <div className="asp3-device-list">
-                {deviceListLoading ? (
-                  <p style={{ fontSize: "12px", color: "#aaa", padding: "8px 0" }}>불러오는 중...</p>
-                ) : trustedDevices.length === 0 ? (
-                  <p style={{ fontSize: "12px", color: "#aaa", padding: "8px 0" }}>등록된 신뢰 기기가 없습니다.</p>
-                ) : (
-                  trustedDevices.map(device => (
-                    <div key={device.deviceId} className="asp3-device-row">
-                      <span className="asp3-device-name" title={device.deviceName}>{device.deviceName}</span>
-                      <button className="asp3-device-remove" onClick={() => handleDeleteDevice(device.deviceId)}>삭제</button>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
           </div>
 
           {/* 데이터 관리 */}
