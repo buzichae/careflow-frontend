@@ -49,6 +49,11 @@ export default function EngineerDashboard() {
   // 작업관리 페이지로 이동/식별할 때 쓸 AsAssignment PK
   const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
 
+  // 상태변경 요청 진행 여부 — 출발 PATCH가 끝나기 전에 도착을 연타하면
+  // 서버 로그가 아직 안 써진 상태로 다음 전이가 나가 "이미 도착했다" 류 오류가 났음.
+  // 요청이 끝날 때까지 빠른 액션 버튼을 잠가 중복/연타 전송을 원천 차단한다.
+  const [statusUpdating, setStatusUpdating] = useState(false);
+
   const [todaySchedule, setTodaySchedule] = useState([]);
 
   // "개인 실적 및 정산" 패널 데이터 — /api/engineer/settlements/summary 재사용
@@ -221,18 +226,28 @@ useEffect(() => {
     }
 
     if (!currentRequestId) return;
+    if (statusUpdating) return; // 진행 중이면 연타 무시 (중복 전송 차단)
 
     const prevStatus = workStatus;
+    setStatusUpdating(true);
     setWorkStatus(key); // 낙관적 업데이트
 
     try {
       await updateAssignmentStatus(currentRequestId, key);
-      // 상태 변경 후 목록을 다시 불러와 todaySchedule의 logStatus도 최신화
-      fetchCurrentWork();
+      // 상태 변경 후 목록을 다시 불러와 todaySchedule의 logStatus도 최신화.
+      // 목록 갱신이 끝날 때까지 버튼 잠금을 유지하려고 await 한다.
+      await fetchCurrentWork();
     } catch (err) {
       console.error("작업 상태 변경 실패:", err);
       setWorkStatus(prevStatus); // 실패 시 롤백
-      alert("작업 상태 변경에 실패했습니다. 다시 시도해주세요.");
+      // 백엔드(GlobalExceptionHandler)가 내려준 구체 메시지를 그대로 노출해
+      // 어떤 가드(ACCEPTED 상태/출발-도착 순서/본인 배정 여부 등)에 걸렸는지 바로 확인.
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error;
+      alert(serverMsg
+        ? `작업 상태 변경에 실패했습니다.\n\n[사유] ${serverMsg}`
+        : "작업 상태 변경에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setStatusUpdating(false);
     }
   };
 
@@ -373,7 +388,7 @@ useEffect(() => {
                     <button
                       key={a.key}
                       className={`ed-quick-btn ${workStatus === "IN_PROGRESS" ? "ed-quick-btn--active" : "ed-quick-btn--disabled"}`}
-                      disabled={workStatus !== "IN_PROGRESS"}
+                      disabled={workStatus !== "IN_PROGRESS" || statusUpdating}
                       onClick={() => handleQuickAction(a.key)}
                     >
                       <a.icon size={16} />
@@ -391,7 +406,7 @@ useEffect(() => {
                   <button
                     key={a.key}
                     className={`ed-quick-btn ${isCurrent ? "ed-quick-btn--active" : isDone ? "ed-quick-btn--done" : "ed-quick-btn--disabled"}`}
-                    disabled={!isNext || !currentRequestId}
+                    disabled={!isNext || !currentRequestId || statusUpdating}
                     onClick={() => handleQuickAction(a.key)}
                   >
                     <a.icon size={16} />
