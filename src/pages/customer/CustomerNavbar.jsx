@@ -91,7 +91,10 @@ export default function CustomerNavbar() {
         <div className="customer-navbar__profile-wrap" ref={dropdownRef}>
           <button
             className="customer-navbar__profile"
-            onClick={() => { setDropdownOpen((p) => !p); setLogoutConfirm(false); }}
+            onClick={() => {
+              setDropdownOpen((p) => !p);
+              setLogoutConfirm(false);
+            }}
           >
             <div className="customer-navbar__avatar">
               <UserRound />
@@ -110,23 +113,38 @@ export default function CustomerNavbar() {
             <div className="customer-dropdown">
               {logoutConfirm ? (
                 <div className="customer-dropdown__confirm">
-                  <p className="customer-dropdown__confirm-text">로그아웃 하시겠습니까?</p>
+                  <p className="customer-dropdown__confirm-text">
+                    로그아웃 하시겠습니까?
+                  </p>
                   <div className="customer-dropdown__confirm-btns">
-                    <button className="customer-dropdown__confirm-cancel" onClick={() => setLogoutConfirm(false)}>취소</button>
-                    <button className="customer-dropdown__confirm-ok" onClick={handleLogout}>로그아웃</button>
+                    <button
+                      className="customer-dropdown__confirm-cancel"
+                      onClick={() => setLogoutConfirm(false)}
+                    >
+                      취소
+                    </button>
+                    <button
+                      className="customer-dropdown__confirm-ok"
+                      onClick={handleLogout}
+                    >
+                      로그아웃
+                    </button>
                   </div>
                 </div>
               ) : (
                 <>
                   <button
                     className="customer-dropdown__item"
-                    onClick={() => { setDropdownOpen(false); navigate("/customer/mypage"); }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate("/customer/mypage");
+                    }}
                   >
                     <User size={14} /> 내 정보
                   </button>
-                  <button className="customer-dropdown__item">
+                  {/* <button className="customer-dropdown__item">
                     <Settings size={14} /> 설정
-                  </button>
+                  </button> */}
                   <div className="customer-dropdown__divider" />
                   <button
                     className="customer-dropdown__item customer-dropdown__item--logout"
