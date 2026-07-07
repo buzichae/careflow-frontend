@@ -137,6 +137,19 @@ export default function EngineerWorkPage() {
   }, [fetchList]);
 
   // [버그 수정] 검색어/지역/날짜 필터를 실제 목록에 적용 (클라이언트 사이드)
+  //
+  // 날짜 필터: <input type="date"> 값은 ISO("2026-07-08")이므로,
+  //   백엔드가 함께 내려주는 scheduledDateIso(ISO)와 직접 비교한다.
+  //   scheduledDate("2026.07.08 (수)")는 표시 전용이라 필터에 쓰지 않는다.
+  //   (구 백엔드 호환용 fallback: ISO 필드가 없을 때만 표시용 문자열에서 연/월/일 추출)
+  const toIsoDate = (item) => {
+    if (item.scheduledDateIso) return item.scheduledDateIso;
+    const m = String(item.scheduledDate ?? "").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+    if (!m) return null;
+    const [, y, mo, d] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  };
+
   const filteredWorkList = useMemo(() => {
     return workList.filter((item) => {
       if (search.trim()) {
@@ -148,9 +161,13 @@ export default function EngineerWorkPage() {
         if (!haystack.includes(q)) return false;
       }
       if (regionFilter !== "전체 지역" && !item.address?.includes(regionFilter)) return false;
-      if (item.scheduledDate) {
-        if (dateStart && item.scheduledDate < dateStart) return false;
-        if (dateEnd && item.scheduledDate > dateEnd) return false;
+
+      // 날짜 범위 필터 (ISO 비교, 양끝 포함)
+      if (dateStart || dateEnd) {
+        const iso = toIsoDate(item);
+        if (!iso) return false; // 일정 미정 등 날짜가 없는 건은 범위 지정 시 제외
+        if (dateStart && iso < dateStart) return false;
+        if (dateEnd && iso > dateEnd) return false;
       }
       return true;
     });
@@ -256,7 +273,6 @@ export default function EngineerWorkPage() {
           className="ewp-filter-select"
           value={regionFilter}
           onChange={(e) => setRegionFilter(e.target.value)}
-          style={{ border: "none", background: "none", font: "inherit", color: "inherit", cursor: "pointer" }}
         >
           <option value="전체 지역">전체 지역</option>
           {regionOptions.map((r) => <option key={r} value={r}>{r}</option>)}
