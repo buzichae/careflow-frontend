@@ -369,23 +369,30 @@ export default function AgencySettingPage() {
       <div className="asp3-body">
         <div className="asp3-left">
 
-          {/* 대행사 정보 - 3번/4번 API */}
+          {/* 대행사 정보 - 3번/4번 API — 대표 계정(슈퍼 계정)만 수정 가능(백엔드 정책과 일치), 일반 관리자는 조회만 가능 */}
           <div className="asp3-section">
             <div className="asp3-section__header">
               <h2 className="asp3-section__title">대행사 정보</h2>
-              <button
-                className="asp3-save-btn"
-                onClick={handleSaveAgency}
-                disabled={infoLoading || infoSaving}
-              >
-                {infoSaving ? "저장 중..." : "저장하기"}
-              </button>
+              {isRepresentative && (
+                <button
+                  className="asp3-save-btn"
+                  onClick={handleSaveAgency}
+                  disabled={infoLoading || infoSaving}
+                >
+                  {infoSaving ? "저장 중..." : "저장하기"}
+                </button>
+              )}
             </div>
 
             {infoLoading ? (
               <p style={{ color: "#aaa", fontSize: "13px", padding: "12px 0" }}>로딩 중...</p>
             ) : (
               <>
+                {!isRepresentative && (
+                  <p className="asp3-hint" style={{ marginBottom: "10px" }}>
+                    대행사 정보와 정산 계좌는 대표(슈퍼) 계정만 수정할 수 있습니다.
+                  </p>
+                )}
                 <div className="asp3-form-grid">
                   {/* 4번 API 수정 가능 필드: agencyName, agencyAddress */}
                   <div className="asp3-form-field">
@@ -395,6 +402,7 @@ export default function AgencySettingPage() {
                       value={agencyName}
                       onChange={e => setAgencyName(e.target.value)}
                       placeholder="대행사명을 입력하세요"
+                      disabled={!isRepresentative}
                     />
                   </div>
                   {/* 주소 full width */}
@@ -405,6 +413,7 @@ export default function AgencySettingPage() {
                       value={address}
                       onChange={e => setAddress(e.target.value)}
                       placeholder="대행사 소재지 주소를 입력하세요"
+                      disabled={!isRepresentative}
                     />
                   </div>
                 </div>
@@ -417,6 +426,7 @@ export default function AgencySettingPage() {
                       className="asp3-input"
                       value={bankName}
                       onChange={e => { setBankName(e.target.value); if (accountError) setAccountError(""); }}
+                      disabled={!isRepresentative}
                     >
                       <option value="">은행을 선택하세요</option>
                       {BANK_LIST.map(bank => (
@@ -431,6 +441,7 @@ export default function AgencySettingPage() {
                       value={accountNumber}
                       onChange={handleAccountNumberChange}
                       placeholder="'-' 없이 또는 포함하여 입력"
+                      disabled={!isRepresentative}
                     />
                   </div>
                   {accountError && (
