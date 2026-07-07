@@ -403,6 +403,7 @@ useEffect(() => {
                     }}
                   >
                     <div className="ed-schedule-item__time">
+                      <span className="ed-schedule-item__date">{item.scheduledDate}</span>
                       <span className="ed-schedule-item__hour">{item.scheduledTime}</span>
                       <span className="ed-schedule-item__badge">
                         {isSelected ? "선택됨" : "예정"}
