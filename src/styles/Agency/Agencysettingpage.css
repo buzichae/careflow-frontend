@@ -32,6 +32,7 @@
   font-family: inherit; outline: none; width: 100%; box-sizing: border-box;
 }
 .asp3-input:focus { border-color: #5B4FF5; box-shadow: 0 0 0 3px #eeeaff; }
+.asp3-input:disabled { background: #f5f5f7; color: #aaa; cursor: not-allowed; }
 .asp3-input--suffix { padding-right: 36px; }
 
 .asp3-input-suffix { position: relative; }

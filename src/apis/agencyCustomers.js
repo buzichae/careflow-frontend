@@ -18,14 +18,6 @@ export const getAgencyCustomerAsRequests = (userId) =>
 export const getAgencyCustomerPayments = (userId) =>
     api.get(`/api/agency/customers/${userId}/payments`);
 
-// 고객 정보 수정 (이름/연락처/상세주소) — null 필드는 기존 값 유지
-export const updateAgencyCustomer = (userId, { name, phone, addressDetail } = {}) =>
-    api.patch(`/api/agency/customers/${userId}`, { name, phone, addressDetail });
-
-// 고객 비밀번호 초기화 — 임시 비밀번호를 생성해 고객 이메일로 발송
-export const resetAgencyCustomerPassword = (userId) =>
-    api.patch(`/api/agency/customers/${userId}/reset-password`);
-
 // 고객 차단 (status=SUSPENDED로 전환, 로그인 즉시 차단됨)
 export const blockAgencyCustomer = (userId) =>
     api.patch(`/api/agency/customers/${userId}/block`);
