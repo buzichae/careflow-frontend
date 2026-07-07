@@ -39,7 +39,7 @@ function getCalendarDays(year, month) {
 
 const FIXED_BLOCKS = [
   { startTime: "08:00", endTime: "09:00", label: "일일 준비",  sub: "장비 점검 및 이동 준비", type: "prepare", icon: Flag   },
-  { startTime: "12:00", endTime: "13:00", label: "점심 시간",  sub: null,                     type: "lunch",   icon: Coffee },
+  { startTime: "13:00", endTime: "14:00", label: "점심 시간",  sub: null,                     type: "lunch",   icon: Coffee },
   { startTime: "18:00", endTime: "18:30", label: "일일 마무리", sub: "작업 보고서 작성 및 정리", type: "close",   icon: ClipboardList },
 ];
 
