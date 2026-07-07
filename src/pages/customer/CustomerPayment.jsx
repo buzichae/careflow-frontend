@@ -19,10 +19,12 @@ import "../../styles/Customer/CustomerPayment.css";
 import {
   getMyAS,
   getReport,
-  processPayment,
+  approveReport,
   getPaymentSummary,
   getMonthlyPayments,
 } from "../../apis/as";
+import ReportModal from "./ReportModal";
+import PaymentModal from "./PaymentModal";
 
 function fmt(dateStr) {
   return dateStr ? String(dateStr).slice(0, 10).replace(/-/g, ".") : "—";
@@ -40,30 +42,9 @@ function fmtMonthLabel(yearMonth) {
   return `${m}월`;
 }
 
-/* 결제 대기 카드 */
-function PaymentActionCard({ req, report, onPaid }) {
-  const [loading, setLoading] = useState(false);
-
-  const handlePay = async () => {
-    const amount = report?.finalAmount;
-    const label = amount != null ? `금액: ${fmtWon(amount)}\n` : "";
-    if (
-      !window.confirm(
-        `결제를 진행하시겠습니까?\n${label}제품: ${productName(req)}`,
-      )
-    )
-      return;
-    setLoading(true);
-    try {
-      await processPayment(req.requestId);
-      onPaid();
-    } catch (e) {
-      alert(e?.response?.data?.message ?? "결제 처리 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+/* 결제 대기 카드 — 결제하기를 누르면 수리 보고서 모달이 먼저 뜨고,
+   보고서 승인 후에만 실제 결제(토스 결제창)로 넘어간다. */
+function PaymentActionCard({ req, report, onOpenReport }) {
   return (
     <div className="cp-action-card">
       <div className="cp-action-card__left">
@@ -93,10 +74,9 @@ function PaymentActionCard({ req, report, onPaid }) {
       <div className="cp-action-card__btns">
         <button
           className="cp-btn cp-btn--primary"
-          onClick={handlePay}
-          disabled={loading}
+          onClick={() => onOpenReport(req, report)}
         >
-          <CreditCard size={14} /> {loading ? "처리 중..." : "결제하기"}
+          <CreditCard size={14} /> 결제하기
         </button>
       </div>
     </div>
@@ -111,6 +91,8 @@ export default function CustomerPayment() {
   const [loading, setLoading] = useState(true);
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
+  const [reportTarget, setReportTarget] = useState(null);
+  const [paymentTarget, setPaymentTarget] = useState(null);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -151,6 +133,29 @@ export default function CustomerPayment() {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  function handleOpenReport(req, report) {
+    if (!report) {
+      alert("보고서를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    setReportTarget({ item: { ...req, appliance: productName(req) }, report });
+  }
+
+  async function handleApproveAndPay() {
+    // 이미 승인된 보고서를 다시 승인 시도하면 서버가 "이미 승인된 보고서입니다"를
+    // 반환해 결제 단계로 못 넘어가고 막혀버리므로, 이미 승인된 상태면 건너뛴다.
+    if (!reportTarget.report.customerApproved) {
+      try {
+        await approveReport(reportTarget.report.reportId);
+      } catch (error) {
+        alert(error.response?.data?.message || "승인에 실패했습니다.");
+        return;
+      }
+    }
+    setPaymentTarget(reportTarget);
+    setReportTarget(null);
+  }
 
   const pending = asList.filter((r) => r.status === "COMPLETED" && r.reportId);
 
@@ -267,9 +272,29 @@ export default function CustomerPayment() {
             key={req.requestId}
             req={req}
             report={reports[req.reportId] ?? null}
-            onPaid={fetchAll}
+            onOpenReport={handleOpenReport}
           />
         ))}
+
+      {/* 수리 보고서 모달 — 승인 후에만 결제 모달로 이어진다 */}
+      {reportTarget && (
+        <ReportModal
+          item={reportTarget.item}
+          report={reportTarget.report}
+          onApprove={handleApproveAndPay}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
+
+      {/* 결제 모달 (토스페이먼츠 결제창 연동) — 결제 승인 결과는
+          /customer/payment/success·fail 페이지에서 처리된다. */}
+      {paymentTarget && (
+        <PaymentModal
+          item={paymentTarget.item}
+          amount={paymentTarget.report.finalAmount}
+          onClose={() => setPaymentTarget(null)}
+        />
+      )}
 
       {/* 결제 내역 테이블 */}
       <div className="cp-card">
