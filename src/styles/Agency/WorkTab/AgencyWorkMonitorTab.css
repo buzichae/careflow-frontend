@@ -351,6 +351,7 @@
 }
 .wmt-detail-btn:hover { background: #f5f3ff; }
 .wmt-detail-btn--active { background: #5B4FF5; color: #fff; border-color: #5B4FF5; }
+.wmt-detail-btn--active:hover { background: #fff; color: #5B4FF5; }
 
 .wmt-more-btn {
   background: none;
@@ -398,12 +399,12 @@
    페이지네이션
 =========================== */
 .wmt-pagination {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 10px 2px;
 }
-.wmt-pagination__left { display: flex; align-items: center; gap: 4px; }
+.wmt-pagination__left { grid-column: 2; justify-self: center; display: flex; align-items: center; gap: 4px; }
 .wmt-pagination__left button {
   width: 30px;
   height: 30px;
@@ -426,7 +427,7 @@
   font-weight: 700;
 }
 
-.wmt-page-size-wrap { position: relative; }
+.wmt-page-size-wrap { grid-column: 3; justify-self: end; position: relative; }
 .wmt-page-size {
   display: flex;
   align-items: center;

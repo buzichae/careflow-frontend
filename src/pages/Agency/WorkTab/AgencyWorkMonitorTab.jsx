@@ -463,7 +463,7 @@ export default function AgencyWorkMonitorTab() {
               <button onClick={() => setPage(Math.max(0, totalPages - 1))} disabled={page >= totalPages - 1}><ChevronsRight size={14} /></button>
             </div>
             {/* 페이지 크기 선택 */}
-            <div className="wmt-page-size-wrap">
+            {/* <div className="wmt-page-size-wrap">
               <div className="wmt-page-size" onClick={() => setShowSizeDropdown(p => !p)}>
                 {size}개씩 보기 <ChevronDown size={13} />
               </div>
@@ -480,7 +480,7 @@ export default function AgencyWorkMonitorTab() {
                   ))}
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
 
           {/* 상태 변경 이력 (GET /api/as-status-logs/agency) */}
