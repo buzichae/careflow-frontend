@@ -165,7 +165,8 @@ export default function AgencyWorkCompleteTab() {
   // 날짜 + 키워드 클라이언트 필터 (접수번호·고객명·기사명)
   const trimmedKeyword = keyword.trim();
   const filteredList = completeList.filter((it) => {
-    const matchesDate = !dateFilter || it.submittedAtRaw?.slice(0, 10) === dateFilter;
+    const matchesDate =
+      !dateFilter || it.submittedAtRaw?.slice(0, 10) === dateFilter;
     const matchesKeyword =
       !trimmedKeyword ||
       String(it.requestId).includes(trimmedKeyword) ||
@@ -405,9 +406,11 @@ export default function AgencyWorkCompleteTab() {
                     <span>
                       <button
                         className={`wct-detail-btn ${isSelected ? "wct-detail-btn--active" : ""}`}
-                        onClick={() => setSelectedItem(isSelected ? null : item)}
+                        onClick={() =>
+                          setSelectedItem(isSelected ? null : item)
+                        }
                       >
-                        {isSelected ? "닫기" : "상세보기"}
+                        {isSelected ? "닫기" : "상세"}
                       </button>
                     </span>
                   </div>

@@ -170,6 +170,7 @@
 
 .aep-detail-btn:hover { background: #eeeaff; border-color: #5B4FF5; }
 .aep-detail-btn--active { background: #5B4FF5; color: #fff; border-color: #5B4FF5; }
+.aep-detail-btn--active:hover { background: #fff; color: #5B4FF5; }
 
 .aep-more-btn {
   background: none; border: none; cursor: pointer; color: #aaa;
@@ -177,8 +178,8 @@
 }
 
 /* 페이지네이션 */
-.aep-pagination { display: flex; align-items: center; justify-content: space-between; }
-.aep-pagination__left { display: flex; align-items: center; gap: 4px; }
+.aep-pagination { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.aep-pagination__left { grid-column: 2; justify-self: center; display: flex; align-items: center; gap: 4px; }
 
 .aep-pagination__left button {
   width: 30px; height: 30px;

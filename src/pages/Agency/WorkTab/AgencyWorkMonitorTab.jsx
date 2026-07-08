@@ -542,7 +542,7 @@ export default function AgencyWorkMonitorTab() {
                           setSelectedItem(isSelected ? null : item)
                         }
                       >
-                        {isSelected ? "닫기" : "상세보기"}
+                        {isSelected ? "닫기" : "상세"}
                       </button>
                       {/* <button className="wmt-more-btn"><MoreVertical size={14} /></button> */}
                     </span>

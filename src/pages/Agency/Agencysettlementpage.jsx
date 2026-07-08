@@ -575,7 +575,7 @@ export default function AgencySettlementPage() {
           <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
           <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
         </div>
-        <div className="asp-page-size">{PAGE_SIZE}개씩 보기 <ChevronDown size={13} /></div>
+        {/* <div className="asp-page-size">{PAGE_SIZE}개씩 보기 <ChevronDown size={13} /></div> */}
       </div>
 
       <p className="asp-footnote">* 실 지급액은 기사의 경우만 표시됩니다. 기사 지급 처리는 상세보기에서 진행하며, CareFlow→대행사 정산 상태는 CareFlow 측에서 관리합니다.</p>

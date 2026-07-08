@@ -274,9 +274,16 @@ export default function AgencyReviewPage() {
                   <div className="arp-table__action-col">
                     <button
                       className={`arp-detail-btn ${isSelected ? "arp-detail-btn--active" : ""}`}
-                      onClick={() => { setSelectedItem(item); setDetailTab("기본 정보"); }}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedItem(null);
+                        } else {
+                          setSelectedItem(item);
+                          setDetailTab("기본 정보");
+                        }
+                      }}
                     >
-                      상세보기
+                      {isSelected ? "닫기" : "상세보기"}
                     </button>
                   </div>
                 </div>
@@ -312,7 +319,7 @@ export default function AgencyReviewPage() {
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
               <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
             </div>
-            <div className="arp-page-size">10개씩 보기 <ChevronDown size={13} /></div>
+            {/* <div className="arp-page-size">10개씩 보기 <ChevronDown size={13} /></div> */}
           </div>
         </div>
 

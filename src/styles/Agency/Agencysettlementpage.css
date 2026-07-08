@@ -174,8 +174,8 @@
 .asp-detail-btn:hover { background: #eeeaff; border-color: #5B4FF5; }
 
 /* 페이지네이션 */
-.asp-pagination { display: flex; align-items: center; justify-content: space-between; }
-.asp-pagination__left { display: flex; align-items: center; gap: 4px; }
+.asp-pagination { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.asp-pagination__left { grid-column: 2; justify-self: center; display: flex; align-items: center; gap: 4px; }
 .asp-pagination__left button {
   width: 30px; height: 30px; border: 0.5px solid #e0dcff; border-radius: 6px;
   background: none; cursor: pointer; font-size: 13px; color: #666;

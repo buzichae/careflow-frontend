@@ -1,14 +1,32 @@
 import { useState, useEffect, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
 import {
-  Users, Circle, BookCheck, ClipboardList, Star,
-  Search, ChevronDown, ChevronLeft, ChevronRight,
-  ChevronsLeft, ChevronsRight, MoreVertical, RefreshCw,
-  Phone, Mail, Building2, X, UserPlus, Pencil, Plus, Save, Loader2,
+  Users,
+  Circle,
+  BookCheck,
+  ClipboardList,
+  Star,
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreVertical,
+  RefreshCw,
+  Phone,
+  Mail,
+  Building2,
+  X,
+  UserPlus,
+  Pencil,
+  Plus,
+  Save,
+  Loader2,
   CheckCircle,
 } from "lucide-react";
 import "../../styles/Agency/agency/AgencyEngineerPage.css";
-import "../../styles/Agency/agency/Agencyengineerpage.edit form.css"
+import "../../styles/Agency/agency/Agencyengineerpage.edit form.css";
 import EngineerApprovalModal from "../../pages/Agency/Modal/Engineerapprovalmodal";
 import { getAgencyEngineersLmsStatus } from "../../apis/lms";
 
@@ -40,15 +58,15 @@ export async function apiFetch(path, options = {}) {
 
 // ── 상수 매핑 ──────────────────────────────
 const SKILL_MAP = {
-  ADVANCED:     { label: "고급", type: "advanced",     en: "ADVANCED"      },
-  INTERMEDIATE: { label: "중급", type: "intermediate", en: "INTERMEDIATE"  },
-  BEGINNER:     { label: "초급", type: "beginner",     en: "BEGINNER"      },
+  ADVANCED: { label: "고급", type: "advanced", en: "ADVANCED" },
+  INTERMEDIATE: { label: "중급", type: "intermediate", en: "INTERMEDIATE" },
+  BEGINNER: { label: "초급", type: "beginner", en: "BEGINNER" },
 };
 
 const SCHEDULE_STATUS_MAP = {
   AVAILABLE: { label: "근무 중", type: "available" },
-  BOOKED:    { label: "작업 중", type: "booked"    },
-  OFF:       { label: "휴무",   type: "off"        },
+  BOOKED: { label: "작업 중", type: "booked" },
+  OFF: { label: "휴무", type: "off" },
 };
 
 const DETAIL_TABS = ["기본 정보", "근무표"];
@@ -100,7 +118,11 @@ function LmsStatusBadge({ isCompleted, lmsDetail }) {
     lmsDetail.completedCount === lmsDetail.totalCount;
 
   if (contentDone) {
-    return <span className="aep-lms-badge aep-lms-badge--quiz-pending">콘텐츠 완료 · 퀴즈 대기</span>;
+    return (
+      <span className="aep-lms-badge aep-lms-badge--quiz-pending">
+        콘텐츠 완료 · 퀴즈 대기
+      </span>
+    );
   }
 
   return <span className="aep-lms-badge aep-lms-badge--fail">미이수</span>;
@@ -108,8 +130,15 @@ function LmsStatusBadge({ isCompleted, lmsDetail }) {
 
 function Avatar({ name, profileImg, size = 36 }) {
   return (
-    <div className="aep-avatar" style={{ width: size, height: size, fontSize: size * 0.38 }}>
-      {profileImg ? <img src={profileImg} alt={name} /> : <span>{name?.charAt(0)}</span>}
+    <div
+      className="aep-avatar"
+      style={{ width: size, height: size, fontSize: size * 0.38 }}
+    >
+      {profileImg ? (
+        <img src={profileImg} alt={name} />
+      ) : (
+        <span>{name?.charAt(0)}</span>
+      )}
     </div>
   );
 }
@@ -126,7 +155,7 @@ function TagInput({ label, values, onChange, placeholder, parseValue }) {
       setDraft("");
       return;
     }
-    if (values.some(v => String(v) === String(parsed))) {
+    if (values.some((v) => String(v) === String(parsed))) {
       setDraft("");
       return;
     }
@@ -156,7 +185,11 @@ function TagInput({ label, values, onChange, placeholder, parseValue }) {
           {values.map((v, idx) => (
             <span key={`${v}-${idx}`} className="aep-tag-chip">
               {v}
-              <button type="button" onClick={() => removeTag(idx)} aria-label={`${v} 삭제`}>
+              <button
+                type="button"
+                onClick={() => removeTag(idx)}
+                aria-label={`${v} 삭제`}
+              >
                 <X size={11} />
               </button>
             </span>
@@ -167,10 +200,12 @@ function TagInput({ label, values, onChange, placeholder, parseValue }) {
             type="text"
             value={draft}
             placeholder={placeholder}
-            onChange={e => setDraft(e.target.value)}
+            onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <button type="button" onClick={addTag}><Plus size={13} /> 추가</button>
+          <button type="button" onClick={addTag}>
+            <Plus size={13} /> 추가
+          </button>
         </div>
       </div>
     </div>
@@ -180,33 +215,42 @@ function TagInput({ label, values, onChange, placeholder, parseValue }) {
 // ── 근무표 캘린더 컴포넌트 (14번 API) ────────────
 function ScheduleCalendar({ engineerUserId }) {
   const now = new Date();
-  const [year, setYear]   = useState(now.getFullYear());
+  const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [schedules, setSchedules] = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    apiFetch(`/api/agency/engineers/${engineerUserId}/schedules?year=${year}&month=${month}`)
+    apiFetch(
+      `/api/agency/engineers/${engineerUserId}/schedules?year=${year}&month=${month}`,
+    )
       .then(setSchedules)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [engineerUserId, year, month]);
 
   const prevMonth = () => {
-    if (month === 1) { setYear(y => y - 1); setMonth(12); }
-    else setMonth(m => m - 1);
+    if (month === 1) {
+      setYear((y) => y - 1);
+      setMonth(12);
+    } else setMonth((m) => m - 1);
   };
   const nextMonth = () => {
-    if (month === 12) { setYear(y => y + 1); setMonth(1); }
-    else setMonth(m => m + 1);
+    if (month === 12) {
+      setYear((y) => y + 1);
+      setMonth(1);
+    } else setMonth((m) => m + 1);
   };
 
   const scheduleMap = {};
-  schedules.forEach(s => { scheduleMap[s.workDate] = s; });
+  schedules.forEach((s) => {
+    scheduleMap[s.workDate] = s;
+  });
 
   // timeSlots는 { start, end } 객체 배열이므로 join() 전에 문자열로 변환해야 함
-  const formatTimeSlots = (slots) => (slots ?? []).map(slot => `${slot.start} - ${slot.end}`).join(", ");
+  const formatTimeSlots = (slots) =>
+    (slots ?? []).map((slot) => `${slot.start} - ${slot.end}`).join(", ");
 
   const firstDay = new Date(year, month - 1, 1).getDay();
   const lastDate = new Date(year, month, 0).getDate();
@@ -216,33 +260,87 @@ function ScheduleCalendar({ engineerUserId }) {
 
   const STATUS_COLOR = {
     AVAILABLE: "#eaf3de",
-    BOOKED:    "#eeeaff",
-    OFF:       "#f5f5f5",
+    BOOKED: "#eeeaff",
+    OFF: "#f5f5f5",
   };
   const STATUS_TEXT_COLOR = {
     AVAILABLE: "#16a34a",
-    BOOKED:    "#5B4FF5",
-    OFF:       "#888",
+    BOOKED: "#5B4FF5",
+    OFF: "#888",
   };
 
   return (
     <div style={{ fontSize: "12px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-        <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", color: "#5B4FF5" }}>‹</button>
-        <span style={{ fontWeight: 700, color: "#1a1a2e" }}>{year}년 {month}월</span>
-        <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", color: "#5B4FF5" }}>›</button>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "10px",
+        }}
+      >
+        <button
+          onClick={prevMonth}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#5B4FF5",
+          }}
+        >
+          ‹
+        </button>
+        <span style={{ fontWeight: 700, color: "#1a1a2e" }}>
+          {year}년 {month}월
+        </span>
+        <button
+          onClick={nextMonth}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#5B4FF5",
+          }}
+        >
+          ›
+        </button>
       </div>
 
       {loading ? (
-        <p style={{ textAlign: "center", color: "#aaa", padding: "20px" }}>로딩 중...</p>
+        <p style={{ textAlign: "center", color: "#aaa", padding: "20px" }}>
+          로딩 중...
+        </p>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", marginBottom: "4px" }}>
-            {["일", "월", "화", "수", "목", "금", "토"].map(d => (
-              <div key={d} style={{ textAlign: "center", color: "#aaa", fontSize: "11px", padding: "4px 0" }}>{d}</div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: "2px",
+              marginBottom: "4px",
+            }}
+          >
+            {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
+              <div
+                key={d}
+                style={{
+                  textAlign: "center",
+                  color: "#aaa",
+                  fontSize: "11px",
+                  padding: "4px 0",
+                }}
+              >
+                {d}
+              </div>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: "2px",
+            }}
+          >
             {cells.map((day, i) => {
               if (!day) return <div key={`empty-${i}`} />;
               const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -251,12 +349,19 @@ function ScheduleCalendar({ engineerUserId }) {
                 <div
                   key={dateStr}
                   style={{
-                    textAlign: "center", padding: "6px 2px", borderRadius: "6px",
+                    textAlign: "center",
+                    padding: "6px 2px",
+                    borderRadius: "6px",
                     background: sch ? STATUS_COLOR[sch.status] : "transparent",
                     color: sch ? STATUS_TEXT_COLOR[sch.status] : "#444",
-                    fontSize: "11px", fontWeight: sch ? 700 : 400,
+                    fontSize: "11px",
+                    fontWeight: sch ? 700 : 400,
                   }}
-                  title={sch ? `${sch.status}\n${formatTimeSlots(sch.timeSlots)}` : ""}
+                  title={
+                    sch
+                      ? `${sch.status}\n${formatTimeSlots(sch.timeSlots)}`
+                      : ""
+                  }
                 >
                   {day}
                 </div>
@@ -264,33 +369,81 @@ function ScheduleCalendar({ engineerUserId }) {
             })}
           </div>
 
-          <div style={{ display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginTop: "10px",
+              flexWrap: "wrap",
+            }}
+          >
             {[
               { status: "AVAILABLE", label: "근무 가능" },
-              { status: "BOOKED",    label: "예약됨"   },
-              { status: "OFF",       label: "휴무"     },
+              { status: "BOOKED", label: "예약됨" },
+              { status: "OFF", label: "휴무" },
             ].map(({ status, label }) => (
-              <div key={status} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px" }}>
-                <div style={{ width: 10, height: 10, borderRadius: 3, background: STATUS_COLOR[status] }} />
-                <span style={{ color: STATUS_TEXT_COLOR[status] }}>{label}</span>
+              <div
+                key={status}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: "11px",
+                }}
+              >
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    background: STATUS_COLOR[status],
+                  }}
+                />
+                <span style={{ color: STATUS_TEXT_COLOR[status] }}>
+                  {label}
+                </span>
               </div>
             ))}
           </div>
 
           {schedules.length > 0 && (
-            <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <p style={{ fontSize: "11px", color: "#aaa", fontWeight: 600 }}>근무 일정 상세</p>
-              {schedules.map(s => (
-                <div key={s.scheduleId} style={{
-                  background: "#f8f7ff", borderRadius: "8px", padding: "8px 10px",
-                  fontSize: "11px", color: "#444",
-                }}>
-                  <span style={{ fontWeight: 700, color: "#5B4FF5" }}>{s.workDate}</span>
-                  <span style={{ marginLeft: "8px", color: STATUS_TEXT_COLOR[s.status] }}>
+            <div
+              style={{
+                marginTop: "12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <p style={{ fontSize: "11px", color: "#aaa", fontWeight: 600 }}>
+                근무 일정 상세
+              </p>
+              {schedules.map((s) => (
+                <div
+                  key={s.scheduleId}
+                  style={{
+                    background: "#f8f7ff",
+                    borderRadius: "8px",
+                    padding: "8px 10px",
+                    fontSize: "11px",
+                    color: "#444",
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: "#5B4FF5" }}>
+                    {s.workDate}
+                  </span>
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      color: STATUS_TEXT_COLOR[s.status],
+                    }}
+                  >
                     {SCHEDULE_STATUS_MAP[s.status]?.label ?? s.status}
                   </span>
                   {s.timeSlots?.length > 0 && (
-                    <p style={{ marginTop: "3px", color: "#888" }}>{formatTimeSlots(s.timeSlots)}</p>
+                    <p style={{ marginTop: "3px", color: "#888" }}>
+                      {formatTimeSlots(s.timeSlots)}
+                    </p>
                   )}
                 </div>
               ))}
@@ -298,7 +451,14 @@ function ScheduleCalendar({ engineerUserId }) {
           )}
 
           {schedules.length === 0 && (
-            <p style={{ textAlign: "center", color: "#aaa", fontSize: "12px", marginTop: "12px" }}>
+            <p
+              style={{
+                textAlign: "center",
+                color: "#aaa",
+                fontSize: "12px",
+                marginTop: "12px",
+              }}
+            >
               등록된 근무표가 없습니다.
             </p>
           )}
@@ -313,15 +473,19 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
   const [form, setForm] = useState({
     phone: initialData.phone ?? "",
     email: initialData.email ?? "",
-    expertBrands: Array.isArray(initialData.expertBrands) ? [...initialData.expertBrands] : [],
-    serviceRegionIds: Array.isArray(initialData.serviceRegionIds) ? [...initialData.serviceRegionIds] : [],
+    expertBrands: Array.isArray(initialData.expertBrands)
+      ? [...initialData.expertBrands]
+      : [],
+    serviceRegionIds: Array.isArray(initialData.serviceRegionIds)
+      ? [...initialData.serviceRegionIds]
+      : [],
     careerStartedYear: initialData.careerStartedYear ?? "",
     introduction: initialData.introduction ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateField = (key, value) => setForm(f => ({ ...f, [key]: value }));
+  const updateField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -338,21 +502,25 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
         email: form.email,
         expertBrands: form.expertBrands,
         serviceRegionIds: form.serviceRegionIds,
-        careerStartedYear: form.careerStartedYear ? Number(form.careerStartedYear) : null,
+        careerStartedYear: form.careerStartedYear
+          ? Number(form.careerStartedYear)
+          : null,
         introduction: form.introduction,
       };
 
       const updated = await apiFetch(
         `/api/agency/engineers/${initialData.engineerUserId}/profile`,
-        { method: "PUT", body: JSON.stringify(payload) }
+        { method: "PUT", body: JSON.stringify(payload) },
       );
 
       onSaved(updated ?? { ...initialData, ...payload });
     } catch (err) {
       console.error(err);
-      setError(err.message === "404" || err.message === "403"
-        ? "수정 권한이 없거나 대상을 찾을 수 없습니다."
-        : "저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      setError(
+        err.message === "404" || err.message === "403"
+          ? "수정 권한이 없거나 대상을 찾을 수 없습니다."
+          : "저장에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
     } finally {
       setSaving(false);
     }
@@ -366,7 +534,7 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
           className="aep-edit-input"
           type="tel"
           value={form.phone}
-          onChange={e => updateField("phone", e.target.value)}
+          onChange={(e) => updateField("phone", e.target.value)}
           placeholder="010-0000-0000"
         />
       </div>
@@ -377,7 +545,7 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
           className="aep-edit-input"
           type="email"
           value={form.email}
-          onChange={e => updateField("email", e.target.value)}
+          onChange={(e) => updateField("email", e.target.value)}
           placeholder="engineer@example.com"
         />
       </div>
@@ -385,14 +553,14 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
       <TagInput
         label="전문 브랜드"
         values={form.expertBrands}
-        onChange={v => updateField("expertBrands", v)}
+        onChange={(v) => updateField("expertBrands", v)}
         placeholder="브랜드명 입력 후 Enter"
       />
 
       <TagInput
         label="활동 지역 ID"
         values={form.serviceRegionIds}
-        onChange={v => updateField("serviceRegionIds", v)}
+        onChange={(v) => updateField("serviceRegionIds", v)}
         placeholder="지역 ID 입력 후 Enter"
         parseValue={(raw) => {
           const n = Number(raw);
@@ -408,7 +576,7 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
           min="1980"
           max={new Date().getFullYear()}
           value={form.careerStartedYear}
-          onChange={e => updateField("careerStartedYear", e.target.value)}
+          onChange={(e) => updateField("careerStartedYear", e.target.value)}
           placeholder="예: 2015"
         />
       </div>
@@ -416,10 +584,22 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
       <div className="aep-edit-field">
         <span className="aep-detail__info-label">기술 등급</span>
         <div className="aep-edit-readonly">
-          <span className={`aep-skill-badge aep-skill-badge--${(SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ?? SKILL_MAP.BEGINNER).type}`}>
-            <span>{(SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ?? SKILL_MAP.BEGINNER).label}</span>
+          <span
+            className={`aep-skill-badge aep-skill-badge--${(SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ?? SKILL_MAP.BEGINNER).type}`}
+          >
+            <span>
+              {
+                (
+                  SKILL_MAP[previewSkillLevel(form.careerStartedYear)] ??
+                  SKILL_MAP.BEGINNER
+                ).label
+              }
+            </span>
           </span>
-          <span className="aep-edit-readonly__hint">경력 시작 연도 기준으로 저장 시 서버에서 자동 산정됩니다 (직접 지정 불가)</span>
+          <span className="aep-edit-readonly__hint">
+            경력 시작 연도 기준으로 저장 시 서버에서 자동 산정됩니다 (직접 지정
+            불가)
+          </span>
         </div>
       </div>
 
@@ -429,7 +609,7 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
           className="aep-edit-input aep-edit-textarea"
           rows={4}
           value={form.introduction}
-          onChange={e => updateField("introduction", e.target.value)}
+          onChange={(e) => updateField("introduction", e.target.value)}
           placeholder="기사 소개를 입력하세요"
         />
       </div>
@@ -437,11 +617,24 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
       {error && <p className="aep-edit-error">{error}</p>}
 
       <div className="aep-edit-actions">
-        <button type="button" className="aep-edit-btn aep-edit-btn--cancel" onClick={onCancel} disabled={saving}>
+        <button
+          type="button"
+          className="aep-edit-btn aep-edit-btn--cancel"
+          onClick={onCancel}
+          disabled={saving}
+        >
           취소
         </button>
-        <button type="submit" className="aep-edit-btn aep-edit-btn--save" disabled={saving}>
-          {saving ? <Loader2 size={14} className="aep-spin" /> : <Save size={14} />}
+        <button
+          type="submit"
+          className="aep-edit-btn aep-edit-btn--save"
+          disabled={saving}
+        >
+          {saving ? (
+            <Loader2 size={14} className="aep-spin" />
+          ) : (
+            <Save size={14} />
+          )}
           {saving ? "저장 중..." : "저장"}
         </button>
       </div>
@@ -452,17 +645,17 @@ function ProfileEditForm({ initialData, onCancel, onSaved }) {
 export default function AgencyEngineerPage() {
   // ── 11번: 기사 목록 ──────────────────────────
   const [engineerList, setEngineerList] = useState([]);
-  const [listLoading, setListLoading]   = useState(true);
+  const [listLoading, setListLoading] = useState(true);
 
   // ── LMS 상세 현황(콘텐츠 완료/퀴즈 대기 구분용) ──────────
   // key: userId(=engineerUserId), value: { completedCount, totalCount, isCompleted }
   const [lmsDetailMap, setLmsDetailMap] = useState({});
 
   // ── 12번: 기사 상세 ──────────────────────────
-  const [selectedItem, setSelectedItem]   = useState(null);
-  const [detailData, setDetailData]       = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [detailData, setDetailData] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailTab, setDetailTab]         = useState("기본 정보");
+  const [detailTab, setDetailTab] = useState("기본 정보");
 
   // ── 13번: 기사 프로필 수정 ─────────────────────
   const [isEditMode, setIsEditMode] = useState(false);
@@ -477,8 +670,8 @@ export default function AgencyEngineerPage() {
   const [workStatusFilter, setWorkStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const token    = localStorage.getItem("token");
-  const decoded  = token ? jwtDecode(token) : null;
+  const token = localStorage.getItem("token");
+  const decoded = token ? jwtDecode(token) : null;
   const agencyId = decoded?.agencyId ?? null;
   // 슈퍼 계정(대표 담당자)만 기사 가입 신청을 승인/반려할 수 있으므로 버튼도 슈퍼 계정에게만 노출
   const isRepresentative = decoded?.isRepresentative ?? false;
@@ -486,7 +679,7 @@ export default function AgencyEngineerPage() {
   const fetchEngineers = useCallback(() => {
     setListLoading(true);
     apiFetch("/api/agency/engineers")
-      .then(data => setEngineerList(Array.isArray(data) ? data : []))
+      .then((data) => setEngineerList(Array.isArray(data) ? data : []))
       .catch(console.error)
       .finally(() => setListLoading(false));
   }, []);
@@ -498,16 +691,24 @@ export default function AgencyEngineerPage() {
     getAgencyEngineersLmsStatus(agencyId)
       .then((res) => {
         const map = {};
-        (res.data ?? []).forEach((e) => { map[e.userId] = e; });
+        (res.data ?? []).forEach((e) => {
+          map[e.userId] = e;
+        });
         setLmsDetailMap(map);
       })
       .catch(console.error);
   }, [agencyId]);
 
-  useEffect(() => { fetchEngineers(); }, [fetchEngineers]);
+  useEffect(() => {
+    fetchEngineers();
+  }, [fetchEngineers]);
   // 검색어·필터가 바뀌면 필터링된 목록 기준으로 1페이지부터 다시 보여줌
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, skillFilter, lmsFilter, workStatusFilter]);
-  useEffect(() => { fetchLmsDetail(); }, [fetchLmsDetail]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, skillFilter, lmsFilter, workStatusFilter]);
+  useEffect(() => {
+    fetchLmsDetail();
+  }, [fetchLmsDetail]);
 
   const handleSelectEngineer = useCallback(async (engineer) => {
     setSelectedItem(engineer);
@@ -515,7 +716,9 @@ export default function AgencyEngineerPage() {
     setIsEditMode(false);
     setDetailLoading(true);
     try {
-      const data = await apiFetch(`/api/agency/engineers/${engineer.engineerUserId}/profile`);
+      const data = await apiFetch(
+        `/api/agency/engineers/${engineer.engineerUserId}/profile`,
+      );
       setDetailData(data);
     } catch (e) {
       console.error(e);
@@ -525,46 +728,65 @@ export default function AgencyEngineerPage() {
     }
   }, []);
 
-  const handleProfileSaved = useCallback((updated) => {
-    setDetailData(prev => ({ ...prev, ...updated }));
-    setIsEditMode(false);
-    // 목록의 요약 정보(전문 가전 등)도 최신 상태를 반영하도록 새로고침
-    fetchEngineers();
-    fetchLmsDetail();
-  }, [fetchEngineers, fetchLmsDetail]);
+  const handleProfileSaved = useCallback(
+    (updated) => {
+      setDetailData((prev) => ({ ...prev, ...updated }));
+      setIsEditMode(false);
+      // 목록의 요약 정보(전문 가전 등)도 최신 상태를 반영하도록 새로고침
+      fetchEngineers();
+      fetchLmsDetail();
+    },
+    [fetchEngineers, fetchLmsDetail],
+  );
 
-  const filteredList = engineerList.filter(e => {
-    const matchesSearch = !searchQuery
-      || e.name?.includes(searchQuery)
-      || String(e.engineerUserId).includes(searchQuery);
+  const filteredList = engineerList.filter((e) => {
+    const matchesSearch =
+      !searchQuery ||
+      e.name?.includes(searchQuery) ||
+      String(e.engineerUserId).includes(searchQuery);
     const matchesSkill = !skillFilter || e.skillLevel === skillFilter;
     const matchesLms = !lmsFilter || String(e.lmsCompleted) === lmsFilter;
-    const matchesWorkStatus = !workStatusFilter || e.currentWorkStatus === workStatusFilter;
+    const matchesWorkStatus =
+      !workStatusFilter || e.currentWorkStatus === workStatusFilter;
     return matchesSearch && matchesSkill && matchesLms && matchesWorkStatus;
   });
 
   // 소속 기사 평균 평점 — avgRating이 없거나(NULL) 0인 기사(리뷰 없음)는 제외하고 평균 계산
-  const ratedEngineers = engineerList.filter(e => e.avgRating != null && Number(e.avgRating) > 0);
-  const avgRatingDisplay = ratedEngineers.length === 0
-    ? "-"
-    : (ratedEngineers.reduce((sum, e) => sum + Number(e.avgRating), 0) / ratedEngineers.length).toFixed(1);
+  const ratedEngineers = engineerList.filter(
+    (e) => e.avgRating != null && Number(e.avgRating) > 0,
+  );
+  const avgRatingDisplay =
+    ratedEngineers.length === 0
+      ? "-"
+      : (
+          ratedEngineers.reduce((sum, e) => sum + Number(e.avgRating), 0) /
+          ratedEngineers.length
+        ).toFixed(1);
 
   const PAGE_SIZE = 10;
   const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
-  const pagedList = filteredList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagedList = filteredList.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
   return (
     <div className="aep">
       <div className="aep-header">
         <h1 className="aep-header__title">기사 관리</h1>
-        <p className="aep-header__sub">소속 기사 정보를 관리하고 근무 현황과 실적을 확인할 수 있습니다.</p>
+        <p className="aep-header__sub">
+          소속 기사 정보를 관리하고 근무 현황과 실적을 확인할 수 있습니다.
+        </p>
       </div>
 
       {/* 통계 카드 */}
       <div className="aep-stats">
         <div className="aep-stat-card">
           <div className="aep-stat-card__text">
-            <p className="aep-stat-card__value">{listLoading ? "..." : engineerList.length}<span>명</span></p>
+            <p className="aep-stat-card__value">
+              {listLoading ? "..." : engineerList.length}
+              <span>명</span>
+            </p>
             <p className="aep-stat-card__label">전체 기사</p>
           </div>
           <div className="aep-stat-card__icon aep-stat-card__icon--purple">
@@ -575,7 +797,13 @@ export default function AgencyEngineerPage() {
         <div className="aep-stat-card">
           <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">
-              {listLoading ? "..." : engineerList.filter(e => e.currentWorkStatus === "AVAILABLE" || e.currentWorkStatus === "BOOKED").length}
+              {listLoading
+                ? "..."
+                : engineerList.filter(
+                    (e) =>
+                      e.currentWorkStatus === "AVAILABLE" ||
+                      e.currentWorkStatus === "BOOKED",
+                  ).length}
               <span>명</span>
             </p>
             <p className="aep-stat-card__label">활동 중</p>
@@ -588,7 +816,9 @@ export default function AgencyEngineerPage() {
         <div className="aep-stat-card">
           <div className="aep-stat-card__text">
             <p className="aep-stat-card__value">
-              {listLoading ? "..." : engineerList.filter(e => e.lmsCompleted).length}
+              {listLoading
+                ? "..."
+                : engineerList.filter((e) => e.lmsCompleted).length}
               <span>명</span>
             </p>
             <p className="aep-stat-card__label">교육 이수 완료</p>
@@ -600,7 +830,10 @@ export default function AgencyEngineerPage() {
 
         <div className="aep-stat-card">
           <div className="aep-stat-card__text">
-            <p className="aep-stat-card__value">{listLoading ? "..." : avgRatingDisplay}<span>/5.0</span></p>
+            <p className="aep-stat-card__value">
+              {listLoading ? "..." : avgRatingDisplay}
+              <span>/5.0</span>
+            </p>
             <p className="aep-stat-card__label">평균 평점</p>
           </div>
           <div className="aep-stat-card__icon aep-stat-card__icon--amber">
@@ -617,13 +850,13 @@ export default function AgencyEngineerPage() {
             type="text"
             placeholder="이름, 기사 ID 검색"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <label className="aep-filter-select">
           <select
             value={skillFilter}
-            onChange={e => setSkillFilter(e.target.value)}
+            onChange={(e) => setSkillFilter(e.target.value)}
             className="aep-filter-select__input"
           >
             <option value="">기술 등급</option>
@@ -636,7 +869,7 @@ export default function AgencyEngineerPage() {
         <label className="aep-filter-select">
           <select
             value={lmsFilter}
-            onChange={e => setLmsFilter(e.target.value)}
+            onChange={(e) => setLmsFilter(e.target.value)}
             className="aep-filter-select__input"
           >
             <option value="">교육 상태</option>
@@ -648,7 +881,7 @@ export default function AgencyEngineerPage() {
         <label className="aep-filter-select">
           <select
             value={workStatusFilter}
-            onChange={e => setWorkStatusFilter(e.target.value)}
+            onChange={(e) => setWorkStatusFilter(e.target.value)}
             className="aep-filter-select__input"
           >
             <option value="">근무 상태</option>
@@ -670,7 +903,10 @@ export default function AgencyEngineerPage() {
           <RefreshCw size={13} /> 필터 초기화
         </button>
         {isRepresentative && (
-          <button className="aep-invite-btn" onClick={() => setIsApprovalModalOpen(true)}>
+          <button
+            className="aep-invite-btn"
+            onClick={() => setIsApprovalModalOpen(true)}
+          >
             <UserPlus size={14} /> 가입 신청 관리
           </button>
         )}
@@ -680,7 +916,9 @@ export default function AgencyEngineerPage() {
         <div className="aep-left">
           <div className="aep-table">
             <div className="aep-table__header">
-              <span><input type="checkbox" /></span>
+              <span>
+                <input type="checkbox" />
+              </span>
               <span>기사 정보</span>
               <span>전문 가전</span>
               <span>기술 등급</span>
@@ -690,46 +928,85 @@ export default function AgencyEngineerPage() {
             </div>
 
             {listLoading ? (
-              <p style={{ padding: "16px", color: "#aaa", fontSize: "13px" }}>로딩 중...</p>
+              <p style={{ padding: "16px", color: "#aaa", fontSize: "13px" }}>
+                로딩 중...
+              </p>
             ) : filteredList.length === 0 ? (
-              <p style={{ padding: "16px", color: "#aaa", fontSize: "13px" }}>소속 기사가 없습니다.</p>
+              <p style={{ padding: "16px", color: "#aaa", fontSize: "13px" }}>
+                소속 기사가 없습니다.
+              </p>
             ) : (
               pagedList.map((item) => {
-                const skill    = SKILL_MAP[item.skillLevel] ?? { label: item.skillLevel, type: "beginner", en: item.skillLevel };
-                const schedule = SCHEDULE_STATUS_MAP[item.currentWorkStatus] ?? { label: "-", type: "off" };
-                const isSelected = selectedItem?.engineerUserId === item.engineerUserId;
+                const skill = SKILL_MAP[item.skillLevel] ?? {
+                  label: item.skillLevel,
+                  type: "beginner",
+                  en: item.skillLevel,
+                };
+                const schedule = SCHEDULE_STATUS_MAP[
+                  item.currentWorkStatus
+                ] ?? { label: "-", type: "off" };
+                const isSelected =
+                  selectedItem?.engineerUserId === item.engineerUserId;
                 const lmsDetail = lmsDetailMap[item.engineerUserId];
                 return (
-                  <div key={item.engineerUserId} className={`aep-table__row ${isSelected ? "aep-table__row--selected" : ""}`}>
-                    <span><input type="checkbox" /></span>
+                  <div
+                    key={item.engineerUserId}
+                    className={`aep-table__row ${isSelected ? "aep-table__row--selected" : ""}`}
+                  >
+                    <span>
+                      <input type="checkbox" />
+                    </span>
                     <span className="aep-table__engineer-col">
                       <Avatar name={item.name} profileImg={null} size={34} />
                       <div>
-                        <span className="aep-table__name">{item.name} 기사</span>
-                        <span className="aep-table__engineer-id">{formatEngineerId(item.engineerUserId)}</span>
+                        <span className="aep-table__name">
+                          {item.name} 기사
+                        </span>
+                        <span className="aep-table__engineer-id">
+                          {formatEngineerId(item.engineerUserId)}
+                        </span>
                       </div>
                     </span>
-                    <span className="aep-table__specialty">{item.categoryName ?? "-"}</span>
+                    <span className="aep-table__specialty">
+                      {item.categoryName ?? "-"}
+                    </span>
                     <span>
-                      <div className={`aep-skill-badge aep-skill-badge--${skill.type}`}>
+                      <div
+                        className={`aep-skill-badge aep-skill-badge--${skill.type}`}
+                      >
                         <span>{skill.label}</span>
                         <span className="aep-skill-badge__en">{skill.en}</span>
                       </div>
                     </span>
                     <span>
-                      <LmsStatusBadge isCompleted={item.lmsCompleted} lmsDetail={lmsDetail} />
+                      <LmsStatusBadge
+                        isCompleted={item.lmsCompleted}
+                        lmsDetail={lmsDetail}
+                      />
                     </span>
                     <span>
-                      <span className={`aep-status-badge aep-status-badge--${schedule.type}`}>{schedule.label}</span>
+                      <span
+                        className={`aep-status-badge aep-status-badge--${schedule.type}`}
+                      >
+                        {schedule.label}
+                      </span>
                     </span>
                     <span className="aep-table__actions">
                       <button
                         className={`aep-detail-btn ${isSelected ? "aep-detail-btn--active" : ""}`}
-                        onClick={() => handleSelectEngineer(item)}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedItem(null);
+                            setDetailData(null);
+                            setIsEditMode(false);
+                          } else {
+                            handleSelectEngineer(item);
+                          }
+                        }}
                       >
-                        상세
+                        {isSelected ? "닫기" : "상세"}
                       </button>
-                      <button className="aep-more-btn"><MoreVertical size={14} /></button>
+                      {/* <button className="aep-more-btn"><MoreVertical size={14} /></button> */}
                     </span>
                   </div>
                 );
@@ -740,15 +1017,43 @@ export default function AgencyEngineerPage() {
           {/* 페이지네이션 */}
           <div className="aep-pagination">
             <div className="aep-pagination__left">
-              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft size={14} /></button>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft size={14} /></button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                <button key={p} className={currentPage === p ? "aep-pagination__active" : ""} onClick={() => setCurrentPage(p)}>{p}</button>
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft size={14} />
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  className={currentPage === p ? "aep-pagination__active" : ""}
+                  onClick={() => setCurrentPage(p)}
+                >
+                  {p}
+                </button>
               ))}
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={14} /></button>
-              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight size={14} /></button>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight size={14} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight size={14} />
+              </button>
             </div>
-            <div className="aep-page-size">10개씩 보기 <ChevronDown size={13} /></div>
+            {/* <div className="aep-page-size">10개씩 보기 <ChevronDown size={13} /></div> */}
           </div>
         </div>
 
@@ -759,13 +1064,20 @@ export default function AgencyEngineerPage() {
               <span className="aep-detail__title">기사 상세 정보</span>
               <div className="aep-detail__header-actions">
                 {detailTab === "기본 정보" && detailData && !isEditMode && (
-                  <button className="aep-edit-toggle-btn" onClick={() => setIsEditMode(true)}>
+                  <button
+                    className="aep-edit-toggle-btn"
+                    onClick={() => setIsEditMode(true)}
+                  >
                     <Pencil size={13} /> 수정
                   </button>
                 )}
                 <button
                   className="aep-detail__close"
-                  onClick={() => { setSelectedItem(null); setDetailData(null); setIsEditMode(false); }}
+                  onClick={() => {
+                    setSelectedItem(null);
+                    setDetailData(null);
+                    setIsEditMode(false);
+                  }}
                 >
                   <X size={16} />
                 </button>
@@ -781,14 +1093,20 @@ export default function AgencyEngineerPage() {
               <div>
                 <div className="aep-detail__profile-name">
                   {detailData?.name ?? selectedItem.name} 기사
-                  <span className={`aep-status-badge aep-status-badge--${SCHEDULE_STATUS_MAP[selectedItem.currentWorkStatus]?.type ?? "off"}`}>
-                    {SCHEDULE_STATUS_MAP[selectedItem.currentWorkStatus]?.label ?? "-"}
+                  <span
+                    className={`aep-status-badge aep-status-badge--${SCHEDULE_STATUS_MAP[selectedItem.currentWorkStatus]?.type ?? "off"}`}
+                  >
+                    {SCHEDULE_STATUS_MAP[selectedItem.currentWorkStatus]
+                      ?.label ?? "-"}
                   </span>
                 </div>
-                <p className="aep-detail__profile-id">{formatEngineerId(selectedItem.engineerUserId)}</p>
+                <p className="aep-detail__profile-id">
+                  {formatEngineerId(selectedItem.engineerUserId)}
+                </p>
                 {detailData && (
                   <div className="aep-detail__profile-rating">
-                    ⭐ {detailData.avgRating ?? "-"} (리뷰 {detailData.totalReviews ?? 0}건)
+                    ⭐ {detailData.avgRating ?? "-"} (리뷰{" "}
+                    {detailData.totalReviews ?? 0}건)
                   </div>
                 )}
               </div>
@@ -799,7 +1117,10 @@ export default function AgencyEngineerPage() {
                 <button
                   key={tab}
                   className={`aep-detail__tab ${detailTab === tab ? "aep-detail__tab--active" : ""}`}
-                  onClick={() => { setDetailTab(tab); setIsEditMode(false); }}
+                  onClick={() => {
+                    setDetailTab(tab);
+                    setIsEditMode(false);
+                  }}
                 >
                   {tab}
                 </button>
@@ -807,9 +1128,13 @@ export default function AgencyEngineerPage() {
             </div>
 
             <div className="aep-detail__body">
-              {detailTab === "기본 정보" && (
-                detailLoading ? (
-                  <p style={{ color: "#aaa", fontSize: "13px", padding: "12px" }}>로딩 중...</p>
+              {detailTab === "기본 정보" &&
+                (detailLoading ? (
+                  <p
+                    style={{ color: "#aaa", fontSize: "13px", padding: "12px" }}
+                  >
+                    로딩 중...
+                  </p>
                 ) : detailData ? (
                   isEditMode ? (
                     <ProfileEditForm
@@ -821,57 +1146,90 @@ export default function AgencyEngineerPage() {
                     <div className="aep-detail__info">
                       <div className="aep-detail__info-row">
                         <span className="aep-detail__info-label">연락처</span>
-                        <span className="aep-detail__info-value">{detailData.phone} <Phone size={11} /></span>
-                      </div>
-                      <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">이메일</span>
-                        <span className="aep-detail__info-value">{detailData.email} <Mail size={11} /></span>
-                      </div>
-                      <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">전문 가전</span>
-                        <span className="aep-detail__info-value">{detailData.categoryName ?? "-"}</span>
-                      </div>
-                      <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">전문 브랜드</span>
-                        <span className="aep-detail__info-value">{detailData.expertBrands?.join(", ") ?? "-"}</span>
-                      </div>
-                      <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">활동 지역</span>
-                        <span className="aep-detail__info-value">{detailData.serviceRegionNames?.join(", ") ?? "-"}</span>
-                      </div>
-                      <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">경력 시작</span>
                         <span className="aep-detail__info-value">
-                          {detailData.careerStartedYear}년 (경력 {getCareerYears(detailData.careerStartedYear)})
+                          {detailData.phone} <Phone size={11} />
                         </span>
                       </div>
                       <div className="aep-detail__info-row">
-                        <span className="aep-detail__info-label">기술 등급</span>
+                        <span className="aep-detail__info-label">이메일</span>
                         <span className="aep-detail__info-value">
-                          {SKILL_MAP[detailData.skillLevel]?.label ?? detailData.skillLevel}
+                          {detailData.email} <Mail size={11} />
+                        </span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">
+                          전문 가전
+                        </span>
+                        <span className="aep-detail__info-value">
+                          {detailData.categoryName ?? "-"}
+                        </span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">
+                          전문 브랜드
+                        </span>
+                        <span className="aep-detail__info-value">
+                          {detailData.expertBrands?.join(", ") ?? "-"}
+                        </span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">
+                          활동 지역
+                        </span>
+                        <span className="aep-detail__info-value">
+                          {detailData.serviceRegionNames?.join(", ") ?? "-"}
+                        </span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">
+                          경력 시작
+                        </span>
+                        <span className="aep-detail__info-value">
+                          {detailData.careerStartedYear}년 (경력{" "}
+                          {getCareerYears(detailData.careerStartedYear)})
+                        </span>
+                      </div>
+                      <div className="aep-detail__info-row">
+                        <span className="aep-detail__info-label">
+                          기술 등급
+                        </span>
+                        <span className="aep-detail__info-value">
+                          {SKILL_MAP[detailData.skillLevel]?.label ??
+                            detailData.skillLevel}
                         </span>
                       </div>
                       {detailData.introduction && (
                         <div className="aep-detail__info-row">
-                          <span className="aep-detail__info-label">자기 소개</span>
-                          <span className="aep-detail__info-value">{detailData.introduction}</span>
+                          <span className="aep-detail__info-label">
+                            자기 소개
+                          </span>
+                          <span className="aep-detail__info-value">
+                            {detailData.introduction}
+                          </span>
                         </div>
                       )}
                       <div className="aep-detail__info-row">
                         <span className="aep-detail__info-label">가입일</span>
-                        <span className="aep-detail__info-value">{detailData.createdAt?.slice(0, 10)}</span>
+                        <span className="aep-detail__info-value">
+                          {detailData.createdAt?.slice(0, 10)}
+                        </span>
                       </div>
 
                       <div className="aep-detail__lms-section">
-                        <p className="aep-detail__section-label">LMS 교육 상태</p>
+                        <p className="aep-detail__section-label">
+                          LMS 교육 상태
+                        </p>
                         <div className="aep-detail__lms-row">
                           <LmsStatusBadge
                             isCompleted={detailData.lmsCompleted}
-                            lmsDetail={lmsDetailMap[selectedItem.engineerUserId]}
+                            lmsDetail={
+                              lmsDetailMap[selectedItem.engineerUserId]
+                            }
                           />
                         </div>
                         {(() => {
-                          const lmsDetail = lmsDetailMap[selectedItem.engineerUserId];
+                          const lmsDetail =
+                            lmsDetailMap[selectedItem.engineerUserId];
                           const contentDone =
                             lmsDetail &&
                             lmsDetail.totalCount > 0 &&
@@ -881,10 +1239,13 @@ export default function AgencyEngineerPage() {
 
                           return contentDone ? (
                             <p className="aep-detail__lms-warn aep-detail__lms-warn--info">
-                              콘텐츠는 모두 이수했지만 OX퀴즈 합격 전까지 배차가 제한됩니다.
+                              콘텐츠는 모두 이수했지만 OX퀴즈 합격 전까지 배차가
+                              제한됩니다.
                             </p>
                           ) : (
-                            <p className="aep-detail__lms-warn">⚠ LMS 미이수 — 배차 불가 상태</p>
+                            <p className="aep-detail__lms-warn">
+                              ⚠ LMS 미이수 — 배차 불가 상태
+                            </p>
                           );
                         })()}
                       </div>
@@ -894,23 +1255,32 @@ export default function AgencyEngineerPage() {
                         <div className="aep-detail__month-cards">
                           <div className="aep-detail__month-card">
                             <p className="aep-detail__month-label">평균 평점</p>
-                            <p className="aep-detail__month-value">{detailData.avgRating ?? "-"}</p>
+                            <p className="aep-detail__month-value">
+                              {detailData.avgRating ?? "-"}
+                            </p>
                           </div>
                           <div className="aep-detail__month-card">
                             <p className="aep-detail__month-label">누적 리뷰</p>
-                            <p className="aep-detail__month-value">{detailData.totalReviews ?? 0}건</p>
+                            <p className="aep-detail__month-value">
+                              {detailData.totalReviews ?? 0}건
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                   )
                 ) : (
-                  <p style={{ color: "#aaa", fontSize: "13px", padding: "12px" }}>상세 정보를 불러올 수 없습니다.</p>
-                )
-              )}
+                  <p
+                    style={{ color: "#aaa", fontSize: "13px", padding: "12px" }}
+                  >
+                    상세 정보를 불러올 수 없습니다.
+                  </p>
+                ))}
 
               {detailTab === "근무표" && (
-                <ScheduleCalendar engineerUserId={selectedItem.engineerUserId} />
+                <ScheduleCalendar
+                  engineerUserId={selectedItem.engineerUserId}
+                />
               )}
             </div>
           </aside>
