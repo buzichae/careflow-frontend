@@ -317,6 +317,8 @@ function SignupForm({ roleKey, onBack }) {
       return (
         !formData.email ||
         !formData.password ||
+        !formData.passwordConfirm ||
+        !pwMatch ||
         !!passwordError ||
         !formData.name ||
         !formData.phone ||
@@ -587,7 +589,7 @@ function SignupForm({ roleKey, onBack }) {
                   {formData.password && passwordError && (
                     <p className="auth-field-error">{passwordError}</p>
                   )}
-                  {isCustomer && (
+                  {(isCustomer || roleKey === "agency") && (
                     <>
                       <AuthInput
                         label="비밀번호 확인"
@@ -616,8 +618,12 @@ function SignupForm({ roleKey, onBack }) {
                   {roleKey === "agency" && (
                     <>
                       <AuthInput
-                        label="대표자명"
-                        placeholder="대표자 이름을 입력해주세요"
+                        label={formData.flag === 1 ? "이름" : "대표자명"}
+                        placeholder={
+                          formData.flag === 1
+                            ? "이름을 입력해주세요"
+                            : "대표자 이름을 입력해주세요"
+                        }
                         value={formData.name}
                         onChange={handleChange("name")}
                       />
