@@ -331,6 +331,8 @@ function SignupForm({ roleKey, onBack }) {
       return (
         !formData.email ||
         !formData.password ||
+        !formData.passwordConfirm ||
+        !pwMatch ||
         !!passwordError ||
         !formData.name ||
         !formData.phone ||
@@ -589,7 +591,7 @@ function SignupForm({ roleKey, onBack }) {
                   {formData.password && passwordError && (
                     <p className="auth-field-error">{passwordError}</p>
                   )}
-                  {(isCustomer || roleKey === "agency") && (
+                  {(isCustomer || roleKey === "agency" || roleKey === "engineer") && (
                     <>
                       <AuthInput
                         label="비밀번호 확인"
