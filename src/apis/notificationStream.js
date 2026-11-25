@@ -8,7 +8,7 @@
 //
 // 반환값: 구독 해제 함수. 컴포넌트 언마운트 시 반드시 호출할 것.
 
-const BASE_URL = "http://localhost:8080"; // axiosInstance.js 의 baseURL 과 동일
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080"; // axiosInstance.js 의 baseURL 과 동일
 
 /**
  * @param {object}   handlers

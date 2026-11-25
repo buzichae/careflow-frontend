@@ -9,7 +9,7 @@ import "../../styles/Agency/AgencyDashboard.css";
 import { getAgencyReviews } from "../../apis/agencyReview";
 import { getAgencyNotifications } from "../../apis/agencyNotification";
 
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
 // 공통 fetch 헬퍼 (JWT 자동 첨부)
 async function apiFetch(path) {

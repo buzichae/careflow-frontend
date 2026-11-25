@@ -30,7 +30,7 @@ import "../../styles/Agency/agency/Agencyengineerpage.edit form.css";
 import EngineerApprovalModal from "../../pages/Agency/Modal/Engineerapprovalmodal";
 import { getAgencyEngineersLmsStatus } from "../../apis/lms";
 
-export const BASE_URL = "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
 export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");

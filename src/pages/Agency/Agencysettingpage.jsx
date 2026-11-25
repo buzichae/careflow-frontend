@@ -4,7 +4,7 @@ import { getIsRepresentativeFromToken } from "../../utils/auth";
 import AgencyStaffApprovalModal from "./Modal/AgencyStaffApprovalModal";
 import "../../styles/Agency/Agencysettingpage.css";
 
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
 // 계좌 등록 시 선택 가능한 은행 목록 (드롭다운용)
 const BANK_LIST = [
