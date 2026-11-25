@@ -5,7 +5,7 @@ import "../../../styles/Agency/Modal/WorkDetailModal.css";
 import api from "../../../apis/axiosInstance";
 import { getRecommendedEngineers } from "../../../apis/agencyEngineer";
 import { getWorkRequestDetail, getAssignmentDetail, rejectWorkRequest } from "../../../apis/agency";
-import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
+import { getAgencyStatusLogs } from "../../../apis/agencyasstatuslog";
  
 const STATUS_LOG_LABEL = {
   WAITING:            "방문 대기",
