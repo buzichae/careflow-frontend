@@ -11,7 +11,7 @@ import WorkDetailModal from "../../Agency/Modal/WorkDetailModal";
 import { AssignDetailModal, ReassignModal } from "../../../pages/Agency/Modal/AssignModals";
 import api from "../../../apis/axiosInstance";
 import { searchAssignments } from "../../../apis/agency";
-import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
+import { getAgencyStatusLogs } from "../../../apis/agencyasstatuslog";
 
 
 // API 응답 AgencyAsRequestListResponse → 컴포넌트 내부 형식으로 매핑

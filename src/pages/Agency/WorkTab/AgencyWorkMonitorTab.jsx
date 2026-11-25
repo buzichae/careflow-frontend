@@ -18,7 +18,7 @@ import {
 import "../../../styles/Agency/WorkTab/AgencyWorkMonitorTab.css";
 import "../../../styles/Agency/WorkTab/Agencyworkmonitortab.additions.css";
 import { getInProgressAssignments } from "../../../apis/agencyAssignment";
-import { getAgencyStatusLogs } from "../../../apis/agencyAsStatusLog";
+import { getAgencyStatusLogs } from "../../../apis/agencyasstatuslog";
 
 // as_status_logs.to_status ENUM → UI 표현 매핑
 const STATUS_LOG_MAP = {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronUp, User, Settings, LogOut } from "lucide-react";
 import { logout, getUserInfo } from "../../apis/auth";
 
-import "../../styles/Engineer/EngineerNavbar.css";
+import "../../styles/Engineer/Engineernavbar.css";
 
 export default function EngineerNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
