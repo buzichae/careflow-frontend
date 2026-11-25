@@ -15,21 +15,21 @@ const STEPS = [
 
 const USER_GUIDES = [
   {
-    img: "/src/assets/고객.png",
+    img: "/고객.png",
     role: "일반 고객",
     color: "#5B4FF5",
     desc: "내 가전을 등록하고 A/S를 신청하여 편리하게 관리하세요.",
     checks: ["가전 등록 및 관리", "A/S 신청 및 진행 상황 확인", "수리 이력 및 진단서 조회", "소모품 교체 알림 및 중고 거래"],
   },
   {
-    img: "/src/assets/기사.png",
+    img: "/기사.png",
     role: "수리 기사",
     color: "#00b894",
     desc: "배정된 작업을 수행하고 정확한 보고서로 신뢰를 쌓으세요.",
     checks: ["배정 알림 및 일정 확인", "단계별 상태 업데이트", "작업 보고서 작성 및 제출", "실적 및 정산 확인"],
   },
   {
-    img: "/src/assets/대행사.png",
+    img: "/대행사.png",
     role: "대행사",
     color: "#0984e3",
     desc: "접수 관리부터 기사 배정, 정산까지 효율적으로 운영하세요.",
@@ -52,7 +52,7 @@ export default function GuidePage() {
       {/* 네브바 */}
       <nav className="guide__nav">
         <div className="guide__logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-          <img src="/src/assets/logo.png" alt="CareFlow" className="guide__logo-img" />
+          <img src="/logo.png" alt="CareFlow" className="guide__logo-img" />
           CareFlow
         </div>
         <div className="guide__nav-links">
@@ -88,7 +88,7 @@ export default function GuidePage() {
           </p>
         </div>
         <div className="guide__hero-visual">
-          <img src="/src/assets/main.png" alt="가전제품" className="guide__hero-img" />
+          <img src="/main.png" alt="가전제품" className="guide__hero-img" />
         </div>
       </section>
 

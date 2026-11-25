@@ -18,17 +18,17 @@ const BADGES = [
 
 const TARGETS = [
   {
-    img: "/src/assets/고객.png",
+    img: "/고객.png",
     title: "일반 고객",
     desc: "내 가전을 한눈에 관리하고, 필요할 때 빠르고 투명하게 A/S를 받을 수 있어요.",
   },
   {
-    img: "/src/assets/기사.png",
+    img: "/기사.png",
     title: "엔지니어 / 대행사",
     desc: "스킬/위치 기반 배정으로 더 많은 작업을 효율적으로 수행하고, 정확한 정산과 평가를 받아요.",
   },
   {
-    img: "/src/assets/대행사.png",
+    img: "/대행사.png",
     title: "기업 / 파트너",
     desc: "데이터 인사이트로 제품 품질을 개선하고, 신뢰도 높은 서비스로 브랜드 가치를 높일 수 있어요.",
   },
@@ -50,7 +50,7 @@ export default function ServicePage() {
       {/* 네브바 */}
       <nav className="service__nav">
         <div className="service__logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-          <img src="/src/assets/logo.png" alt="CareFlow" className="service__logo-img" />
+          <img src="/logo.png" alt="CareFlow" className="service__logo-img" />
              CareFlow
         </div>
         <div className="service__nav-links">
@@ -104,7 +104,7 @@ export default function ServicePage() {
               <span className="service__floating-label">{f.label}</span>
             </div>
           ))}
-          <img src="/src/assets/main.png" alt="가전제품" className="service__hero-img" />
+          <img src="/main.png" alt="가전제품" className="service__hero-img" />
         </div>
       </section>
 

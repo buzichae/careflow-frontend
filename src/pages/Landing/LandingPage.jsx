@@ -35,7 +35,7 @@ export default function LandingPage() {
     <div className="landing">
       <nav className="landing__nav">
         <div className="landing__logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-          <img src="/src/assets/logo.png" alt="CareFlow" className="landing__logo-img" />
+          <img src="/logo.png" alt="CareFlow" className="landing__logo-img" />
           CareFlow
         </div>
         <div className="landing__nav-links">
@@ -77,7 +77,7 @@ export default function LandingPage() {
          </div>
         </div>
         <div className="landing__hero-visual">
-          <img src="/src/assets/main.png" alt="가전제품" className="landing__hero-img" />
+          <img src="/main.png" alt="가전제품" className="landing__hero-img" />
         </div>
       </section>
 

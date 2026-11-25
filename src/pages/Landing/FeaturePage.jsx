@@ -49,7 +49,7 @@ const VALUES = [
 function PreviewAppliance() {
   return (
     <div className="feature__preview feature__preview--appliance">
-      <img src="/src/assets/가구.png" alt="가전제품" className="feature__appliance-img" />
+      <img src="/가구.png" alt="가전제품" className="feature__appliance-img" />
     </div>
   );
 }
@@ -154,7 +154,7 @@ export default function FeaturePage() {
       {/* 네브바 */}
       <nav className="feature__nav">
         <div className="feature__logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-          <img src="/src/assets/logo.png" alt="CareFlow" className="feature__logo-img" />
+          <img src="/logo.png" alt="CareFlow" className="feature__logo-img" />
           CareFlow
         </div>
         <div className="feature__nav-links">

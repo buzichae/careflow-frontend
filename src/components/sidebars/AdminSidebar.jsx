@@ -57,7 +57,7 @@ export default function AdminSidebar() {
         style={{ cursor: "pointer" }}
       >
         <img
-          src="/src/assets/logo.png"
+          src="/logo.png"
           alt="CareFlow"
           className="sidebar__logo-img"
         />

@@ -686,7 +686,7 @@ export default function CustomerHome() {
         </div>
         <div className="ch-hero__illust" aria-hidden="true">
           <img
-            src="/src/assets/main.png"
+            src="/main.png"
             alt=""
             className="ch-hero__illust-img"
           />

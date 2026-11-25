@@ -19,7 +19,7 @@ export default function EngineerSidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__logo">
-  <img src="/src/assets/logo.png" alt="CareFlow" className="sidebar__logo-img" />
+  <img src="/logo.png" alt="CareFlow" className="sidebar__logo-img" />
   CareFlow
 </div>
       <nav className="sidebar__nav">
